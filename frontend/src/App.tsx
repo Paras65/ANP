@@ -281,7 +281,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col font-devanagari select-none ${
+    <div className={`min-h-screen flex flex-col font-devanagari ${
       isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
     } ${isMobileDeviceView ? 'bg-slate-900 py-6 px-2 flex items-center justify-center' : ''}`}>
 
@@ -587,7 +587,7 @@ export const App: React.FC = () => {
                   {heroArticle && (
                     <div 
                       onClick={() => setActiveArticle(heroArticle)}
-                      className={`rounded-3xl border overflow-hidden cursor-pointer group shadow-xl transition-all duration-300 active:scale-[0.99] ${
+                      className={`rounded-3xl border overflow-hidden cursor-pointer group shadow-xl transition-colors duration-150 active:scale-[0.99] ${
                         isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/70' : 'bg-white border-slate-200'
                       }`}
                     >

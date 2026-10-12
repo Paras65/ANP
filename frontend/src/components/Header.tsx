@@ -54,10 +54,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           
           {/* Bureau Location & Date */}
-          <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px]">
-            <span className="flex items-center gap-1 font-bold text-red-500">
-              <MapPin size={11} />
-              <span>मुख्यालय: कवर्धा (कबीरधाम)</span>
+          <div className="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-[11px] shrink-0">
+            <span className="flex items-center gap-1 font-bold text-red-500 shrink-0">
+              <MapPin size={11} className="shrink-0" />
+              <span className="sm:hidden">कवर्धा</span>
+              <span className="hidden sm:inline">मुख्यालय: कवर्धा (कबीरधाम)</span>
             </span>
             <span className="hidden md:inline text-slate-500">|</span>
             <span className="hidden md:inline">12 अक्टूबर 2026</span>
@@ -66,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Social Links & Device View Switcher */}
-          <div className="flex items-center gap-1.5 sm:gap-2 font-medium">
+          <div className="flex items-center gap-1 sm:gap-2 font-medium shrink-0">
             
             {/* Desktop Simulator Toggle */}
             {toggleDeviceView && (
@@ -94,12 +95,12 @@ export const Header: React.FC<HeaderProps> = ({
               href={SOCIAL_LINKS.youtube} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95"
+              className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
               title="Ambition News YouTube Channel"
             >
               <YoutubeIcon size={12} />
-              <span className="hidden sm:inline">YouTube</span>
-              <span className="text-[9px]">({SOCIAL_LINKS.youtubeSubs})</span>
+              <span>YouTube</span>
+              <span className="hidden sm:inline text-[9px]">({SOCIAL_LINKS.youtubeSubs})</span>
             </a>
 
             {/* Instagram Link */}
@@ -107,12 +108,12 @@ export const Header: React.FC<HeaderProps> = ({
               href={SOCIAL_LINKS.instagram} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="flex items-center gap-1 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-90 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95"
+              className="flex items-center gap-1 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-90 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
               title="Ambition News Kawardha Instagram"
             >
               <InstagramIcon size={12} />
-              <span className="hidden sm:inline">Insta</span>
-              <span className="text-[9px]">(@ambition_news)</span>
+              <span>Insta</span>
+              <span className="hidden sm:inline text-[9px]">(@ambition_news)</span>
             </a>
 
             {/* WhatsApp Link */}
@@ -120,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
               href={SOCIAL_LINKS.whatsappChannel} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95"
+              className="hidden sm:flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
               title="Ambition News WhatsApp Channel"
             >
               <WhatsAppIcon size={12} />
@@ -133,41 +134,41 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 2. MAIN NATIVE APP BAR */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-1.5 sm:gap-4">
         
         {/* Brand Logo & Headquarters Tag */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <div className="bg-red-600 text-white font-black text-xl sm:text-2xl px-2.5 py-0.5 rounded-lg shadow-md flex items-center tracking-wider">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="bg-red-600 text-white font-black text-base sm:text-2xl px-2 sm:px-2.5 py-0.5 rounded-lg shadow-md flex items-center tracking-wider">
                 AMBITION
               </div>
-              <span className="text-[10px] sm:text-xs bg-black/80 text-white font-bold px-1.5 py-0.5 rounded">
+              <span className="text-[9px] sm:text-xs bg-black/80 text-white font-bold px-1.5 py-0.5 rounded">
                 न्यूज़
               </span>
               <span 
-                className={`w-2 h-2 rounded-full ${backendSynced ? 'bg-emerald-400 animate-pulse' : 'bg-emerald-500'}`} 
+                className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${backendSynced ? 'bg-emerald-400 animate-pulse' : 'bg-emerald-500'}`} 
                 title={backendSynced ? "Backend Synced" : "Live Demo Mode"}
               ></span>
             </div>
-            <div className="text-[9px] sm:text-[10px] font-semibold text-slate-400 mt-0.5 flex items-center gap-1">
+            <div className="text-[8px] sm:text-[10px] font-semibold text-slate-400 mt-0.5 flex items-center gap-1">
               <span className="text-red-500 font-bold">कवर्धा</span>
               <span>•</span>
-              <span className="truncate max-w-[150px] sm:max-w-none">CG-MP का 88 जिला नेटवर्क</span>
+              <span className="truncate max-w-[100px] sm:max-w-none">CG-MP 88 जिला नेटवर्क</span>
             </div>
           </div>
         </div>
 
         {/* State Toggle & Quick Action Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           
-          {/* State Switcher (Compact on mobile) */}
-          <div className={`flex p-0.5 rounded-xl border text-xs font-bold ${
+          {/* State Switcher (Ultra-Compact on mobile) */}
+          <div className={`flex p-0.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-bold ${
             isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-300'
           }`}>
             <button 
               onClick={() => setSelectedState('chhattisgarh')}
-              className={`px-2 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs transition ${
+              className={`px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs transition ${
                 selectedState === 'chhattisgarh' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -176,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button 
               onClick={() => setSelectedState('madhya-pradesh')}
-              className={`px-2 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs transition ${
+              className={`px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs transition ${
                 selectedState === 'madhya-pradesh' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -188,31 +189,29 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Admin Desk Button */}
           <button 
             onClick={onOpenAdminPortal}
-            className="flex bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-700 items-center gap-1.5 transition active:scale-95 shadow"
+            className="flex bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-700 items-center gap-1 transition active:scale-95 shadow shrink-0"
             title="Open Editorial & Admin Desk"
           >
-            <ShieldCheck size={13} className="text-amber-400" />
-            <span className="hidden sm:inline">एडमिन डेस्क</span>
-            <span className="sm:hidden text-[10px]">एडमिन</span>
+            <ShieldCheck size={14} className="text-amber-400 shrink-0" />
+            <span className="hidden sm:inline text-xs">एडमिन</span>
           </button>
 
           {/* WhatsApp Share App Button */}
           {onShareAppWhatsApp && (
             <button 
               onClick={onShareAppWhatsApp}
-              className="flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl items-center gap-1.5 transition active:scale-95 shadow shadow-emerald-950/40"
+              className="flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl items-center gap-1 transition active:scale-95 shadow shadow-emerald-950/40 shrink-0"
               title="व्हाट्सएप पर ऐप शेयर करें"
             >
-              <WhatsAppIcon size={13} />
-              <span className="hidden sm:inline">ऐप शेयर करें</span>
-              <span className="sm:hidden text-[10px]">शेयर</span>
+              <WhatsAppIcon size={14} className="shrink-0" />
+              <span className="hidden sm:inline text-xs">शेयर ऐप</span>
             </button>
           )}
 
           {/* Theme Toggle */}
           <button 
             onClick={toggleTheme}
-            className={`p-2 rounded-xl border text-sm transition ${
+            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border text-sm transition shrink-0 ${
               isDark ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
             }`}
             title="Toggle theme"
