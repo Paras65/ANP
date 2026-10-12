@@ -1,0 +1,63 @@
+export interface Article {
+  _id: string;
+  title: string;
+  excerpt: string;
+  content?: string;
+  coverImage?: string;
+  publishedAt: string;
+  district: string;
+  state: 'chhattisgarh' | 'madhya-pradesh';
+  category: string;
+  author: string;
+  views?: number;
+  isBreaking?: boolean;
+  isFeatured?: boolean;
+  shares?: number;
+}
+
+export interface VideoBulletin {
+  id: string;
+  title: string;
+  youtubeId: string;
+  thumbnail: string;
+  duration: string;
+  views: string;
+  timeAgo: string;
+  category: string;
+  youtubeUrl: string;
+}
+
+export interface InstagramPost {
+  id: string;
+  caption: string;
+  imageUrl: string;
+  videoUrl?: string;
+  youtubeId?: string;
+  postUrl: string;
+  likes: string;
+  commentsCount?: string;
+  sharesCount?: string;
+  district: string;
+  timeAgo: string;
+  audioTrack?: string;
+}
+
+export interface MandiRate {
+  id: string;
+  crop: string;
+  mandi: string;
+  state: string;
+  rate: number;
+  unit: string;
+  change: 'up' | 'down' | 'steady';
+  diff: number;
+}
+
+export interface DistrictItem {
+  _id: string;
+  name: string;
+  nameHindi: string;
+  slug: string;
+  state: 'chhattisgarh' | 'madhya-pradesh';
+}
+
