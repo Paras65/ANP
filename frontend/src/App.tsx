@@ -24,6 +24,7 @@ import { StoriesTray } from './components/StoriesTray';
 import { StoryViewerModal } from './components/StoryViewerModal';
 import { ReelsViewerModal } from './components/ReelsViewerModal';
 import { BottomNav } from './components/BottomNav';
+import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import type { TabType } from './components/BottomNav';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon } from './components/SocialIcons';
 
@@ -851,6 +852,9 @@ export const App: React.FC = () => {
           savedCount={savedArticles.length}
           isDark={isDark}
         />
+
+        {/* PWA INSTALL PROMPT (SHORT & SWEET IF NOT INSTALLED) */}
+        <PwaInstallPrompt />
 
         {/* 7. FULL ARTICLE READER BOTTOM SHEET / MODAL */}
         {activeArticle && (
