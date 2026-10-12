@@ -224,11 +224,18 @@ export const App: React.FC = () => {
     window.history.pushState({ view: 'public' }, '', '/');
   };
 
-  // WhatsApp Share Helper
+  // WhatsApp Share Helper for single article
   const shareWhatsApp = (title: string) => {
     const text = `*${title}*\n\nपूरी खबर Ambition News पोर्टल पर पढ़ें 👇\n${window.location.origin}\n\n_Ambition News — कवर्धा (कबीरधाम) • CG & MP_`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     showToast('📲 व्हाट्सएप शेयर लिंक खोला गया');
+  };
+
+  // WhatsApp Share Helper for Full App
+  const handleShareAppWhatsApp = () => {
+    const text = `*Ambition News (कवर्धा) — अब आपके मोबाइल पर!* 📲\n\nछत्तीसगढ़ और मध्यप्रदेश की निष्पक्ष खबरें, लाइव रील्स, वीडियो बुलेटिन और मंडी भाव सीधे फोन में देखें।\n\n👉 *यहाँ क्लिक करके ऐप खोलें:* \n${window.location.origin}\n\n_कवर्धा की सच्ची व निष्पक्ष आवाज़ — Ambition News_`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    showToast('📲 व्हाट्सएप पर ऐप शेयर लिंक खोला गया');
   };
 
   // Open full article from Story viewer
@@ -324,6 +331,7 @@ export const App: React.FC = () => {
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
           onOpenAdminPortal={handleOpenAdmin}
+          onShareAppWhatsApp={handleShareAppWhatsApp}
           backendSynced={backendSynced}
           isMobileDeviceView={isMobileDeviceView}
           toggleDeviceView={() => setIsMobileDeviceView(!isMobileDeviceView)}
@@ -808,12 +816,21 @@ export const App: React.FC = () => {
                     <p className="text-[10px] text-slate-400 leading-relaxed">
                       बिना प्ले स्टोर के सीधे फोन में लगाएं। 2G पर भी चलेगा।
                     </p>
-                    <button 
-                      onClick={() => showToast('📲 PWA इंस्टॉलेशन प्रॉम्प्ट सक्रिय हुआ (डेमो)')}
-                      className="w-full bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs py-1.5 rounded-xl shadow transition"
-                    >
-                      + Home Screen पर जोड़ें
-                    </button>
+                    <div className="flex flex-col gap-1.5 pt-1">
+                      <button 
+                        onClick={() => showToast('📲 PWA इंस्टॉलेशन प्रॉम्प्ट सक्रिय हुआ (डेमो)')}
+                        className="w-full bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs py-1.5 rounded-xl shadow transition"
+                      >
+                        + Home Screen पर जोड़ें
+                      </button>
+                      <button 
+                        onClick={handleShareAppWhatsApp}
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-1.5 rounded-xl shadow transition flex items-center justify-center gap-1.5"
+                      >
+                        <WhatsAppIcon size={12} />
+                        <span>व्हाट्सएप पर ऐप शेयर करें</span>
+                      </button>
+                    </div>
                   </div>
 
                 </aside>
@@ -854,7 +871,7 @@ export const App: React.FC = () => {
         />
 
         {/* PWA INSTALL PROMPT (SHORT & SWEET IF NOT INSTALLED) */}
-        <PwaInstallPrompt />
+        <PwaInstallPrompt onShareWhatsApp={handleShareAppWhatsApp} />
 
         {/* 7. FULL ARTICLE READER BOTTOM SHEET / MODAL */}
         {activeArticle && (

@@ -11,6 +11,7 @@ interface HeaderProps {
   selectedCategory: string;
   setSelectedCategory: (cat: string) => void;
   onOpenAdminPortal: () => void;
+  onShareAppWhatsApp?: () => void;
   backendSynced: boolean;
   isMobileDeviceView?: boolean;
   toggleDeviceView?: () => void;
@@ -36,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   selectedCategory,
   setSelectedCategory,
   onOpenAdminPortal,
+  onShareAppWhatsApp,
   backendSynced,
   isMobileDeviceView,
   toggleDeviceView
@@ -193,6 +195,19 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">एडमिन डेस्क</span>
             <span className="sm:hidden text-[10px]">एडमिन</span>
           </button>
+
+          {/* WhatsApp Share App Button */}
+          {onShareAppWhatsApp && (
+            <button 
+              onClick={onShareAppWhatsApp}
+              className="flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl items-center gap-1.5 transition active:scale-95 shadow shadow-emerald-950/40"
+              title="व्हाट्सएप पर ऐप शेयर करें"
+            >
+              <WhatsAppIcon size={13} />
+              <span className="hidden sm:inline">ऐप शेयर करें</span>
+              <span className="sm:hidden text-[10px]">शेयर</span>
+            </button>
+          )}
 
           {/* Theme Toggle */}
           <button 

@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Download, X, Sparkles, Share } from 'lucide-react';
+import { WhatsAppIcon } from './SocialIcons';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-export const PwaInstallPrompt: React.FC = () => {
+interface PwaInstallPromptProps {
+  onShareWhatsApp?: () => void;
+}
+
+export const PwaInstallPrompt: React.FC<PwaInstallPromptProps> = ({ onShareWhatsApp }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isIos, setIsIos] = useState(false);
@@ -133,6 +138,16 @@ export const PwaInstallPrompt: React.FC = () => {
             <span>+ लगाएं</span>
           </button>
           
+          {onShareWhatsApp && (
+            <button
+              onClick={onShareWhatsApp}
+              className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white p-1.5 rounded-xl shadow flex items-center justify-center transition"
+              title="व्हाट्सएप पर शेयर करें"
+            >
+              <WhatsAppIcon size={14} />
+            </button>
+          )}
+
           <button
             onClick={handleDismiss}
             className="p-1 rounded-lg text-slate-400 hover:text-white transition"
