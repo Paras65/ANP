@@ -246,6 +246,47 @@ export const INSTAGRAM_POSTS: InstagramPost[] = [
     district: 'मुख्यालय',
     timeAgo: '2 दिन पहले',
     audioTrack: 'Ambition News • ग्राउंड जीरो रिपोर्टिंग ओरिजिनल'
+  },
+  {
+    id: 'insta-5',
+    caption: 'कवर्धा रानीदहरा जलप्रपात — वनांचल की हरी-भरी वादियों के बीच बहती दूधिया जलधारा! वीकेंड पर पर्यटकों की उमड़ी भारी भीड़। #Ranidahra #KawardhaWaterfall #KabirdhamTourism #AmbitionNews',
+    imageUrl: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=800&auto=format&fit=crop&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-waterfall-in-forest-2213-large.mp4',
+    youtubeId: 'kJQP7kiw5Fk',
+    postUrl: 'https://www.instagram.com/ambition_news/',
+    likes: '3,420',
+    commentsCount: '412',
+    sharesCount: '310',
+    district: 'कवर्धा',
+    timeAgo: '4 घंटे पहले',
+    audioTrack: 'Ambition News • रानीदहरा झरना व प्राकृतिक संगीत'
+  },
+  {
+    id: 'insta-6',
+    caption: 'छत्तीसगढ़िया ओलंपिक और पारंपरिक खेलों में कवर्धा के युवाओं का जलवा! गेड़ी दौड़ और कबड्डी में दिखा गजब का उत्साह। #CGOlympics #KawardhaSports #AmbitionNewsLive #Kabaddi',
+    imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=800&auto=format&fit=crop&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-running-on-a-rural-road-42674-large.mp4',
+    youtubeId: 'b_oYfF8jO4M',
+    postUrl: 'https://www.instagram.com/ambition_news/',
+    likes: '2,890',
+    commentsCount: '275',
+    sharesCount: '198',
+    district: 'कबीरधाम',
+    timeAgo: '1 दिन पहले',
+    audioTrack: 'Ambition News • छत्तीसगढ़िया जोश व खेल तरंग'
+  },
+  {
+    id: 'insta-7',
+    caption: 'कवर्धा भारत माता चौक पर भव्य शाम की महाआरती और रोशनी का मनोरम दृश्य! जय छत्तीसगढ़ महतारी। #KawardhaCity #BharatMataChowk #NightView #Kabirdham',
+    imageUrl: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=800&auto=format&fit=crop&q=80',
+    youtubeId: 'L_LUpnjgPso',
+    postUrl: 'https://www.instagram.com/ambition_news/',
+    likes: '4,120',
+    commentsCount: '530',
+    sharesCount: '420',
+    district: 'कवर्धा',
+    timeAgo: '2 दिन पहले',
+    audioTrack: 'Ambition News • कवर्धा संध्या आरती ओरिजिनल'
   }
 ];
 

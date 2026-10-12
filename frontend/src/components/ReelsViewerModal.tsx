@@ -68,14 +68,22 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   const [newComment, setNewComment] = useState('');
   const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
 
   const currentReel = posts[currentIndex] || posts[0];
   const isCurrentLiked = !!likedPosts[currentReel.id];
   const currentLikeCount = likeCounts[currentReel.id] || 1200;
   const isCurrentSaved = !!savedPosts[currentReel.id];
 
+  // Auto-hide swipe hint after 3.5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSwipeHint(false), 3500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Navigate reels
   const handlePrev = () => {
+    setShowSwipeHint(false);
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setIsCaptionExpanded(false);
@@ -84,6 +92,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   };
 
   const handleNext = () => {
+    setShowSwipeHint(false);
     if (currentIndex < posts.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setIsCaptionExpanded(false);
@@ -111,6 +120,24 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, isPlaying, onClose]);
 
+  // Wheel / Trackpad scroll navigation (desktop & laptop touchpads)
+  useEffect(() => {
+    let lastWheel = 0;
+    const handleWheel = (e: WheelEvent) => {
+      const now = Date.now();
+      if (now - lastWheel < 500) return;
+      if (e.deltaY > 25) {
+        lastWheel = now;
+        handleNext();
+      } else if (e.deltaY < -25) {
+        lastWheel = now;
+        handlePrev();
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: true });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [currentIndex]);
+
   // Touch Swipe detection
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
@@ -121,10 +148,10 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     const touchEndY = e.changedTouches[0].clientY;
     const diff = touchStartY - touchEndY;
 
-    if (diff > 50) {
+    if (diff > 40) {
       // Swiped UP -> Next Reel
       handleNext();
-    } else if (diff < -50) {
+    } else if (diff < -40) {
       // Swiped DOWN -> Previous Reel
       handlePrev();
     }
@@ -236,6 +263,14 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
               <VolumeX size={14} className="text-pink-400" />
               <span>🔊 टैप करके आवाज़ चालू करें</span>
             </button>
+          )}
+
+          {/* Floating Swipe Up Hint Badge */}
+          {showSwipeHint && (
+            <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 pointer-events-none animate-bounce bg-black/80 backdrop-blur-md border border-pink-500/50 text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl">
+              <ChevronUp size={14} className="text-pink-400 animate-pulse" />
+              <span>ऊपर स्वाइप करें अगली रील के लिए</span>
+            </div>
           )}
 
           {/* Big Center Heart Burst Animation on Like */}
