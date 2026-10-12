@@ -281,7 +281,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 flex flex-col font-devanagari select-none ${
+    <div className={`min-h-screen flex flex-col font-devanagari select-none ${
       isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
     } ${isMobileDeviceView ? 'bg-slate-900 py-6 px-2 flex items-center justify-center' : ''}`}>
 
@@ -663,7 +663,7 @@ export const App: React.FC = () => {
                       <div 
                         key={art._id}
                         onClick={() => setActiveArticle(art)}
-                        className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer group transition-all duration-300 active:scale-[0.99] ${
+                        className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer group transition-colors duration-150 active:scale-[0.99] ${
                           isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/60' : 'bg-white border-slate-200 shadow-sm'
                         }`}
                       >

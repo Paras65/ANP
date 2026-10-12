@@ -70,7 +70,7 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
           <div 
             key={post.id}
             onClick={() => onSelectReel(post.id)}
-            className={`group rounded-2xl border overflow-hidden flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-1 active:scale-95 shadow-md ${
+            className={`group rounded-2xl border overflow-hidden flex flex-col justify-between cursor-pointer transition-transform duration-200 hover:-translate-y-1 active:scale-95 shadow-md ${
               isDark ? 'bg-slate-950 border-slate-800 hover:border-pink-500/80' : 'bg-slate-50 border-slate-200 hover:border-pink-500 hover:shadow-lg'
             }`}
           >

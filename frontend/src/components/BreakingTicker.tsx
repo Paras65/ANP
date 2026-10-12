@@ -31,14 +31,14 @@ export const BreakingTicker: React.FC<BreakingTickerProps> = ({
         onMouseLeave={() => setIsPaused(false)}
       >
         <div 
-          className="whitespace-nowrap inline-flex items-center gap-8 ticker-scroll"
+          className="whitespace-nowrap inline-flex items-center gap-8 ticker-seamless"
           style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
         >
-          {breakingArticles.map((art) => (
+          {[...breakingArticles, ...breakingArticles].map((art, idx) => (
             <button
-              key={art._id}
+              key={`${art._id}-${idx}`}
               onClick={() => onSelectArticle(art)}
-              className="inline-flex items-center gap-1.5 hover:underline text-left text-white/95 hover:text-white font-medium group transition"
+              className="inline-flex items-center gap-1.5 hover:underline text-left text-white/95 hover:text-white font-medium group transition shrink-0"
             >
               <span className="bg-black/30 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                 {art.district}

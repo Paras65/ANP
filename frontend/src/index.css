@@ -5,21 +5,48 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
   font-family: 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, sans-serif;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes ticker {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+/* 100% Seamless Infinite Marquee with Zero Jump / Reflow */
+@keyframes seamlessMarquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
 }
 
-.ticker-scroll {
-  animation: ticker 28s linear infinite;
+.ticker-seamless {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+  animation: seamlessMarquee 32s linear infinite;
+}
+
+/* Audio Marquee in Reels */
+@keyframes audioMarquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.audio-ticker {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+  animation: audioMarquee 16s linear infinite;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -29,8 +56,8 @@ body {
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Native glass effect */
@@ -42,9 +69,9 @@ body {
 /* Story gradient ring pulse */
 @keyframes story-pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  50% { transform: scale(1.04); }
 }
 
 .story-active {
-  animation: story-pulse 2s infinite ease-in-out;
+  animation: story-pulse 2.5s infinite ease-in-out;
 }

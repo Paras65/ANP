@@ -475,8 +475,9 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           <div className="flex items-center gap-2 text-[11px] text-slate-300 overflow-hidden">
             <Music size={12} className="text-pink-400 shrink-0" />
             <div className="overflow-hidden whitespace-nowrap flex-1">
-              <div className="inline-block ticker-scroll text-[11px] font-medium">
-                {currentReel.audioTrack || 'Ambition News • ओरिजिनल ऑडियो - कवर्धा'}
+              <div className="audio-ticker text-[11px] font-medium gap-8">
+                <span>{currentReel.audioTrack || 'Ambition News • ओरिजिनल ऑडियो - कवर्धा'}</span>
+                <span>{currentReel.audioTrack || 'Ambition News • ओरिजिनल ऑडियो - कवर्धा'}</span>
               </div>
             </div>
             <Disc size={13} className="text-pink-400 animate-spin shrink-0" />
