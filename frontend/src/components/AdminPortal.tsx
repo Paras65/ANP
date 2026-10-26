@@ -879,12 +879,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       />
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           const clean = extractYouTubeChannelId(channelIdInput) || channelIdInput.trim();
                           if (clean) {
+                            setSyncFeedback('⏳ चैनल आईडी Atlas में सुरक्षित की जा रही है...');
                             localStorage.setItem('anp_yt_channel_id', clean);
-                            if (onSaveChannelId) onSaveChannelId(clean);
-                            setSyncFeedback(`✅ चैनल आईडी "${clean}" सुरक्षित की गई!`);
+                            if (onSaveChannelId) {
+                              await onSaveChannelId(clean);
+                            }
+                            setSyncFeedback(`✅ चैनल आईडी "${clean}" MongoDB Atlas में सुरक्षित की गई!`);
                             setTimeout(() => setSyncFeedback(null), 3500);
                           }
                         }}

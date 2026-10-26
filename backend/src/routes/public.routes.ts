@@ -6,6 +6,7 @@ import { Article } from '../models/Article.model.js';
 import { User } from '../models/User.model.js';
 import { Video } from '../models/Video.model.js';
 import { Reel } from '../models/Reel.model.js';
+import { Setting } from '../models/Setting.model.js';
 import { fetchChannelVideos } from '../services/youtubeSync.js';
 
 const router = Router();
@@ -382,22 +383,38 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
   }
 });
 
-// 5c. GET & POST /api/youtube/config - Read or update active channel ID
-router.get('/youtube/config', (req: Request, res: Response) => {
-  res.json({ success: true, channelId: activeYouTubeChannelId });
+// 5c. GET & POST /api/youtube/config - Read or update active channel ID in MongoDB Atlas
+router.get('/youtube/config', async (req: Request, res: Response) => {
+  try {
+    const doc = await Setting.findOne({ key: 'youtube_channel_id' });
+    const channelId = doc?.value || activeYouTubeChannelId || process.env.YOUTUBE_CHANNEL_ID || '';
+    res.json({ success: true, channelId });
+  } catch {
+    res.json({ success: true, channelId: activeYouTubeChannelId });
+  }
 });
 
-router.post('/youtube/config', (req: Request, res: Response) => {
-  const { channelId } = req.body;
-  if (!channelId) {
-    return res.status(400).json({ success: false, message: 'चैनल आईडी प्रदान करें' });
+router.post('/youtube/config', async (req: Request, res: Response) => {
+  try {
+    const { channelId } = req.body;
+    if (!channelId) {
+      return res.status(400).json({ success: false, message: 'चैनल आईडी प्रदान करें' });
+    }
+    const clean = String(channelId).trim();
+    activeYouTubeChannelId = clean;
+    await Setting.findOneAndUpdate(
+      { key: 'youtube_channel_id' },
+      { key: 'youtube_channel_id', value: clean },
+      { upsert: true, new: true }
+    );
+    res.json({
+      success: true,
+      message: 'यूट्यूब चैनल आईडी सफलतापूर्वक MongoDB Atlas में सुरक्षित हो गई!',
+      channelId: clean
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
-  activeYouTubeChannelId = channelId.trim();
-  res.json({
-    success: true,
-    message: 'यूट्यूब चैनल आईडी सफलतापूर्वक सहेजी गई',
-    channelId: activeYouTubeChannelId
-  });
 });
 
 // 6. POST /api/videos - Add new YouTube Bulletin directly into MongoDB Atlas

@@ -133,13 +133,35 @@ export const App: React.FC = () => {
     return 0;
   };
 
+  // Save Channel ID to MongoDB Atlas & LocalStorage
+  const handleSaveChannelId = async (id: string) => {
+    setYoutubeChannelId(id);
+    localStorage.setItem('anp_yt_channel_id', id);
+    try {
+      await api.post('/youtube/config', { channelId: id });
+      showToast('✅ यूट्यूब चैनल आईडी MongoDB Atlas में सुरक्षित हो गई!');
+    } catch (err) {
+      console.warn('Config save error:', err);
+    }
+  };
+
+  // Load configured channel ID from Atlas on mount
+  useEffect(() => {
+    api.get('/youtube/config').then(res => {
+      if (res.data?.channelId) {
+        setYoutubeChannelId(res.data.channelId);
+        localStorage.setItem('anp_yt_channel_id', res.data.channelId);
+      }
+    }).catch(() => {});
+  }, []);
+
   // Auto-sync on startup
   useEffect(() => {
     const isAutoSyncEnabled = localStorage.getItem('anp_auto_sync_enabled') !== 'false';
     if (isAutoSyncEnabled && youtubeChannelId) {
       handleSyncYouTube(youtubeChannelId).catch(() => {});
     }
-  }, []);
+  }, [youtubeChannelId]);
 
   const handleAddVideo = async (newVideo: VideoBulletin) => {
     const updated = [newVideo, ...videoBulletins];
@@ -425,7 +447,7 @@ export const App: React.FC = () => {
         onAddReel={handleAddReel}
         onDeleteReel={handleDeleteReel}
         youtubeChannelId={youtubeChannelId}
-        onSaveChannelId={(id) => setYoutubeChannelId(id)}
+        onSaveChannelId={handleSaveChannelId}
         onSyncChannel={handleSyncYouTube}
       />
     );
