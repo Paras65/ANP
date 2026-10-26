@@ -20,13 +20,23 @@ export const Footer: React.FC<FooterProps> = ({ isDark, onOpenAdminPortal }) => 
           
           {/* Col 1: Brand Info */}
           <div className="space-y-3 md:col-span-1">
-            <div className="flex items-center gap-1.5">
-              <span className="bg-red-600 text-white font-black text-xl px-2.5 py-0.5 rounded shadow">
-                AMBITION
-              </span>
-              <span className="text-xs bg-black/80 text-white font-bold px-1.5 py-0.5 rounded">
-                न्यूज़
-              </span>
+            <div className="flex items-center gap-2.5">
+              <img 
+                src="/logo.png" 
+                alt="एम्बिशन न्यूज़" 
+                className="w-12 h-12 rounded-full object-cover ring-2 ring-red-500/60 bg-white p-0.5 shadow-md shrink-0" 
+              />
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="bg-red-600 text-white font-black text-lg px-2 py-0.5 rounded shadow leading-none">
+                    एम्बिशन
+                  </span>
+                  <span className="text-xs bg-slate-900 border border-red-500/40 text-red-400 font-bold px-1.5 py-0.5 rounded leading-none">
+                    न्यूज़
+                  </span>
+                </div>
+                <span className="text-[10px] text-red-400 font-semibold mt-1">ambitionnews.com</span>
+              </div>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-400">
               कवर्धा (कबीरधाम) का अग्रणी डिजिटल न्यूज़ नेटवर्क। छत्तीसगढ़ के 33 और मध्यप्रदेश के 55 जिलों की निष्पक्ष, निर्भीक और सटीक जमीनी पत्रकारिता।

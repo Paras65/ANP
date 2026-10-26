@@ -1,35 +1,94 @@
-import React from 'react';
-import { Heart, ExternalLink, Play, Film } from 'lucide-react';
+import React, { useState } from 'react';
+import { Heart, ExternalLink, Play, Film, Plus, X, Check, AlertCircle } from 'lucide-react';
 import { InstagramIcon } from './SocialIcons';
 import type { InstagramPost } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
+import { parseInstagramUrl, parseYouTubeUrl } from '../utils/mediaUtils';
 
 interface InstagramSectionProps {
   posts: InstagramPost[];
   onSelectReel: (postId: string) => void;
   isDark: boolean;
+  onAddReel?: (post: InstagramPost) => void;
 }
 
 export const InstagramSection: React.FC<InstagramSectionProps> = ({ 
   posts, 
   onSelectReel, 
-  isDark 
+  isDark,
+  onAddReel 
 }) => {
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [reelUrlInput, setReelUrlInput] = useState('');
+  const [captionInput, setCaptionInput] = useState('');
+  const [districtInput, setDistrictInput] = useState('कवर्धा');
+  const [audioInput, setAudioInput] = useState('Ambition News Original');
+  const [parsedReel, setParsedReel] = useState<{ type: 'instagram' | 'youtube_short'; embedUrl: string; previewThumb?: string; rawId?: string } | null>(null);
+
+  const handleUrlChange = (val: string) => {
+    setReelUrlInput(val);
+    const ig = parseInstagramUrl(val);
+    if (ig) {
+      setParsedReel({
+        type: 'instagram',
+        embedUrl: ig.embedUrl
+      });
+      return;
+    }
+    const yt = parseYouTubeUrl(val);
+    if (yt) {
+      setParsedReel({
+        type: 'youtube_short',
+        embedUrl: yt.embedUrl,
+        previewThumb: yt.thumbnailUrl,
+        rawId: yt.id
+      });
+      return;
+    }
+    setParsedReel(null);
+  };
+
+  const handleSaveReel = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!parsedReel || !captionInput.trim()) return;
+
+    const newPost: InstagramPost = {
+      id: 'reel_' + Date.now(),
+      caption: captionInput.trim(),
+      imageUrl: parsedReel.previewThumb || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800',
+      youtubeId: parsedReel.type === 'youtube_short' ? parsedReel.rawId : undefined,
+      embedUrl: parsedReel.embedUrl,
+      postUrl: reelUrlInput.trim(),
+      likes: '1',
+      commentsCount: '0',
+      sharesCount: '0',
+      district: districtInput,
+      timeAgo: 'अभी-अभी',
+      audioTrack: audioInput.trim() || 'Ambition News Original'
+    };
+
+    if (onAddReel) {
+      onAddReel(newPost);
+    }
+    setShowAddModal(false);
+    setReelUrlInput('');
+    setCaptionInput('');
+    setParsedReel(null);
+  };
+
   return (
     <section className={`rounded-3xl border p-4 sm:p-5 transition-colors ${
-      isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+      isDark ? 'bg-[#090d18]/95 border-red-950/40 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
     }`}>
       
       {/* Instagram Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-800/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-red-950/30">
         
         {/* Profile Info */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600 shrink-0">
-            <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-xs ${
-              isDark ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'
-            }`}>
-              ANP
+            <div className="w-full h-full rounded-full overflow-hidden bg-slate-950 flex items-center justify-center p-0.5">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover rounded-full" />
             </div>
           </div>
           <div>
@@ -50,17 +109,31 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
           </div>
         </div>
 
-        {/* Follow CTA */}
-        <a 
-          href={SOCIAL_LINKS.instagram}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md transition active:scale-95 shrink-0"
-        >
-          <InstagramIcon size={15} />
-          <span>इंस्टाग्राम पर फॉलो करें</span>
-          <ExternalLink size={12} />
-        </a>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          {onAddReel && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition active:scale-95 shadow"
+              title="नई इंस्टाग्राम रील या यूट्यूब शॉर्ट जोड़ें"
+            >
+              <Plus size={14} className="text-pink-400" />
+              <span>+ रील जोड़ें</span>
+            </button>
+          )}
+
+          {/* Follow CTA */}
+          <a 
+            href={SOCIAL_LINKS.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-pink-600/30 transition active:scale-95 shrink-0"
+          >
+            <InstagramIcon size={15} />
+            <span>इंस्टाग्राम पर फॉलो करें</span>
+            <ExternalLink size={12} />
+          </a>
+        </div>
 
       </div>
 
@@ -128,6 +201,133 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Add New Reel Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0b0f19] border border-pink-500/30 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+            
+            <div className="p-4 bg-[#070a12] flex items-center justify-between border-b border-white/10">
+              <div className="flex items-center gap-2 text-pink-500 font-bold text-sm">
+                <InstagramIcon size={18} />
+                <span className="text-white">नई इंस्टाग्राम रील या यूट्यूब शॉर्ट जोड़ें</span>
+              </div>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveReel} className="p-5 space-y-4">
+              {/* URL Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                  <span>रील लिंक (Instagram Reel या YouTube Shorts URL)</span>
+                  <span className="text-[10px] text-pink-400 font-normal">instagram.com/reel/... या shorts/...</span>
+                </label>
+                <input 
+                  type="text"
+                  value={reelUrlInput}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  placeholder="उदा. https://www.instagram.com/reel/C8xxx... या https://youtube.com/shorts/..."
+                  className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition"
+                  required
+                />
+              </div>
+
+              {/* Live Preview if parsed */}
+              {parsedReel && (
+                <div className="p-3 rounded-2xl bg-black/40 border border-emerald-500/40 flex items-center gap-3">
+                  <div className="w-16 aspect-[9/14] rounded-lg overflow-hidden relative shrink-0 bg-slate-900 border border-white/10 flex items-center justify-center">
+                    {parsedReel.previewThumb ? (
+                      <img src={parsedReel.previewThumb} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <InstagramIcon size={24} className="text-pink-500" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                      <Check size={12} />
+                      <span>{parsedReel.type === 'instagram' ? 'मान्य इंस्टाग्राम रील' : 'मान्य यूट्यूब शॉर्ट'} मिली!</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 block truncate mt-0.5">
+                      सीधे फुल स्क्रीन प्लेयर में चलेगी
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {reelUrlInput && !parsedReel && (
+                <div className="p-2.5 rounded-xl bg-pink-950/30 border border-pink-500/30 flex items-center gap-2 text-[11px] text-pink-400">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>कृपया वैध इंस्टाग्राम रील या यूट्यूब शॉर्ट का लिंक दर्ज करें।</span>
+                </div>
+              )}
+
+              {/* Caption */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">कैप्शन (Caption)</label>
+                <textarea 
+                  value={captionInput}
+                  onChange={(e) => setCaptionInput(e.target.value)}
+                  placeholder="उदा. कवर्धा भोरमदेव मंदिर का मनमोहक दृश्य... #Kawardha #AmbitionNews"
+                  rows={3}
+                  className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl p-3 text-xs text-white placeholder:text-slate-500 outline-none resize-none transition"
+                  required
+                />
+              </div>
+
+              {/* District & Audio */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">जिला (District)</label>
+                  <input 
+                    type="text"
+                    value={districtInput}
+                    onChange={(e) => setDistrictInput(e.target.value)}
+                    placeholder="कवर्धा"
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">ऑडियो/म्यूजिक ट्रैक</label>
+                  <input 
+                    type="text"
+                    value={audioInput}
+                    onChange={(e) => setAudioInput(e.target.value)}
+                    placeholder="Ambition News Original"
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition"
+                >
+                  रद्द करें
+                </button>
+                <button
+                  type="submit"
+                  disabled={!parsedReel || !captionInput.trim()}
+                  className="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-90 disabled:opacity-50 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-pink-600/30 transition active:scale-95 flex items-center gap-1.5"
+                >
+                  <Check size={14} />
+                  <span>रील प्रकाशित करें</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
 
     </section>
   );

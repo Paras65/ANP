@@ -39,7 +39,7 @@ import {
   SOCIAL_LINKS 
 } from './data/mockData';
 import type { StoryItem } from './components/StoriesTray';
-import type { Article, DistrictItem } from './types';
+import type { Article, DistrictItem, VideoBulletin, InstagramPost } from './types';
 import api from './api/client';
 
 export const App: React.FC = () => {
@@ -65,6 +65,45 @@ export const App: React.FC = () => {
   const [savedArticles, setSavedArticles] = useState<Article[]>([INITIAL_ARTICLES[0]]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+
+  // Dynamic Live YouTube Videos & Instagram Reels
+  const [videoBulletins, setVideoBulletins] = useState<VideoBulletin[]>(() => {
+    const saved = localStorage.getItem('anp_video_bulletins');
+    return saved ? JSON.parse(saved) : VIDEO_BULLETINS;
+  });
+
+  const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(() => {
+    const saved = localStorage.getItem('anp_instagram_posts');
+    return saved ? JSON.parse(saved) : INSTAGRAM_POSTS;
+  });
+
+  const handleAddVideo = (newVideo: VideoBulletin) => {
+    const updated = [newVideo, ...videoBulletins];
+    setVideoBulletins(updated);
+    localStorage.setItem('anp_video_bulletins', JSON.stringify(updated));
+    showToast('नया यूट्यूब वीडियो सफलतापूर्वक जोड़ा गया!');
+  };
+
+  const handleDeleteVideo = (id: string) => {
+    const updated = videoBulletins.filter(v => v.id !== id);
+    setVideoBulletins(updated);
+    localStorage.setItem('anp_video_bulletins', JSON.stringify(updated));
+    showToast('वीडियो हटा दिया गया');
+  };
+
+  const handleAddReel = (newReel: InstagramPost) => {
+    const updated = [newReel, ...instagramPosts];
+    setInstagramPosts(updated);
+    localStorage.setItem('anp_instagram_posts', JSON.stringify(updated));
+    showToast('नई रील सफलतापूर्वक जोड़ी गई!');
+  };
+
+  const handleDeleteReel = (id: string) => {
+    const updated = instagramPosts.filter(r => r.id !== id);
+    setInstagramPosts(updated);
+    localStorage.setItem('anp_instagram_posts', JSON.stringify(updated));
+    showToast('रील हटा दी गई');
+  };
 
   // Toggle Dark Mode
   const toggleTheme = () => {
@@ -276,14 +315,20 @@ export const App: React.FC = () => {
         onDeleteArticle={handleDeleteArticle}
         onBackToPublic={handleBackToPublic}
         isDark={isDark}
+        videos={videoBulletins}
+        onAddVideo={handleAddVideo}
+        onDeleteVideo={handleDeleteVideo}
+        reels={instagramPosts}
+        onAddReel={handleAddReel}
+        onDeleteReel={handleDeleteReel}
       />
     );
   }
 
   return (
     <div className={`min-h-screen flex flex-col font-devanagari ${
-      isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
-    } ${isMobileDeviceView ? 'bg-slate-900 py-6 px-2 flex items-center justify-center' : ''}`}>
+      isDark ? 'bg-[#060911] text-slate-100' : 'bg-slate-50 text-slate-900'
+    } ${isMobileDeviceView ? 'bg-[#04060c] py-6 px-2 flex items-center justify-center' : ''}`}>
 
       {/* Main Wrapper: If Mobile Device Preview Frame is enabled, wrap in iPhone 16 style shell */}
       <div className={`w-full flex flex-col flex-1 ${
@@ -426,7 +471,11 @@ export const App: React.FC = () => {
           {/* TAB: VIDEOS ONLY VIEW */}
           {activeTab === 'videos' && (
             <div className="space-y-4 animate-in fade-in duration-300">
-              <VideoSection bulletins={VIDEO_BULLETINS} isDark={isDark} />
+              <VideoSection 
+                bulletins={videoBulletins} 
+                isDark={isDark} 
+                onAddVideo={handleAddVideo}
+              />
             </div>
           )}
 
@@ -434,9 +483,10 @@ export const App: React.FC = () => {
           {activeTab === 'insta' && (
             <div className="space-y-4 animate-in fade-in duration-300">
               <InstagramSection 
-                posts={INSTAGRAM_POSTS} 
+                posts={instagramPosts} 
                 onSelectReel={(id) => setActiveReelId(id)}
                 isDark={isDark} 
+                onAddReel={handleAddReel}
               />
             </div>
           )}
@@ -838,13 +888,18 @@ export const App: React.FC = () => {
               </div>
 
               {/* DEDICATED YOUTUBE BULLETINS SECTION */}
-              <VideoSection bulletins={VIDEO_BULLETINS} isDark={isDark} />
+              <VideoSection 
+                bulletins={videoBulletins} 
+                isDark={isDark} 
+                onAddVideo={handleAddVideo}
+              />
 
               {/* DEDICATED INSTAGRAM KAWARDHA SECTION */}
               <InstagramSection 
-                posts={INSTAGRAM_POSTS} 
+                posts={instagramPosts} 
                 onSelectReel={(id) => setActiveReelId(id)}
                 isDark={isDark} 
+                onAddReel={handleAddReel}
               />
             </>
           )}
@@ -863,7 +918,7 @@ export const App: React.FC = () => {
           setActiveTab={(tab) => {
             setActiveTab(tab);
             if (tab === 'insta') {
-              setActiveReelId(INSTAGRAM_POSTS[0].id);
+              setActiveReelId(instagramPosts[0]?.id || null);
             }
           }}
           savedCount={savedArticles.length}
@@ -899,7 +954,7 @@ export const App: React.FC = () => {
         {activeReelId && (
           <ReelsViewerModal 
             initialPostId={activeReelId}
-            posts={INSTAGRAM_POSTS}
+            posts={instagramPosts}
             onClose={() => setActiveReelId(null)}
             onShareWhatsApp={(caption) => shareWhatsApp(`Reels: ${caption}`)}
           />

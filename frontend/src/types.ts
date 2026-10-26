@@ -33,6 +33,7 @@ export interface InstagramPost {
   imageUrl: string;
   videoUrl?: string;
   youtubeId?: string;
+  embedUrl?: string;
   postUrl: string;
   likes: string;
   commentsCount?: string;

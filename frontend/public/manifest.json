@@ -1,7 +1,7 @@
 {
-  "name": "Ambition News — कवर्धा, CG & MP",
-  "short_name": "Ambition",
-  "description": "छत्तीसगढ़ और मध्यप्रदेश की स्थानीय एवं निष्पक्ष खबरें",
+  "name": "एम्बिशन न्यूज़ — कवर्धा, CG & MP",
+  "short_name": "एम्बिशन न्यूज़",
+  "description": "छत्तीसगढ़ और मध्यप्रदेश की स्थानीय एवं निष्पक्ष खबरें (ambitionnews.com)",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#020617",
@@ -10,6 +10,12 @@
   "dir": "ltr",
   "categories": ["news", "magazines"],
   "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/favicon.svg",
       "sizes": "any",

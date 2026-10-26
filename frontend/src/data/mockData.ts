@@ -1,6 +1,9 @@
 import type { Article, VideoBulletin, InstagramPost, MandiRate, DistrictItem } from '../types';
 
 export const SOCIAL_LINKS = {
+  website: 'https://ambitionnews.com',
+  domain: 'ambitionnews.com',
+  logo: '/logo.png',
   instagram: 'https://www.instagram.com/ambition_news/',
   instagramHandle: '@ambition_news',
   instagramBio: 'Ambition news ( कवर्धा ) • निष्पक्ष एवं निर्भीक क्षेत्रीय पत्रकारिता',

@@ -221,8 +221,19 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           onClick={() => setIsPlaying(!isPlaying)}
           onDoubleClick={handleDoubleTap}
         >
-          {/* Video or Image Background */}
-          {currentReel.videoUrl ? (
+          {/* Video, Instagram Embed, or Image Background */}
+          {currentReel.embedUrl || (currentReel.postUrl && currentReel.postUrl.includes('instagram.com/reel/')) ? (
+            <div className="w-full h-full flex items-center justify-center bg-black">
+              <iframe
+                src={currentReel.embedUrl || `${currentReel.postUrl.replace(/\/$/, '')}/embed`}
+                title={currentReel.caption}
+                className="w-full h-full border-0"
+                allowFullScreen
+                scrolling="no"
+                allow="autoplay; encrypted-media"
+              ></iframe>
+            </div>
+          ) : currentReel.videoUrl ? (
             <video
               src={currentReel.videoUrl}
               autoPlay

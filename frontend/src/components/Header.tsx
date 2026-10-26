@@ -44,12 +44,15 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className={`sticky top-0 z-40 border-b backdrop-blur-xl transition-colors ${
-      isDark ? 'bg-slate-950/95 border-slate-800 text-slate-100' : 'bg-white/95 border-slate-200 text-slate-900 shadow-sm'
+      isDark ? 'bg-[#080c14]/98 border-red-950/40 text-slate-100 shadow-xl shadow-black/50' : 'bg-white/98 border-red-100 text-slate-900 shadow-md'
     }`}>
       
+      {/* Signature Red News Accent Stripe */}
+      <div className="h-[3px] w-full bg-gradient-to-r from-red-700 via-red-500 to-rose-600 shadow-sm" />
+
       {/* 1. TOP UTILITY STRIP (COMPACT ON MOBILE) */}
       <div className={`border-b text-[11px] py-1 px-3 sm:px-4 transition-colors ${
-        isDark ? 'bg-slate-900/80 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'
+        isDark ? 'bg-[#04060c] border-white/5 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'
       }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           
@@ -134,42 +137,62 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 2. MAIN NATIVE APP BAR */}
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-1.5 sm:gap-4">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4">
         
         {/* Brand Logo & Headquarters Tag */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="bg-red-600 text-white font-black text-base sm:text-2xl px-2 sm:px-2.5 py-0.5 rounded-lg shadow-md flex items-center tracking-wider">
-                AMBITION
-              </div>
-              <span className="text-[9px] sm:text-xs bg-black/80 text-white font-bold px-1.5 py-0.5 rounded">
+        <div 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 cursor-pointer group py-0.5"
+          title="एम्बिशन न्यूज़ - ambitionnews.com"
+        >
+          {/* Official 3D Round Logo - Highly Visible, Large & Sharp with Red Studio Glow */}
+          <div className="relative shrink-0 flex items-center justify-center">
+            <img 
+              src="/logo.png" 
+              alt="एम्बिशन न्यूज़ Logo" 
+              className="w-12 h-12 sm:w-15 sm:h-15 md:w-16 md:h-16 object-contain filter drop-shadow-[0_4px_16px_rgba(220,38,38,0.55)] transition-transform duration-300 group-hover:scale-105" 
+            />
+            <span 
+              className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#080c14] shadow-sm animate-pulse" 
+              title={backendSynced ? "लाइव सर्वर कनेक्टेड" : "लाइव मोड"}
+            />
+          </div>
+
+          <div className="flex flex-col justify-center">
+            {/* Sleek Hindi Channel Title */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-black text-xl sm:text-2xl tracking-tight leading-none text-red-500 drop-shadow-sm">
+                एम्बिशन
+              </span>
+              <span className={`font-black text-xl sm:text-2xl tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'} drop-shadow-sm`}>
                 न्यूज़
               </span>
-              <span 
-                className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${backendSynced ? 'bg-emerald-400 animate-pulse' : 'bg-emerald-500'}`} 
-                title={backendSynced ? "Backend Synced" : "Live Demo Mode"}
-              ></span>
+              <span className="flex items-center gap-1 bg-red-600 text-white text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm shadow-red-600/40 tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                LIVE
+              </span>
             </div>
-            <div className="text-[8px] sm:text-[10px] font-semibold text-slate-400 mt-0.5 flex items-center gap-1">
-              <span className="text-red-500 font-bold">कवर्धा</span>
-              <span>•</span>
-              <span className="truncate max-w-[100px] sm:max-w-none">CG-MP 88 जिला नेटवर्क</span>
+
+            {/* Subtitle: Bureau & Coverage */}
+            <div className="text-[10px] sm:text-xs font-semibold text-slate-400 mt-1 flex items-center gap-1.5 leading-none">
+              <span className="text-red-400 font-bold">कवर्धा (कबीरधाम)</span>
+              <span className="text-slate-600">•</span>
+              <span className="truncate max-w-[130px] sm:max-w-none text-slate-300 font-medium">CG-MP 88 जिला नेटवर्क</span>
             </div>
           </div>
         </div>
 
         {/* State Toggle & Quick Action Controls */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           
-          {/* State Switcher (Ultra-Compact on mobile) */}
-          <div className={`flex p-0.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-bold ${
-            isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-300'
+          {/* State Switcher (Styled with News Theme) */}
+          <div className={`flex p-0.5 rounded-xl border text-[10px] sm:text-xs font-bold ${
+            isDark ? 'bg-[#05070d] border-red-950/60' : 'bg-slate-100 border-slate-300'
           }`}>
             <button 
               onClick={() => setSelectedState('chhattisgarh')}
-              className={`px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs transition ${
-                selectedState === 'chhattisgarh' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              className={`px-2 sm:px-3.5 py-1 rounded-lg text-[10px] sm:text-xs transition-all ${
+                selectedState === 'chhattisgarh' ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' : 'text-slate-400 hover:text-white'
               }`}
             >
               <span className="sm:hidden">छ.ग.</span>
@@ -177,8 +200,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button 
               onClick={() => setSelectedState('madhya-pradesh')}
-              className={`px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs transition ${
-                selectedState === 'madhya-pradesh' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              className={`px-2 sm:px-3.5 py-1 rounded-lg text-[10px] sm:text-xs transition-all ${
+                selectedState === 'madhya-pradesh' ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' : 'text-slate-400 hover:text-white'
               }`}
             >
               <span className="sm:hidden">म.प्र.</span>
@@ -189,7 +212,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Admin Desk Button */}
           <button 
             onClick={onOpenAdminPortal}
-            className="flex bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-700 items-center gap-1 transition active:scale-95 shadow shrink-0"
+            className="flex bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-700/80 items-center gap-1 transition active:scale-95 shadow shrink-0"
             title="Open Editorial & Admin Desk"
           >
             <ShieldCheck size={14} className="text-amber-400 shrink-0" />
@@ -224,7 +247,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 3. CATEGORIES HORIZONTAL MOMENTUM STRIP */}
       <div className={`overflow-x-auto no-scrollbar border-t transition-colors ${
-        isDark ? 'bg-slate-950 border-slate-900' : 'bg-slate-50 border-slate-200'
+        isDark ? 'bg-[#05070e] border-red-950/30' : 'bg-slate-50 border-slate-200'
       }`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1.5 flex items-center gap-1.5 text-xs whitespace-nowrap">
           {CATEGORIES.map((cat) => {
@@ -235,9 +258,9 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1 rounded-full font-bold text-[11px] sm:text-xs transition-all active:scale-95 ${
                   isActive 
-                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30' 
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/40' 
                     : isDark 
-                      ? 'text-slate-400 hover:text-white hover:bg-slate-800/80' 
+                      ? 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700' 
                       : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200'
                 }`}
               >

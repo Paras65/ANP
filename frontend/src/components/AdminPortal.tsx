@@ -15,9 +15,12 @@ import {
   Camera, 
   Plus,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Tv,
+  Film
 } from 'lucide-react';
-import type { Article, DistrictItem } from '../types';
+import type { Article, DistrictItem, VideoBulletin, InstagramPost } from '../types';
+import { parseYouTubeUrl, parseInstagramUrl } from '../utils/mediaUtils';
 
 interface AdminPortalProps {
   articles: Article[];
@@ -27,6 +30,12 @@ interface AdminPortalProps {
   onDeleteArticle: (id: string) => void;
   onBackToPublic: () => void;
   isDark: boolean;
+  videos?: VideoBulletin[];
+  onAddVideo?: (video: VideoBulletin) => void;
+  onDeleteVideo?: (id: string) => void;
+  reels?: InstagramPost[];
+  onAddReel?: (post: InstagramPost) => void;
+  onDeleteReel?: (id: string) => void;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
@@ -36,9 +45,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onPublishArticle,
   onDeleteArticle,
   onBackToPublic,
-  isDark
+  isDark,
+  videos = [],
+  onAddVideo,
+  onDeleteVideo,
+  reels = [],
+  onAddReel,
+  onDeleteReel
 }) => {
-  const [activeTab, setActiveTab] = useState<'create' | 'articles' | 'breaking' | 'reporters'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'articles' | 'breaking' | 'reporters' | 'media'>('create');
+  
+  // Media Tab state
+  const [ytUrl, setYtUrl] = useState('');
+  const [ytTitle, setYtTitle] = useState('');
+  const [ytCategory, setYtCategory] = useState('कवर्धा स्पेशल');
+  const [ytDuration, setYtDuration] = useState('10:00');
+  const [parsedYt, setParsedYt] = useState<ReturnType<typeof parseYouTubeUrl>>(null);
+
+  const [reelUrl, setReelUrl] = useState('');
+  const [reelCaption, setReelCaption] = useState('');
+  const [reelDistrict, setReelDistrict] = useState('कवर्धा');
+  const [reelAudio, setReelAudio] = useState('Ambition News Original');
+  const [parsedReel, setParsedReel] = useState<{ type: 'instagram' | 'youtube_short'; embedUrl: string; previewThumb?: string; rawId?: string } | null>(null);
   
   // Form states for creating news
   const [title, setTitle] = useState('');
@@ -124,8 +152,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           {/* Logo & Portal Identity */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
+              <img 
+                src="/logo.png" 
+                alt="एम्बिशन न्यूज़" 
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-red-500/60 bg-white p-0.5 shadow shrink-0" 
+              />
               <span className="bg-red-600 text-white font-black text-xl px-2.5 py-0.5 rounded-lg shadow">
-                AMBITION
+                एम्बिशन न्यूज़
               </span>
               <span className="text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded">
                 एडमिन व रिपोर्टर डेस्क
@@ -258,6 +291,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           >
             <Users size={14} />
             <span>👥 क्षेत्रीय ब्यूरो नेटवर्क</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('media')}
+            className={`pb-2.5 px-3 flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
+              activeTab === 'media'
+                ? 'border-red-600 text-red-500'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <Tv size={14} className="text-red-500" />
+            <span>📺 यूट्यूब वीडियो व रील्स हब ({videos.length + reels.length})</span>
           </button>
         </div>
       </div>
@@ -711,6 +756,356 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* TAB 5: YOUTUBE & REELS HUB */}
+        {activeTab === 'media' && (
+          <div className="space-y-6">
+            
+            {/* 1. YOUTUBE BULLETINS SECTION */}
+            <div className={`p-5 rounded-3xl border ${
+              isDark ? 'bg-[#090d18]/95 border-red-950/40' : 'bg-white border-slate-200'
+            }`}>
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white">
+                    <Tv size={17} />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-black text-white">यूट्यूब वीडियो बुलेटिन प्रबंधन</h2>
+                    <p className="text-xs text-slate-400">पोर्टल पर लाइव दिखने वाले यूट्यूब वीडियो जोड़ें व हटाएं</p>
+                  </div>
+                </div>
+                <span className="text-xs bg-red-950 text-red-300 font-bold px-2 py-0.5 rounded border border-red-800">
+                  {videos.length} वीडियो सक्रिय
+                </span>
+              </div>
+
+              {/* Add YouTube Video Form */}
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!parsedYt || !ytTitle.trim()) return;
+                  if (onAddVideo) {
+                    onAddVideo({
+                      id: 'vid_' + Date.now(),
+                      title: ytTitle.trim(),
+                      youtubeId: parsedYt.id,
+                      thumbnail: parsedYt.thumbnailUrl,
+                      duration: ytDuration || '10:00',
+                      views: '1',
+                      timeAgo: 'अभी-अभी',
+                      category: ytCategory,
+                      youtubeUrl: parsedYt.watchUrl
+                    });
+                  }
+                  setYtUrl('');
+                  setYtTitle('');
+                  setParsedYt(null);
+                }}
+                className="bg-black/30 p-4 rounded-2xl border border-white/10 space-y-3 mb-6"
+              >
+                <div className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Plus size={14} />
+                  <span>नया यूट्यूब वीडियो लिंक जोड़ें</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      YouTube URL (watch?v=, youtu.be, या ID)
+                    </label>
+                    <input 
+                      type="text"
+                      value={ytUrl}
+                      onChange={(e) => {
+                        setYtUrl(e.target.value);
+                        setParsedYt(parseYouTubeUrl(e.target.value));
+                      }}
+                      placeholder="उदा. https://www.youtube.com/watch?v=..."
+                      className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      वीडियो शीर्षक (Headline)
+                    </label>
+                    <input 
+                      type="text"
+                      value={ytTitle}
+                      onChange={(e) => setYtTitle(e.target.value)}
+                      placeholder="उदा. कवर्धा में किसानों की बड़ी रैली..."
+                      className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {parsedYt && (
+                  <div className="flex items-center gap-3 p-2.5 bg-emerald-950/30 border border-emerald-500/40 rounded-xl">
+                    <img src={parsedYt.thumbnailUrl} alt="Thumb" className="w-16 aspect-video rounded object-cover" />
+                    <span className="text-xs text-emerald-400 font-bold">वैध वीडियो मिला! ID: {parsedYt.id}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={ytCategory}
+                      onChange={(e) => setYtCategory(e.target.value)}
+                      className="bg-[#05070e] border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white outline-none"
+                    >
+                      <option value="कवर्धा स्पेशल">कवर्धा स्पेशल</option>
+                      <option value="राज्य बुलेटिन">राज्य बुलेटिन</option>
+                      <option value="राजनीति">राजनीति</option>
+                      <option value="अपराध">अपराध</option>
+                      <option value="कृषि व मंडी">कृषि व मंडी</option>
+                    </select>
+
+                    <input 
+                      type="text"
+                      value={ytDuration}
+                      onChange={(e) => setYtDuration(e.target.value)}
+                      placeholder="12:30"
+                      className="w-20 bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!parsedYt || !ytTitle.trim()}
+                    className="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow active:scale-95"
+                  >
+                    + वीडियो प्रकाशित करें
+                  </button>
+                </div>
+              </form>
+
+              {/* Existing Videos List */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  लाइव वीडियो सूची ({videos.length})
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {videos.map((vid) => (
+                    <div key={vid.id} className="p-3 bg-black/40 rounded-2xl border border-white/10 flex items-center gap-3">
+                      <div className="w-20 aspect-video rounded-lg overflow-hidden relative shrink-0 bg-slate-900">
+                        <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1 right-1 bg-black/80 text-[9px] px-1 rounded text-white font-mono">
+                          {vid.duration}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-white truncate">{vid.title}</div>
+                        <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                          <span className="text-red-400 font-medium">{vid.category}</span>
+                          <span>•</span>
+                          <span>{vid.timeAgo}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <a 
+                          href={vid.youtubeUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-slate-400 hover:text-white"
+                          title="Open on YouTube"
+                        >
+                          <ExternalLink size={14} />
+                        </a>
+                        {onDeleteVideo && (
+                          <button
+                            onClick={() => onDeleteVideo(vid.id)}
+                            className="p-1.5 text-red-400 hover:text-red-300"
+                            title="हटाएं"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* 2. REELS & SHORTS SECTION */}
+            <div className={`p-5 rounded-3xl border ${
+              isDark ? 'bg-[#090d18]/95 border-pink-950/40' : 'bg-white border-slate-200'
+            }`}>
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-pink-600 via-purple-600 to-indigo-600 flex items-center justify-center text-white">
+                    <Film size={17} />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-black text-white">इंस्टाग्राम रील्स व यूट्यूब शॉर्ट्स प्रबंधन</h2>
+                    <p className="text-xs text-slate-400">पोर्टल पर लाइव दिखने वाली रील्स जोड़ें व हटाएं</p>
+                  </div>
+                </div>
+                <span className="text-xs bg-pink-950 text-pink-300 font-bold px-2 py-0.5 rounded border border-pink-800">
+                  {reels.length} रील्स सक्रिय
+                </span>
+              </div>
+
+              {/* Add Reel Form */}
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!parsedReel || !reelCaption.trim()) return;
+                  if (onAddReel) {
+                    onAddReel({
+                      id: 'reel_' + Date.now(),
+                      caption: reelCaption.trim(),
+                      imageUrl: parsedReel.previewThumb || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800',
+                      youtubeId: parsedReel.type === 'youtube_short' ? parsedReel.rawId : undefined,
+                      embedUrl: parsedReel.embedUrl,
+                      postUrl: reelUrl.trim(),
+                      likes: '1',
+                      commentsCount: '0',
+                      sharesCount: '0',
+                      district: reelDistrict,
+                      timeAgo: 'अभी-अभी',
+                      audioTrack: reelAudio.trim() || 'Ambition News Original'
+                    });
+                  }
+                  setReelUrl('');
+                  setReelCaption('');
+                  setParsedReel(null);
+                }}
+                className="bg-black/30 p-4 rounded-2xl border border-white/10 space-y-3 mb-6"
+              >
+                <div className="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Plus size={14} />
+                  <span>नई इंस्टाग्राम रील या यूट्यूब शॉर्ट जोड़ें</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Instagram Reel या YouTube Shorts URL
+                    </label>
+                    <input 
+                      type="text"
+                      value={reelUrl}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setReelUrl(val);
+                        const ig = parseInstagramUrl(val);
+                        if (ig) {
+                          setParsedReel({ type: 'instagram', embedUrl: ig.embedUrl });
+                          return;
+                        }
+                        const yt = parseYouTubeUrl(val);
+                        if (yt) {
+                          setParsedReel({ type: 'youtube_short', embedUrl: yt.embedUrl, previewThumb: yt.thumbnailUrl, rawId: yt.id });
+                          return;
+                        }
+                        setParsedReel(null);
+                      }}
+                      placeholder="उदा. https://www.instagram.com/reel/... या shorts/..."
+                      className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      कैप्शन (Caption)
+                    </label>
+                    <input 
+                      type="text"
+                      value={reelCaption}
+                      onChange={(e) => setReelCaption(e.target.value)}
+                      placeholder="उदा. कवर्धा भोरमदेव मंदिर की भव्य आरती..."
+                      className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {parsedReel && (
+                  <div className="flex items-center gap-3 p-2.5 bg-emerald-950/30 border border-emerald-500/40 rounded-xl">
+                    <span className="text-xs text-emerald-400 font-bold">
+                      मान्य {parsedReel.type === 'instagram' ? 'इंस्टाग्राम रील' : 'यूट्यूब शॉर्ट'} लिंक मिला!
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text"
+                      value={reelDistrict}
+                      onChange={(e) => setReelDistrict(e.target.value)}
+                      placeholder="जिला (कवर्धा)"
+                      className="w-28 bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                    />
+                    <input 
+                      type="text"
+                      value={reelAudio}
+                      onChange={(e) => setReelAudio(e.target.value)}
+                      placeholder="ऑडियो ट्रैक"
+                      className="w-40 bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!parsedReel || !reelCaption.trim()}
+                    className="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-90 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow active:scale-95"
+                  >
+                    + रील प्रकाशित करें
+                  </button>
+                </div>
+              </form>
+
+              {/* Existing Reels List */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  लाइव रील्स सूची ({reels.length})
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {reels.map((reel) => (
+                    <div key={reel.id} className="p-2.5 bg-black/40 rounded-2xl border border-white/10 flex flex-col justify-between">
+                      <div className="aspect-[9/14] rounded-xl overflow-hidden relative bg-slate-900 mb-2">
+                        <img src={reel.imageUrl} alt={reel.caption} className="w-full h-full object-cover" />
+                        <span className="absolute top-1 left-1 bg-black/80 text-[9px] px-1.5 py-0.5 rounded text-pink-400 font-bold">
+                          {reel.district}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-white font-medium line-clamp-2 leading-snug">{reel.caption}</p>
+                      <div className="flex items-center justify-between pt-2 mt-1 border-t border-white/10">
+                        <a 
+                          href={reel.postUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-[10px] text-pink-400 hover:underline flex items-center gap-0.5"
+                        >
+                          <span>लिंक</span>
+                          <ExternalLink size={10} />
+                        </a>
+                        {onDeleteReel && (
+                          <button
+                            onClick={() => onDeleteReel(reel.id)}
+                            className="text-red-400 hover:text-red-300 p-1"
+                            title="हटाएं"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
           </div>
         )}
 

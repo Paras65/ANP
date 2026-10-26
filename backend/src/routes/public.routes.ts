@@ -188,4 +188,108 @@ router.post('/articles', async (req: Request, res: Response) => {
   }
 });
 
+// Store for Live Synced Videos & Reels
+let mockVideos: any[] = [
+  {
+    id: 'vid-1',
+    title: 'Ambition News Special: कवर्धा शहर के प्रमुख मुद्दों पर नागरिकों और जनप्रतिनिधियों की सीधी बहस',
+    youtubeId: 'b_oYfF8jO4M',
+    thumbnail: 'https://img.youtube.com/vi/b_oYfF8jO4M/hqdefault.jpg',
+    duration: '14:28',
+    views: '8.4K',
+    timeAgo: '2 घंटे पहले',
+    category: 'कवर्धा स्पेशल',
+    youtubeUrl: 'https://www.youtube.com/watch?v=b_oYfF8jO4M'
+  },
+  {
+    id: 'vid-2',
+    title: 'छत्तीसगढ़ आज शाम का महाबुलेटिन: धान खरीदी, कैबिनेट बैठक और बस्तर से ग्राउंड रिपोर्ट',
+    youtubeId: 'L_LUpnjgPso',
+    thumbnail: 'https://img.youtube.com/vi/L_LUpnjgPso/hqdefault.jpg',
+    duration: '18:50',
+    views: '12.1K',
+    timeAgo: '5 घंटे पहले',
+    category: 'राज्य बुलेटिन',
+    youtubeUrl: 'https://www.youtube.com/watch?v=L_LUpnjgPso'
+  }
+];
+
+let mockReels: any[] = [
+  {
+    id: 'reel-1',
+    caption: 'कवर्धा चिल्फी घाटी का विहंगम दृश्य... मैकल की वादियों में कोहरे की चादर 📸 @ambition_news #Kawardha #ChilphiGhati',
+    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80',
+    youtubeId: 'kJQP7kiw5Fk',
+    postUrl: 'https://www.instagram.com/ambition_news/',
+    likes: '1,420',
+    commentsCount: '184',
+    sharesCount: '92',
+    district: 'कवर्धा',
+    timeAgo: '3 घंटे पहले',
+    audioTrack: 'Ambition News • चिल्फी घाटी मॉर्निंग स्पेशल'
+  }
+];
+
+// 5. GET /api/videos - List YouTube Bulletins
+router.get('/videos', (req: Request, res: Response) => {
+  res.json({ success: true, data: mockVideos });
+});
+
+// 6. POST /api/videos - Add new YouTube Bulletin
+router.post('/videos', (req: Request, res: Response) => {
+  try {
+    const { title, youtubeId, category, duration } = req.body;
+    if (!title || !youtubeId) {
+      return res.status(400).json({ success: false, message: 'शीर्षक और YouTube ID आवश्यक है' });
+    }
+    const newVid = {
+      id: 'vid_' + Date.now(),
+      title,
+      youtubeId,
+      thumbnail: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`,
+      duration: duration || '10:00',
+      views: '1',
+      timeAgo: 'अभी-अभी',
+      category: category || 'ताज़ा बुलेटिन',
+      youtubeUrl: `https://www.youtube.com/watch?v=${youtubeId}`
+    };
+    mockVideos.unshift(newVid);
+    res.status(201).json({ success: true, data: newVid });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7. GET /api/reels - List Reels / Shorts
+router.get('/reels', (req: Request, res: Response) => {
+  res.json({ success: true, data: mockReels });
+});
+
+// 8. POST /api/reels - Add new Reel / Short
+router.post('/reels', (req: Request, res: Response) => {
+  try {
+    const { caption, postUrl, youtubeId, imageUrl, district, audioTrack } = req.body;
+    if (!caption) {
+      return res.status(400).json({ success: false, message: 'कैप्शन आवश्यक है' });
+    }
+    const newReel = {
+      id: 'reel_' + Date.now(),
+      caption,
+      imageUrl: imageUrl || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800'),
+      youtubeId: youtubeId || undefined,
+      postUrl: postUrl || 'https://www.instagram.com/ambition_news/',
+      likes: '1',
+      commentsCount: '0',
+      sharesCount: '0',
+      district: district || 'कवर्धा',
+      timeAgo: 'अभी-अभी',
+      audioTrack: audioTrack || 'Ambition News Live'
+    };
+    mockReels.unshift(newReel);
+    res.status(201).json({ success: true, data: newReel });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

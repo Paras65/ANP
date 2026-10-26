@@ -38,13 +38,13 @@ app.get('/', (req: Request, res: Response) => {
 
 // Start Server
 const startServer = async () => {
-  await connectDB();
-  app.listen(PORT, () => {
+  app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`🚀 [Server] Running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
     console.log(`📡 [Health] http://localhost:${PORT}/api/health`);
     console.log(`📍 [Districts API] http://localhost:${PORT}/api/districts`);
     console.log(`📰 [Articles API] http://localhost:${PORT}/api/articles`);
   });
+  await connectDB();
 };
 
 startServer();
