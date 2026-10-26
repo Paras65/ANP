@@ -74,7 +74,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // Auto-Sync state
   const [channelIdInput, setChannelIdInput] = useState<string>(() => {
-    return youtubeChannelId || localStorage.getItem('anp_yt_channel_id') || 'UC_x5XG1OV2P6uZZ5FSM9Ttw';
+    return youtubeChannelId || localStorage.getItem('anp_yt_channel_id') || 'UC8mIipC7suPuBJ_n8kUzkCg';
   });
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);

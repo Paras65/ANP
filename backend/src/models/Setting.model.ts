@@ -12,3 +12,4 @@ const SettingSchema = new Schema<ISetting>({
 }, { timestamps: true });
 
 export const Setting = model<ISetting>('Setting', SettingSchema);
+

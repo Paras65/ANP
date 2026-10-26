@@ -67,9 +67,9 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  // Auto-Sync YouTube Channel ID
+  // Auto-Sync YouTube Channel ID (Ambition News)
   const [youtubeChannelId, setYoutubeChannelId] = useState<string>(() => {
-    return localStorage.getItem('anp_yt_channel_id') || 'UC_x5XG1OV2P6uZZ5FSM9Ttw';
+    return localStorage.getItem('anp_yt_channel_id') || 'UC8mIipC7suPuBJ_n8kUzkCg';
   });
   const [isSyncingYouTube, setIsSyncingYouTube] = useState(false);
 

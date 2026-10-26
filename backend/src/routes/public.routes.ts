@@ -10,7 +10,7 @@ import { Setting } from '../models/Setting.model.js';
 import { fetchChannelVideos } from '../services/youtubeSync.js';
 
 const router = Router();
-let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || '';
+let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg';
 
 // 1. GET /api/districts - Fetch districts live from MongoDB Atlas
 router.get('/districts', async (req: Request, res: Response) => {
