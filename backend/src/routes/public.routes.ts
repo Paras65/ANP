@@ -4,8 +4,10 @@ import { District } from '../models/District.model.js';
 import { Category } from '../models/Category.model.js';
 import { Article } from '../models/Article.model.js';
 import { User } from '../models/User.model.js';
+import { fetchChannelVideos } from '../services/youtubeSync.js';
 
 const router = Router();
+let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || '';
 
 // In-Memory Fallback Store if MongoDB is still syncing / connecting
 let mockDistricts = [
@@ -233,6 +235,83 @@ let mockReels: any[] = [
 // 5. GET /api/videos - List YouTube Bulletins
 router.get('/videos', (req: Request, res: Response) => {
   res.json({ success: true, data: mockVideos });
+});
+
+// 5b. GET /api/youtube/sync - Auto-fetch YouTube channel videos via Atom/RSS
+router.get('/youtube/sync', async (req: Request, res: Response) => {
+  try {
+    const channelId = String(req.query.channelId || activeYouTubeChannelId || process.env.YOUTUBE_CHANNEL_ID || '').trim();
+    if (!channelId) {
+      return res.status(400).json({
+        success: false,
+        message: 'चैनल आईडी (Channel ID UC...) प्रदान करें'
+      });
+    }
+
+    const force = req.query.force === 'true';
+    const videos = await fetchChannelVideos(channelId, force);
+
+    let newVideosAdded = 0;
+    let newReelsAdded = 0;
+
+    for (const v of videos) {
+      const alreadyInVideos = mockVideos.some((mv) => mv.youtubeId === v.youtubeId);
+      if (!alreadyInVideos) {
+        mockVideos.unshift(v);
+        newVideosAdded++;
+      }
+      if (v.isShort) {
+        const alreadyInReels = mockReels.some((mr) => mr.youtubeId === v.youtubeId);
+        if (!alreadyInReels) {
+          mockReels.unshift({
+            id: 'reel_' + v.youtubeId,
+            caption: v.title,
+            imageUrl: v.thumbnail,
+            youtubeId: v.youtubeId,
+            postUrl: v.youtubeUrl,
+            likes: '1.2K',
+            commentsCount: '80',
+            sharesCount: '45',
+            district: 'कवर्धा',
+            timeAgo: v.timeAgo,
+            audioTrack: 'Ambition News Original'
+          });
+          newReelsAdded++;
+        }
+      }
+    }
+
+    activeYouTubeChannelId = channelId;
+    return res.json({
+      success: true,
+      channelId,
+      totalFetched: videos.length,
+      newVideosAdded,
+      newReelsAdded,
+      videos: mockVideos,
+      reels: mockReels
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5c. GET & POST /api/youtube/config - Read or update active channel ID
+router.get('/youtube/config', (req: Request, res: Response) => {
+  res.json({ success: true, channelId: activeYouTubeChannelId });
+});
+
+router.post('/youtube/config', (req: Request, res: Response) => {
+  const { channelId } = req.body;
+  if (!channelId) {
+    return res.status(400).json({ success: false, message: 'चैनल आईडी प्रदान करें' });
+  }
+  activeYouTubeChannelId = channelId.trim();
+  res.json({
+    success: true,
+    message: 'यूट्यूब चैनल आईडी सफलतापूर्वक सहेजी गई',
+    channelId: activeYouTubeChannelId
+  });
 });
 
 // 6. POST /api/videos - Add new YouTube Bulletin

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, ExternalLink, X, Eye, Clock, Tv, Plus, Check, AlertCircle } from 'lucide-react';
+import { Play, ExternalLink, X, Eye, Clock, Tv, Plus, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { YoutubeIcon } from './SocialIcons';
 import type { VideoBulletin } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
@@ -9,9 +9,11 @@ interface VideoSectionProps {
   bulletins: VideoBulletin[];
   isDark: boolean;
   onAddVideo?: (video: VideoBulletin) => void;
+  onSync?: () => void;
+  isSyncing?: boolean;
 }
 
-export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, onAddVideo }) => {
+export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, onAddVideo, onSync, isSyncing = false }) => {
   const [activeVideo, setActiveVideo] = useState<VideoBulletin | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [inputUrl, setInputUrl] = useState('');
@@ -79,6 +81,18 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 shrink-0">
+          {onSync && (
+            <button
+              onClick={onSync}
+              disabled={isSyncing}
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition active:scale-95 shadow cursor-pointer disabled:opacity-50"
+              title="यूट्यूब से ताज़ा वीडियो स्वतः सिंक करें"
+            >
+              <RefreshCw size={13} className={`text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'सिंक हो रहा है...' : '🔄 ऑटो-सिंक'}</span>
+            </button>
+          )}
+
           {onAddVideo && (
             <button
               onClick={() => setShowAddModal(true)}

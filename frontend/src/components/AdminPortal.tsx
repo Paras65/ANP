@@ -17,10 +17,14 @@ import {
   Sparkles,
   ExternalLink,
   Tv,
-  Film
+  Film,
+  RefreshCw,
+  Zap,
+  Check,
+  HelpCircle
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost } from '../types';
-import { parseYouTubeUrl, parseInstagramUrl } from '../utils/mediaUtils';
+import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos } from '../utils/mediaUtils';
 
 interface AdminPortalProps {
   articles: Article[];
@@ -36,6 +40,9 @@ interface AdminPortalProps {
   reels?: InstagramPost[];
   onAddReel?: (post: InstagramPost) => void;
   onDeleteReel?: (id: string) => void;
+  youtubeChannelId?: string;
+  onSaveChannelId?: (channelId: string) => void;
+  onSyncChannel?: (channelId: string) => Promise<number>;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
@@ -51,7 +58,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onDeleteVideo,
   reels = [],
   onAddReel,
-  onDeleteReel
+  onDeleteReel,
+  youtubeChannelId = '',
+  onSaveChannelId,
+  onSyncChannel
 }) => {
   const [activeTab, setActiveTab] = useState<'create' | 'articles' | 'breaking' | 'reporters' | 'media'>('create');
   
@@ -61,6 +71,57 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [ytCategory, setYtCategory] = useState('कवर्धा स्पेशल');
   const [ytDuration, setYtDuration] = useState('10:00');
   const [parsedYt, setParsedYt] = useState<ReturnType<typeof parseYouTubeUrl>>(null);
+
+  // Auto-Sync state
+  const [channelIdInput, setChannelIdInput] = useState<string>(() => {
+    return youtubeChannelId || localStorage.getItem('anp_yt_channel_id') || 'UC_x5XG1OV2P6uZZ5FSM9Ttw';
+  });
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+  const [autoSyncOnLoad, setAutoSyncOnLoad] = useState<boolean>(() => {
+    return localStorage.getItem('anp_auto_sync_enabled') !== 'false';
+  });
+
+  const handleTriggerSync = async () => {
+    const cleanId = extractYouTubeChannelId(channelIdInput) || channelIdInput.trim();
+    if (!cleanId) {
+      setSyncFeedback('⚠️ कृपया एक वैध यूट्यूब चैनल आईडी दर्ज करें');
+      setTimeout(() => setSyncFeedback(null), 3000);
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncFeedback('🔄 यूट्यूब से नवीनतम वीडियो व शॉर्ट्स फेच किए जा रहे हैं...');
+
+    try {
+      if (onSyncChannel) {
+        const count = await onSyncChannel(cleanId);
+        setSyncFeedback(`✅ सफलता! यूट्यूब चैनल से ${count} वीडियो व शॉर्ट्स स्वतः सिंक हो गए!`);
+      } else {
+        const res = await syncYouTubeChannelVideos(cleanId);
+        if (res.success) {
+          if (onAddVideo && res.videos.length > 0) {
+            for (const v of res.videos) {
+              onAddVideo(v);
+            }
+          }
+          if (onAddReel && res.reels.length > 0) {
+            for (const r of res.reels) {
+              onAddReel(r);
+            }
+          }
+          setSyncFeedback(`✅ सफलता! यूट्यूब से ${res.count} नवीनतम वीडियो व शॉर्ट्स जोड़े गए!`);
+        } else {
+          setSyncFeedback(`⚠️ ${res.error || 'सिंक नहीं हो सका'}`);
+        }
+      }
+    } catch {
+      setSyncFeedback('⚠️ नेटवर्क समस्या: यूट्यूब फीड से कनेक्ट नहीं हो सका');
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncFeedback(null), 5000);
+    }
+  };
 
   const [reelUrl, setReelUrl] = useState('');
   const [reelCaption, setReelCaption] = useState('');
@@ -763,6 +824,119 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         {activeTab === 'media' && (
           <div className="space-y-6">
             
+            {/* 0. DEDICATED LIVE YOUTUBE AUTO-SYNC ENGINE */}
+            <div className={`p-5 sm:p-6 rounded-3xl border transition-all ${
+              isDark 
+                ? 'bg-gradient-to-br from-red-950/40 via-[#0a0e1c] to-[#070b16] border-red-900/40 shadow-xl' 
+                : 'bg-white border-slate-200 shadow-md'
+            }`}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center text-white shadow-lg shadow-red-600/30 shrink-0">
+                    <Zap size={22} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base sm:text-lg font-black text-white">
+                        ऑटोमैटिक यूट्यूब सिंक इंजन (Live Auto-Sync)
+                      </h2>
+                      <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        सक्रिय
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      यूट्यूब पर वीडियो या शॉर्ट्स अपलोड होते ही यहाँ अपने-आप दिखने लगेगा — बार-बार लिंक डालने की आवश्यकता नहीं!
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleTriggerSync}
+                  disabled={isSyncing}
+                  className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:brightness-110 active:scale-95 text-white font-bold text-xs px-5 py-2.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-red-600/25 transition disabled:opacity-60 cursor-pointer"
+                >
+                  <RefreshCw size={15} className={isSyncing ? 'animate-spin' : ''} />
+                  <span>{isSyncing ? 'सिंक हो रहा है...' : '🔄 अभी सिंक करें (Sync Latest)'}</span>
+                </button>
+              </div>
+
+              {/* Channel ID Input & Guidance */}
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                      यूट्यूब चैनल आईडी (YouTube Channel ID / Channel URL)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={channelIdInput}
+                        onChange={(e) => setChannelIdInput(e.target.value)}
+                        placeholder="उदा. UC_x5XG1OV2P6uZZ5FSM9Ttw या https://youtube.com/channel/UC..."
+                        className="flex-1 bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3.5 py-2 text-xs text-white font-mono outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const clean = extractYouTubeChannelId(channelIdInput) || channelIdInput.trim();
+                          if (clean) {
+                            localStorage.setItem('anp_yt_channel_id', clean);
+                            if (onSaveChannelId) onSaveChannelId(clean);
+                            setSyncFeedback(`✅ चैनल आईडी "${clean}" सुरक्षित की गई!`);
+                            setTimeout(() => setSyncFeedback(null), 3500);
+                          }
+                        }}
+                        className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
+                      >
+                        सेव करें
+                      </button>
+                    </div>
+                  </div>
+
+                  {syncFeedback && (
+                    <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                      <Check size={14} className="text-emerald-400 shrink-0" />
+                      <span>{syncFeedback}</span>
+                    </div>
+                  )}
+
+                  {/* Auto-sync on load toggle */}
+                  <div className="flex items-center gap-3 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 select-none">
+                      <input
+                        type="checkbox"
+                        checked={autoSyncOnLoad}
+                        onChange={(e) => {
+                          setAutoSyncOnLoad(e.target.checked);
+                          localStorage.setItem('anp_auto_sync_enabled', String(e.target.checked));
+                        }}
+                        className="w-4 h-4 rounded text-red-600 focus:ring-red-500 bg-slate-900 border-slate-700 cursor-pointer"
+                      />
+                      <span>वेबसाइट लोड होते ही बैकग्राउंड में नए वीडियो अपने-आप सिंक करें</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Help box */}
+                <div className="p-3.5 bg-black/40 border border-white/10 rounded-2xl text-[11px] space-y-1.5 text-slate-300">
+                  <div className="font-bold text-white flex items-center gap-1">
+                    <HelpCircle size={13} className="text-amber-400" />
+                    <span>चैनल आईडी (UC...) कैसे प्राप्त करें?</span>
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1 text-slate-400 leading-relaxed">
+                    <li><strong className="text-slate-200">YouTube Studio</strong> (studio.youtube.com) खोलें।</li>
+                    <li>बाईं ओर <strong className="text-slate-200">Customization</strong> पर क्लिक करें।</li>
+                    <li><strong className="text-slate-200">Basic Info</strong> में नीचे <strong className="text-red-400">Channel ID</strong> (UC से शुरू) कॉपी करके यहाँ पेस्ट करें।</li>
+                  </ol>
+                  <div className="text-[10px] text-amber-300/80 pt-1 border-t border-white/5">
+                    💡 <strong>शॉर्ट्स (#shorts)</strong> स्वतः रील्स सेक्शन में और <strong>लंबे वीडियो</strong> बुलेटिन में लोड हो जाएंगे!
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* 1. YOUTUBE BULLETINS SECTION */}
             <div className={`p-5 rounded-3xl border ${
               isDark ? 'bg-[#090d18]/95 border-red-950/40' : 'bg-white border-slate-200'

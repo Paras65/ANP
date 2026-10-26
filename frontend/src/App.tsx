@@ -41,6 +41,7 @@ import {
 import type { StoryItem } from './components/StoriesTray';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost } from './types';
 import api from './api/client';
+import { syncYouTubeChannelVideos } from './utils/mediaUtils';
 
 export const App: React.FC = () => {
   const [isDark, setIsDark] = useState(true);
@@ -66,6 +67,12 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
+  // Auto-Sync YouTube Channel ID
+  const [youtubeChannelId, setYoutubeChannelId] = useState<string>(() => {
+    return localStorage.getItem('anp_yt_channel_id') || 'UC_x5XG1OV2P6uZZ5FSM9Ttw';
+  });
+  const [isSyncingYouTube, setIsSyncingYouTube] = useState(false);
+
   // Dynamic Live YouTube Videos & Instagram Reels
   const [videoBulletins, setVideoBulletins] = useState<VideoBulletin[]>(() => {
     const saved = localStorage.getItem('anp_video_bulletins');
@@ -76,6 +83,63 @@ export const App: React.FC = () => {
     const saved = localStorage.getItem('anp_instagram_posts');
     return saved ? JSON.parse(saved) : INSTAGRAM_POSTS;
   });
+
+  // Master YouTube & Shorts/Reels Synchronizer
+  const handleSyncYouTube = async (channelIdToSync?: string): Promise<number> => {
+    const targetId = channelIdToSync || youtubeChannelId;
+    if (!targetId) return 0;
+
+    setIsSyncingYouTube(true);
+    try {
+      const res = await syncYouTubeChannelVideos(targetId);
+      if (res.success && res.videos.length > 0) {
+        let addedCount = 0;
+
+        setVideoBulletins(prev => {
+          const existingIds = new Set(prev.map(v => v.youtubeId));
+          const newItems = res.videos.filter(v => !existingIds.has(v.youtubeId));
+          addedCount += newItems.length;
+          if (newItems.length > 0) {
+            const merged = [...newItems, ...prev];
+            localStorage.setItem('anp_video_bulletins', JSON.stringify(merged));
+            return merged;
+          }
+          return prev;
+        });
+
+        if (res.reels.length > 0) {
+          setInstagramPosts(prev => {
+            const existingIds = new Set(prev.map(r => r.youtubeId || r.id));
+            const newReels = res.reels.filter(r => !existingIds.has(r.youtubeId || r.id));
+            if (newReels.length > 0) {
+              const merged = [...newReels, ...prev];
+              localStorage.setItem('anp_instagram_posts', JSON.stringify(merged));
+              return merged;
+            }
+            return prev;
+          });
+        }
+
+        if (addedCount > 0) {
+          showToast(`⚡ यूट्यूब से ${addedCount} नए वीडियो व रील्स स्वतः लोड हुए!`);
+        }
+        return res.count;
+      }
+    } catch (err) {
+      console.warn('YouTube auto-sync error:', err);
+    } finally {
+      setIsSyncingYouTube(false);
+    }
+    return 0;
+  };
+
+  // Auto-sync on startup
+  useEffect(() => {
+    const isAutoSyncEnabled = localStorage.getItem('anp_auto_sync_enabled') !== 'false';
+    if (isAutoSyncEnabled && youtubeChannelId) {
+      handleSyncYouTube(youtubeChannelId).catch(() => {});
+    }
+  }, []);
 
   const handleAddVideo = (newVideo: VideoBulletin) => {
     const updated = [newVideo, ...videoBulletins];
@@ -321,6 +385,9 @@ export const App: React.FC = () => {
         reels={instagramPosts}
         onAddReel={handleAddReel}
         onDeleteReel={handleDeleteReel}
+        youtubeChannelId={youtubeChannelId}
+        onSaveChannelId={(id) => setYoutubeChannelId(id)}
+        onSyncChannel={handleSyncYouTube}
       />
     );
   }
@@ -475,6 +542,8 @@ export const App: React.FC = () => {
                 bulletins={videoBulletins} 
                 isDark={isDark} 
                 onAddVideo={handleAddVideo}
+                onSync={() => handleSyncYouTube()}
+                isSyncing={isSyncingYouTube}
               />
             </div>
           )}
@@ -892,6 +961,8 @@ export const App: React.FC = () => {
                 bulletins={videoBulletins} 
                 isDark={isDark} 
                 onAddVideo={handleAddVideo}
+                onSync={() => handleSyncYouTube()}
+                isSyncing={isSyncingYouTube}
               />
 
               {/* DEDICATED INSTAGRAM KAWARDHA SECTION */}
