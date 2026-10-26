@@ -201,7 +201,7 @@ export function parseYouTubeRssXml(xmlText: string): { videos: VideoBulletin[]; 
  */
 export async function syncYouTubeChannelVideos(
   channelId: string,
-  backendApiUrl = 'http://localhost:5000/api'
+  backendApiUrl = import.meta.env.VITE_API_URL || 'https://anp-n2e6.onrender.com/api'
 ): Promise<{ success: boolean; videos: VideoBulletin[]; reels: InstagramPost[]; count: number; error?: string }> {
   const cleanId = extractYouTubeChannelId(channelId) || channelId.trim();
   if (!cleanId || !cleanId.startsWith('UC')) {
