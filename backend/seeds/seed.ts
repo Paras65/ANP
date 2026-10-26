@@ -4,6 +4,9 @@ import { State } from '../src/models/State.model.js';
 import { District } from '../src/models/District.model.js';
 import { Category } from '../src/models/Category.model.js';
 import { User } from '../src/models/User.model.js';
+import { Article } from '../src/models/Article.model.js';
+import { Video } from '../src/models/Video.model.js';
+import { Reel } from '../src/models/Reel.model.js';
 
 dotenv.config();
 
@@ -174,7 +177,7 @@ export const seedDatabase = async () => {
 
     // 5. Seed Super Admin User
     console.log('👑 Seeding Super Admin User...');
-    await User.findOneAndUpdate(
+    const adminUser = await User.findOneAndUpdate(
       { phone: '9999999999' },
       {
         phone: '9999999999',
@@ -183,10 +186,189 @@ export const seedDatabase = async () => {
         role: 'ADMIN',
         isActive: true
       },
-      { upsert: true }
+      { upsert: true, new: true }
     );
 
-    console.log('✅ [Seed Completed] 2 States, 88+ Districts, 12 Categories, and Super Admin ready!');
+    // 6. Seed Real Initial Articles into Atlas
+    console.log('📰 Seeding Real Articles...');
+    const kawardhaDistrict = await District.findOne({ slug: 'kabirdham' }) || await District.findOne({ nameHindi: /कवर्धा/ });
+    const raipurDistrict = await District.findOne({ slug: 'raipur' });
+    const bastarDistrict = await District.findOne({ slug: 'bastar' });
+    const bhopalDistrict = await District.findOne({ slug: 'bhopal' });
+    const indoreDistrict = await District.findOne({ slug: 'indore' });
+    const politicsCategory = await Category.findOne({ slug: 'politics' }) || categories[0];
+    const devCategory = await Category.findOne({ slug: 'development' }) || categories[1];
+    const agriCategory = await Category.findOne({ slug: 'agriculture' }) || categories[2];
+
+    const initialArticles = [
+      {
+        title: 'कवर्धा चिल्फी घाटी सड़क चौड़ीकरण को केंद्र से मिली मंजूरी: सुगम होगा रायपुर-जबलपुर नेशनल हाईवे सफर',
+        slug: 'kawardha-chilphi-ghati-highway-widening-approval',
+        excerpt: 'मैकल पर्वत श्रृंखला के बीच स्थित चिल्फी घाटी में बार-बार लगने वाले जाम से मिलेगी मुक्ति। ₹450 करोड़ की लागत से 4-लेन टनल और एलिवेटेड कॉरिडोर का निर्माण जल्द शुरू होगा...',
+        content: 'कबीरधाम (कवर्धा) जिले की जीवनरेखा मानी जाने वाली चिल्फी घाटी सड़क परियोजना को केंद्र सरकार से अंतिम स्वीकृति मिल गई है। इस महत्वाकांक्षी परियोजना से छत्तीसगढ़ और मध्य प्रदेश के बीच भारी वाहनों का आवागमन सुगम और सुरक्षित होगा। स्थानीय व्यापारियों और पर्यटकों ने इस निर्णय का स्वागत किया है।',
+        coverImage: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80',
+        stateId: cgState._id,
+        districtId: kawardhaDistrict?._id || raipurDistrict?._id,
+        categoryId: devCategory._id,
+        authorId: adminUser._id,
+        tags: ['कवर्धा', 'चिल्फी घाटी', 'विकास', 'हाईवे'],
+        status: 'PUBLISHED',
+        isBreaking: true,
+        isFeatured: true,
+        views: 1420,
+        publishedAt: new Date(Date.now() - 15 * 60 * 1000)
+      },
+      {
+        title: 'किसानों के खाते में धान बोनस की अगली किश्त जल्द: मुख्यमंत्री ने मंत्रालय में समीक्षा बैठक कर दिए कड़े निर्देश',
+        slug: 'dhan-bonus-next-installment-cm-review',
+        excerpt: 'मंत्रालय महानदी भवन में आयोजित उच्चस्तरीय बैठक में कृषि विभाग को निर्देश दिए गए कि भुगतान प्रक्रिया में कोई बाधा न आए। सभी जिला कलेक्टरों को निगरानी के आदेश...',
+        content: 'मंत्रालय महानदी भवन में आयोजित समीक्षा बैठक में मुख्यमंत्री ने कृषि एवं सहकारिता विभाग के अधिकारियों को स्पष्ट निर्देश दिए हैं कि किसानों को धान की अंतर राशि का भुगतान तय समय सीमा में सीधे बैंक खातों में सुनिश्चित किया जाए।',
+        coverImage: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1000&auto=format&fit=crop&q=80',
+        stateId: cgState._id,
+        districtId: raipurDistrict?._id || cgState._id,
+        categoryId: politicsCategory._id,
+        authorId: adminUser._id,
+        tags: ['धान बोनस', 'किसान', 'रायपुर'],
+        status: 'PUBLISHED',
+        isBreaking: true,
+        isFeatured: false,
+        views: 1890,
+        publishedAt: new Date(Date.now() - 45 * 60 * 1000)
+      },
+      {
+        title: 'भोरमदेव सहकारी शक्कर कारखाने में पेराई सत्र की तैयारियां तेज: कवर्धा के गन्ना उत्पादक किसानों में भारी उत्साह',
+        slug: 'bhoramdeo-sugar-factory-crushing-season-kawardha',
+        excerpt: 'जिले के प्रमुख भोरमदेव चीनी मिल में बॉयलरों की मरम्मत और टेस्टिंग का कार्य अंतिम चरण में। आगामी सप्ताह से गन्ना तुलाई शुरू होने के आसार...',
+        content: 'कबीरधाम जिले के हजारों गन्ना किसानों के लिए राहत भरी खबर है। भोरमदेव सहकारी शक्कर कारखाने में आगामी पेराई सत्र हेतु सभी तकनीकी तैयारियां पूरी कर ली गई हैं। प्रबंधन के अनुसार इस वर्ष रिकॉर्ड 4 लाख मीट्रिक टन गन्ने की पेराई का लक्ष्य निर्धारित किया गया है।',
+        coverImage: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
+        stateId: cgState._id,
+        districtId: kawardhaDistrict?._id || raipurDistrict?._id,
+        categoryId: agriCategory._id,
+        authorId: adminUser._id,
+        tags: ['कवर्धा', 'भोरमदेव', 'गन्ना किसान', 'मंडी'],
+        status: 'PUBLISHED',
+        isBreaking: false,
+        isFeatured: true,
+        views: 950,
+        publishedAt: new Date(Date.now() - 90 * 60 * 1000)
+      },
+      {
+        title: 'भोपाल मेट्रो विस्तार परियोजना: 5 नए स्टेशनों का कार्य अंतिम चरण में, अगले माह शुरू हो सकता है ट्रायल रन',
+        slug: 'bhopal-metro-expansion-new-stations',
+        excerpt: 'राजधानी के मुख्य मार्गों पर यातायात को सुगम बनाने के लिए प्रशासन ने नया रूट चार्ट जारी किया। आगामी माह में ट्रायल रन शुरू होने की पूरी संभावना...',
+        content: 'मध्य प्रदेश की राजधानी भोपाल में मेट्रो रेल परियोजना के पहले चरण का कार्य तेजी से पूरा किया जा रहा है। सुभाष नगर से एम्स तक के रूट पर सिग्नलिंग और सेफ्टी ऑडिट की प्रक्रिया जारी है।',
+        coverImage: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=1000&auto=format&fit=crop&q=80',
+        stateId: mpState._id,
+        districtId: bhopalDistrict?._id || mpState._id,
+        categoryId: devCategory._id,
+        authorId: adminUser._id,
+        tags: ['भोपाल', 'मेट्रो', 'मध्य प्रदेश'],
+        status: 'PUBLISHED',
+        isBreaking: true,
+        isFeatured: false,
+        views: 1120,
+        publishedAt: new Date(Date.now() - 120 * 60 * 1000)
+      },
+      {
+        title: 'एशिया की सबसे बड़ी कृषि मंडी में सोयाबीन व गेहूं की बंपर आवक, डिजिटल पर्ची से तुरंत भुगतान',
+        slug: 'indore-mandi-soybean-wheat-record-arrival',
+        excerpt: 'इंदौर कृषि उपज मंडी में आज बंपर आवक दर्ज की गई। व्यापारियों ने ऑनलाइन पेमेंट से सीधे किसानों के खातों में राशि ट्रांसफर की...',
+        content: 'इंदौर कृषि मंडी में नए सीजन की फसलों की जबरदस्त आवक देखी जा रही है। मंडी प्रशासन द्वारा शुरू की गई डिजिटल तौल और आरटीजीएस भुगतान प्रणाली से किसानों को घंटों लाइन में खड़े रहने से मुक्ति मिली है।',
+        coverImage: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=1000&auto=format&fit=crop&q=80',
+        stateId: mpState._id,
+        districtId: indoreDistrict?._id || mpState._id,
+        categoryId: agriCategory._id,
+        authorId: adminUser._id,
+        tags: ['इंदौर', 'मंडी', 'कृषि'],
+        status: 'PUBLISHED',
+        isBreaking: false,
+        isFeatured: false,
+        views: 840,
+        publishedAt: new Date(Date.now() - 180 * 60 * 1000)
+      }
+    ];
+
+    for (const art of initialArticles) {
+      await Article.findOneAndUpdate(
+        { slug: art.slug },
+        art,
+        { upsert: true }
+      );
+    }
+
+    // 7. Seed Real Initial Videos into Atlas
+    console.log('📺 Seeding Videos...');
+    const initialVideos = [
+      {
+        title: 'Ambition News Special: कवर्धा शहर के प्रमुख मुद्दों पर नागरिकों और जनप्रतिनिधियों की सीधी बहस',
+        youtubeId: 'b_oYfF8jO4M',
+        thumbnail: 'https://img.youtube.com/vi/b_oYfF8jO4M/hqdefault.jpg',
+        duration: '14:28',
+        views: '8.4K',
+        timeAgo: '2 घंटे पहले',
+        category: 'कवर्धा स्पेशल',
+        youtubeUrl: 'https://www.youtube.com/watch?v=b_oYfF8jO4M',
+        isShort: false
+      },
+      {
+        title: 'छत्तीसगढ़ आज शाम का महाबुलेटिन: धान खरीदी, कैबिनेट बैठक और बस्तर से ग्राउंड रिपोर्ट',
+        youtubeId: 'L_LUpnjgPso',
+        thumbnail: 'https://img.youtube.com/vi/L_LUpnjgPso/hqdefault.jpg',
+        duration: '18:50',
+        views: '12.1K',
+        timeAgo: '5 घंटे पहले',
+        category: 'राज्य बुलेटिन',
+        youtubeUrl: 'https://www.youtube.com/watch?v=L_LUpnjgPso',
+        isShort: false
+      }
+    ];
+
+    for (const vid of initialVideos) {
+      await Video.findOneAndUpdate(
+        { youtubeId: vid.youtubeId },
+        vid,
+        { upsert: true }
+      );
+    }
+
+    // 8. Seed Real Initial Reels into Atlas
+    console.log('📱 Seeding Reels...');
+    const initialReels = [
+      {
+        caption: 'कवर्धा चिल्फी घाटी का विहंगम दृश्य... मैकल की वादियों में कोहरे की चादर 📸 @ambition_news #Kawardha #ChilphiGhati',
+        imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80',
+        youtubeId: 'kJQP7kiw5Fk',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/kJQP7kiw5Fk?autoplay=1&loop=1&playlist=kJQP7kiw5Fk&rel=0',
+        postUrl: 'https://www.youtube.com/shorts/kJQP7kiw5Fk',
+        likes: '1.4K',
+        commentsCount: '184',
+        sharesCount: '92',
+        district: 'कवर्धा',
+        timeAgo: '3 घंटे पहले',
+        audioTrack: 'Ambition News • चिल्फी घाटी मॉर्निंग स्पेशल'
+      },
+      {
+        caption: 'छत्तीसगढ़ का खजुराहो — 1000 वर्ष प्राचीन ऐतिहासिक भोरमदेव मंदिर की दिव्य संध्या आरती 🙏🚩 #Kawardha #Bhoramdeo',
+        imageUrl: 'https://images.unsplash.com/photo-1609766857041-ed402ea8069a?w=800&auto=format&fit=crop&q=80',
+        postUrl: 'https://www.instagram.com/ambition_news/',
+        likes: '2.1K',
+        commentsCount: '230',
+        sharesCount: '140',
+        district: 'कवर्धा',
+        timeAgo: '5 घंटे पहले',
+        audioTrack: 'Ambition News Original'
+      }
+    ];
+
+    for (const r of initialReels) {
+      await Reel.findOneAndUpdate(
+        { caption: r.caption },
+        r,
+        { upsert: true }
+      );
+    }
+
+    console.log('✅ [Seed Completed] 2 States, 88+ Districts, Categories, Articles, Videos, and Reels ready in MongoDB Atlas!');
     process.exit(0);
   } catch (error) {
     console.error('❌ [Seed Error]:', error);

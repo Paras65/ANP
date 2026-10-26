@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "seed": "tsx seeds/index.ts"
+    "seed": "tsx seeds/seed.ts"
   },
   "keywords": ["news", "pwa", "chhattisgarh", "madhya-pradesh"],
   "author": "Ambition News Team",

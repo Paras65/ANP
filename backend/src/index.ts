@@ -19,6 +19,7 @@ app.use(helmet({
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'https://ambition-news-portal.vercel.app',
   'https://ambitionnews.com',
   'https://www.ambitionnews.com',
   process.env.FRONTEND_URL

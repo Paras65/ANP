@@ -141,32 +141,44 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  const handleAddVideo = (newVideo: VideoBulletin) => {
+  const handleAddVideo = async (newVideo: VideoBulletin) => {
     const updated = [newVideo, ...videoBulletins];
     setVideoBulletins(updated);
     localStorage.setItem('anp_video_bulletins', JSON.stringify(updated));
     showToast('नया यूट्यूब वीडियो सफलतापूर्वक जोड़ा गया!');
+    try {
+      await api.post('/videos', newVideo);
+    } catch {}
   };
 
-  const handleDeleteVideo = (id: string) => {
+  const handleDeleteVideo = async (id: string) => {
     const updated = videoBulletins.filter(v => v.id !== id);
     setVideoBulletins(updated);
     localStorage.setItem('anp_video_bulletins', JSON.stringify(updated));
     showToast('वीडियो हटा दिया गया');
+    try {
+      await api.delete(`/videos/${id}`);
+    } catch {}
   };
 
-  const handleAddReel = (newReel: InstagramPost) => {
+  const handleAddReel = async (newReel: InstagramPost) => {
     const updated = [newReel, ...instagramPosts];
     setInstagramPosts(updated);
     localStorage.setItem('anp_instagram_posts', JSON.stringify(updated));
     showToast('नई रील सफलतापूर्वक जोड़ी गई!');
+    try {
+      await api.post('/reels', newReel);
+    } catch {}
   };
 
-  const handleDeleteReel = (id: string) => {
+  const handleDeleteReel = async (id: string) => {
     const updated = instagramPosts.filter(r => r.id !== id);
     setInstagramPosts(updated);
     localStorage.setItem('anp_instagram_posts', JSON.stringify(updated));
     showToast('रील हटा दी गई');
+    try {
+      await api.delete(`/reels/${id}`);
+    } catch {}
   };
 
   // Toggle Dark Mode
@@ -234,9 +246,28 @@ export const App: React.FC = () => {
     }
   };
 
+  // Load live media (videos & reels) from MongoDB Atlas
+  const loadMediaFromBackend = async () => {
+    try {
+      const [vRes, rRes] = await Promise.allSettled([
+        api.get('/videos'),
+        api.get('/reels')
+      ]);
+      if (vRes.status === 'fulfilled' && vRes.value.data?.data && Array.isArray(vRes.value.data.data) && vRes.value.data.data.length > 0) {
+        setVideoBulletins(vRes.value.data.data);
+      }
+      if (rRes.status === 'fulfilled' && rRes.value.data?.data && Array.isArray(rRes.value.data.data) && rRes.value.data.data.length > 0) {
+        setInstagramPosts(rRes.value.data.data);
+      }
+    } catch {
+      // Keep local state
+    }
+  };
+
   useEffect(() => {
     loadDistrictsFromBackend();
     loadArticles();
+    loadMediaFromBackend();
   }, [selectedState, currentDistrict]);
 
   // Handle new article submitted from Reporter Modal
@@ -262,17 +293,25 @@ export const App: React.FC = () => {
     showToast('🎉 सफलता! खबर Ambition News पोर्टल पर प्रकाशित हो गई!');
 
     try {
-      await api.post('/articles', createdArticle);
+      const res = await api.post('/articles', createdArticle);
+      if (res.data?.data?._id) {
+        setArticles(prev => prev.map(a => a._id === createdArticle._id ? res.data.data : a));
+      }
       setBackendSynced(true);
     } catch {
       // Offline fallback maintained
     }
   };
 
-  // Delete article
-  const handleDeleteArticle = (id: string) => {
+  // Delete article live from MongoDB Atlas
+  const handleDeleteArticle = async (id: string) => {
     setArticles(prev => prev.filter(a => a._id !== id));
     showToast('🗑️ खबर सफलतापूर्वक हटा दी गई');
+    try {
+      await api.delete(`/articles/${id}`);
+    } catch {
+      // Handled
+    }
   };
 
   // Offline Detection & Resilience
