@@ -87,6 +87,17 @@ export const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INSTAGRAM_POSTS;
   });
 
+  // Dynamic WhatsApp Group / Channel Link
+  const [whatsappLink, setWhatsappLink] = useState<string>(() => {
+    return localStorage.getItem('anp_whatsapp_link') || SOCIAL_LINKS.whatsappChannel;
+  });
+
+  const handleSaveWhatsAppLink = (link: string) => {
+    setWhatsappLink(link);
+    localStorage.setItem('anp_whatsapp_link', link);
+    showToast('✅ व्हाट्सएप ग्रुप लिंक सुरक्षित किया गया!');
+  };
+
   // Master YouTube & Shorts/Reels Synchronizer
   const handleSyncYouTube = async (channelIdToSync?: string): Promise<number> => {
     const targetId = channelIdToSync || youtubeChannelId;
@@ -587,6 +598,8 @@ export const App: React.FC = () => {
         hasYouTubeApiKey={hasYouTubeApiKey}
         onSaveChannelId={handleSaveChannelId}
         onSyncChannel={handleSyncYouTube}
+        whatsappLink={whatsappLink}
+        onSaveWhatsAppLink={handleSaveWhatsAppLink}
       />
     );
   }
@@ -650,6 +663,7 @@ export const App: React.FC = () => {
           setActiveTab={setActiveTab}
           onToggleSearch={() => setIsSearching(prev => !prev)}
           onOpenDistrictPicker={openDistrictModal}
+          whatsappLink={whatsappLink}
         />
 
         {/* 2. BREAKING NEWS TICKER */}
@@ -1148,6 +1162,44 @@ export const App: React.FC = () => {
                     </a>
                   </div>
 
+                  {/* WhatsApp News Group & Community Join Card */}
+                  <div className={`p-3.5 rounded-2xl border transition-all ${
+                    isDark 
+                      ? 'bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-900 border-emerald-800/60 shadow-lg shadow-emerald-950/20' 
+                      : 'bg-emerald-50/80 border-emerald-200 shadow-sm'
+                  }`}>
+                    <div className="flex items-center gap-2.5 mb-2.5">
+                      <div className="w-9 h-9 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-600/30 shrink-0">
+                        <WhatsAppIcon size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-black text-white flex items-center gap-1.5">
+                          <span>व्हाट्सएप न्यूज़ ग्रुप</span>
+                          <span className="bg-emerald-500/20 text-emerald-400 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-emerald-500/40">
+                            लाइव
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-emerald-400 font-medium truncate">
+                          कवर्धा व CG-MP 88 जिला बुलेटिन
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
+                      कवर्धा, मंडी भाव, सरकारी योजनाएं और प्रदेश की बड़ी खबरें तुरंत अपने फोन पर पाने के लिए ग्रुप में शामिल हों।
+                    </p>
+
+                    <a 
+                      href={whatsappLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-950/40 transition active:scale-95 cursor-pointer"
+                    >
+                      <WhatsAppIcon size={14} />
+                      <span>ग्रुप से जुड़ें (Join Group)</span>
+                    </a>
+                  </div>
+
                   {/* PWA App Install Banner */}
                   <div className="p-3.5 rounded-2xl border border-red-800/60 bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-900 text-center space-y-2">
                     <Download size={18} className="mx-auto text-red-400" />
@@ -1205,6 +1257,7 @@ export const App: React.FC = () => {
         <Footer 
           isDark={isDark} 
           onOpenAdminPortal={handleOpenAdmin}
+          whatsappLink={whatsappLink}
         />
 
         {/* 6. NATIVE BOTTOM NAVIGATION BAR */}

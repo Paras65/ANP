@@ -6,9 +6,10 @@ import { SOCIAL_LINKS } from '../data/mockData';
 interface FooterProps {
   isDark: boolean;
   onOpenAdminPortal?: () => void;
+  whatsappLink?: string;
 }
 
-export const Footer: React.FC<FooterProps> = ({ isDark, onOpenAdminPortal }) => {
+export const Footer: React.FC<FooterProps> = ({ isDark, onOpenAdminPortal, whatsappLink }) => {
   return (
     <footer className={`border-t py-10 transition-colors text-xs ${
       isDark ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-300 text-slate-600'
@@ -85,7 +86,7 @@ export const Footer: React.FC<FooterProps> = ({ isDark, onOpenAdminPortal }) => 
               </a>
 
               <a 
-                href={SOCIAL_LINKS.whatsappChannel}
+                href={whatsappLink || SOCIAL_LINKS.whatsappChannel}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 p-2 rounded-lg bg-emerald-950/40 border border-emerald-900/60 hover:border-emerald-500 text-emerald-300 hover:text-white transition group"
@@ -94,8 +95,8 @@ export const Footer: React.FC<FooterProps> = ({ isDark, onOpenAdminPortal }) => 
                   <WhatsAppIcon size={13} />
                 </div>
                 <div>
-                  <div className="font-bold">WhatsApp Channel</div>
-                  <div className="text-[10px] text-slate-400">सीधे फोन पर ब्रेकिंग न्यूज़</div>
+                  <div className="font-bold">WhatsApp ग्रुप / चैनल</div>
+                  <div className="text-[10px] text-slate-400">कवर्धा व CG-MP 88 जिला न्यूज़</div>
                 </div>
               </a>
 

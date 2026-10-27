@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost } from '../types';
 import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos } from '../utils/mediaUtils';
+import { WhatsAppIcon } from './SocialIcons';
+import { SOCIAL_LINKS } from '../data/mockData';
 
 interface AdminPortalProps {
   articles: Article[];
@@ -44,6 +46,8 @@ interface AdminPortalProps {
   hasYouTubeApiKey?: boolean;
   onSaveChannelId?: (channelId: string) => void | Promise<void>;
   onSyncChannel?: (channelId: string) => Promise<number>;
+  whatsappLink?: string;
+  onSaveWhatsAppLink?: (link: string) => void;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
@@ -63,9 +67,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   youtubeChannelId = '',
   hasYouTubeApiKey = false,
   onSaveChannelId,
-  onSyncChannel
+  onSyncChannel,
+  whatsappLink = '',
+  onSaveWhatsAppLink
 }) => {
   const [activeTab, setActiveTab] = useState<'create' | 'articles' | 'breaking' | 'reporters' | 'media'>('create');
+  
+  // WhatsApp Link Management
+  const [whatsappInput, setWhatsappInput] = useState<string>(() => {
+    return whatsappLink || localStorage.getItem('anp_whatsapp_link') || SOCIAL_LINKS.whatsappGroup;
+  });
+  const [whatsappFeedback, setWhatsappFeedback] = useState<string | null>(null);
   
   // Media Tab state
   const [ytUrl, setYtUrl] = useState('');
@@ -969,6 +981,97 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     💡 <strong>शॉर्ट्स (#shorts)</strong> स्वतः रील्स सेक्शन में और <strong>लंबे वीडियो</strong> बुलेटिन में लोड हो जाएंगे!
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* 0.1 OFFICIAL WHATSAPP GROUP & CHANNEL MANAGEMENT */}
+            <div className={`p-5 sm:p-6 rounded-3xl border transition-all ${
+              isDark 
+                ? 'bg-gradient-to-br from-emerald-950/40 via-[#0a1411] to-[#07110e] border-emerald-900/40 shadow-xl' 
+                : 'bg-emerald-50/70 border-emerald-200 shadow-md'
+            }`}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-600/30 shrink-0">
+                    <WhatsAppIcon size={24} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base sm:text-lg font-black text-white">
+                        व्हाट्सएप ग्रुप व चैनल लिंक प्रबंधन (Official WhatsApp Group)
+                      </h2>
+                      <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        लाइव लिंक
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      यहाँ अपने व्हाट्सएप ग्रुप (Invite Link) या चैनल का लिंक डालें। यह तुरंत पोर्टल के हेडर, साइडबार व फुटर में अपडेट हो जाएगा।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href={whatsappInput}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center gap-1.5 transition active:scale-95"
+                  >
+                    <span>टेस्ट लिंक</span>
+                    <ExternalLink size={13} />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!whatsappInput.trim()) return;
+                      if (onSaveWhatsAppLink) onSaveWhatsAppLink(whatsappInput.trim());
+                      localStorage.setItem('anp_whatsapp_link', whatsappInput.trim());
+                      setWhatsappFeedback('✅ व्हाट्सएप ग्रुप लिंक सफलतापूर्वक सहेजा गया!');
+                      setTimeout(() => setWhatsappFeedback(null), 3500);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-emerald-900/40 transition active:scale-95 cursor-pointer"
+                  >
+                    <Check size={14} />
+                    <span>सहेजें (Save Link)</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  व्हाट्सएप ग्रुप / चैनल इनवाइट लिंक (WhatsApp Group URL)
+                </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input 
+                    type="url"
+                    value={whatsappInput}
+                    onChange={(e) => setWhatsappInput(e.target.value)}
+                    placeholder="https://chat.whatsapp.com/..."
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-emerald-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!whatsappInput.trim()) return;
+                      if (onSaveWhatsAppLink) onSaveWhatsAppLink(whatsappInput.trim());
+                      localStorage.setItem('anp_whatsapp_link', whatsappInput.trim());
+                      setWhatsappFeedback('✅ व्हाट्सएप ग्रुप लिंक सफलतापूर्वक सहेजा गया!');
+                      setTimeout(() => setWhatsappFeedback(null), 3500);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
+                  >
+                    अपडेट करें
+                  </button>
+                </div>
+                {whatsappFeedback && (
+                  <p className="text-xs text-emerald-400 font-bold mt-2 animate-in fade-in">
+                    {whatsappFeedback}
+                  </p>
+                )}
+                <p className="text-[10px] text-slate-400 mt-2">
+                  उदाहरण: <code className="text-emerald-400">https://chat.whatsapp.com/InviteCode</code> या <code className="text-emerald-400">https://whatsapp.com/channel/ChannelId</code>
+                </p>
               </div>
             </div>
 

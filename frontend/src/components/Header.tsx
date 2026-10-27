@@ -20,6 +20,7 @@ interface HeaderProps {
   setActiveTab?: (tab: TabType) => void;
   onToggleSearch?: () => void;
   onOpenDistrictPicker?: () => void;
+  whatsappLink?: string;
 }
 
 const CATEGORIES = [
@@ -49,7 +50,8 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   onToggleSearch,
-  onOpenDistrictPicker
+  onOpenDistrictPicker,
+  whatsappLink
 }) => {
   const handleLogoClick = () => {
     if (setActiveTab) setActiveTab('home');
@@ -148,13 +150,13 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline text-[9px]">(@ambition_news)</span>
             </a>
 
-            {/* WhatsApp Link */}
+            {/* WhatsApp Link - Always accessible on both Mobile & Desktop */}
             <a 
-              href={SOCIAL_LINKS.whatsappChannel} 
+              href={whatsappLink || SOCIAL_LINKS.whatsappChannel} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
-              title="Ambition News WhatsApp Channel"
+              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
+              title="Ambition News WhatsApp Group / Channel"
             >
               <WhatsAppIcon size={12} />
               <span>WhatsApp</span>

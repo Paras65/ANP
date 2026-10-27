@@ -11,7 +11,8 @@ export const SOCIAL_LINKS = {
   youtubeHandle: '@ambition_news',
   youtubeSubs: '4.2K+',
   whatsappShare: 'https://wa.me/?text=',
-  whatsappChannel: 'https://whatsapp.com/channel/ambition_news',
+  whatsappChannel: 'https://chat.whatsapp.com/LlvVXPw56G9IRY7YmeDsj2?s=cl&p=a&mlu=4&ilr=4',
+  whatsappGroup: 'https://chat.whatsapp.com/LlvVXPw56G9IRY7YmeDsj2?s=cl&p=a&mlu=4&ilr=4',
   headquarters: 'कवर्धा (कबीरधाम), छत्तीसगढ़'
 };
 
