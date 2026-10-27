@@ -47,3 +47,19 @@ export const apiLimiter = rateLimit({
     }
   }
 });
+
+// 4. Strict Content Mutation Rate Limiter (Defends against Burp Suite / Postman DB Bloat Flooding)
+export const contentCreationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Maximum 30 write mutations per 15 minutes per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'सामग्री निर्माण दर सीमा समाप्त (Rate limit exceeded)। Burp Suite / Postman जैसे टूल्स से ऑटोमेटेड फ्लडिंग प्रतिबंधित है।',
+    error: {
+      code: 'CONTENT_WRITE_LIMIT_EXCEEDED',
+      message: 'Too many write requests in a short period. Please wait 15 minutes.'
+    }
+  }
+});

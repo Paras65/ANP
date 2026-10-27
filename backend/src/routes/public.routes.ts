@@ -11,12 +11,20 @@ import { Reel } from '../models/Reel.model.js';
 import { Setting } from '../models/Setting.model.js';
 import { MandiRate } from '../models/MandiRate.model.js';
 import { requireAdminAuth } from '../middleware/auth.middleware.js';
-import { authLimiter, aiLimiter } from '../middleware/rateLimiter.middleware.js';
+import { authLimiter, aiLimiter, contentCreationLimiter } from '../middleware/rateLimiter.middleware.js';
 import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI } from '../services/youtubeSync.js';
 import { processGeminiNewsTask } from '../services/gemini.service.js';
 
 const router = Router();
 let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg';
+
+/**
+ * ReDoS & Regex Injection Defense:
+ * Escapes regex special metacharacters and caps string length before MongoDB evaluation.
+ */
+function escapeRegex(text: string): string {
+  return String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&').slice(0, 80);
+}
 
 // 1. GET /api/districts - Fetch districts live from MongoDB Atlas
 router.get('/districts', async (req: Request, res: Response) => {
@@ -93,30 +101,34 @@ router.get('/articles', async (req: Request, res: Response) => {
     }
 
     if (district && district !== 'सभी') {
+      const safeDistrict = escapeRegex(String(district));
       const districtDoc = await District.findOne({
         $or: [
-          { nameHindi: new RegExp(String(district), 'i') },
-          { name: new RegExp(String(district), 'i') },
-          { slug: String(district).toLowerCase() }
+          { nameHindi: new RegExp(safeDistrict, 'i') },
+          { name: new RegExp(safeDistrict, 'i') },
+          { slug: String(district).toLowerCase().slice(0, 50) }
         ]
       });
       if (districtDoc) filter.districtId = districtDoc._id;
     }
 
     if (category && category !== 'सभी खबरें') {
+      const cleanCat = String(category).replace(/[^\u0900-\u097F\w]/g, '').trim();
+      const safeCat = escapeRegex(cleanCat);
       const catDoc = await Category.findOne({
         $or: [
-          { name: new RegExp(String(category).replace(/[^\u0900-\u097F\w]/g, '').trim(), 'i') },
-          { slug: String(category).toLowerCase() }
+          { name: new RegExp(safeCat, 'i') },
+          { slug: String(category).toLowerCase().slice(0, 50) }
         ]
       });
       if (catDoc) filter.categoryId = catDoc._id;
     }
 
     if (search) {
+      const safeSearch = escapeRegex(String(search));
       filter.$or = [
-        { title: new RegExp(String(search), 'i') },
-        { excerpt: new RegExp(String(search), 'i') }
+        { title: new RegExp(safeSearch, 'i') },
+        { excerpt: new RegExp(safeSearch, 'i') }
       ];
     }
 
@@ -153,7 +165,7 @@ router.get('/articles', async (req: Request, res: Response) => {
 });
 
 // 4. POST /api/articles - Submit new article directly into MongoDB Atlas
-router.post('/articles', requireAdminAuth, async (req: Request, res: Response) => {
+router.post('/articles', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { title, excerpt, content, district, category, author, state, isBreaking, isFeatured, coverImage } = req.body;
 
@@ -258,7 +270,7 @@ router.post('/articles', requireAdminAuth, async (req: Request, res: Response) =
 });
 
 // 4b. DELETE /api/articles/:id - Soft delete article from MongoDB Atlas
-router.delete('/articles/:id', requireAdminAuth, async (req: Request, res: Response) => {
+router.delete('/articles/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await Article.findByIdAndUpdate(id, { deletedAt: new Date() });
@@ -269,7 +281,7 @@ router.delete('/articles/:id', requireAdminAuth, async (req: Request, res: Respo
 });
 
 // 4c. PUT /api/articles/:id - Update existing article live in MongoDB Atlas
-router.put('/articles/:id', requireAdminAuth, async (req: Request, res: Response) => {
+router.put('/articles/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { title, excerpt, content, district, category, author, state, isBreaking, isFeatured, coverImage } = req.body;
@@ -545,7 +557,7 @@ router.post('/youtube/config', requireAdminAuth, async (req: Request, res: Respo
 });
 
 // 6. POST /api/videos - Add new YouTube Bulletin directly into MongoDB Atlas
-router.post('/videos', requireAdminAuth, async (req: Request, res: Response) => {
+router.post('/videos', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { title, youtubeId, category, duration } = req.body;
     if (!title || !youtubeId) {
@@ -587,7 +599,7 @@ router.post('/videos', requireAdminAuth, async (req: Request, res: Response) => 
 });
 
 // 6b. DELETE /api/videos/:id - Delete YouTube Bulletin from MongoDB Atlas
-router.delete('/videos/:id', requireAdminAuth, async (req: Request, res: Response) => {
+router.delete('/videos/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await Video.deleteOne({ $or: [{ _id: id }, { youtubeId: id }] });
@@ -625,7 +637,7 @@ router.get('/reels', async (req: Request, res: Response) => {
 });
 
 // 8. POST /api/reels - Add new Reel / Short directly into MongoDB Atlas
-router.post('/reels', requireAdminAuth, async (req: Request, res: Response) => {
+router.post('/reels', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { caption, postUrl, youtubeId, imageUrl, district, audioTrack, embedUrl } = req.body;
     if (!caption) {
@@ -667,7 +679,7 @@ router.post('/reels', requireAdminAuth, async (req: Request, res: Response) => {
 });
 
 // 8b. DELETE /api/reels/:id - Delete Reel from MongoDB Atlas
-router.delete('/reels/:id', requireAdminAuth, async (req: Request, res: Response) => {
+router.delete('/reels/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await Reel.deleteOne({ $or: [{ _id: id }, { youtubeId: id }] });
@@ -711,7 +723,7 @@ router.get('/mandi', async (req: Request, res: Response) => {
 });
 
 // 9b. POST /api/mandi - Add new crop rate
-router.post('/mandi', requireAdminAuth, async (req: Request, res: Response) => {
+router.post('/mandi', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { crop, mandi, state, rate, unit, change, diff } = req.body;
     if (!crop || !rate) {
@@ -745,7 +757,7 @@ router.post('/mandi', requireAdminAuth, async (req: Request, res: Response) => {
 });
 
 // 9c. PUT /api/mandi/:id - Update existing Mandi Rate
-router.put('/mandi/:id', requireAdminAuth, async (req: Request, res: Response) => {
+router.put('/mandi/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { crop, mandi, state, rate, unit, change, diff } = req.body;
@@ -784,7 +796,7 @@ router.put('/mandi/:id', requireAdminAuth, async (req: Request, res: Response) =
 });
 
 // 9d. DELETE /api/mandi/:id - Delete Mandi Rate
-router.delete('/mandi/:id', requireAdminAuth, async (req: Request, res: Response) => {
+router.delete('/mandi/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await MandiRate.findByIdAndDelete(id);

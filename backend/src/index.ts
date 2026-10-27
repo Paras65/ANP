@@ -9,6 +9,7 @@ import { requestLogger } from './middleware/requestLogger.middleware.js';
 import { errorHandler } from './middleware/errorHandler.middleware.js';
 import { notFoundHandler } from './middleware/notFound.middleware.js';
 import { sanitizeInputs } from './middleware/sanitizeInput.middleware.js';
+import { antiBloatGuard } from './middleware/antiBloat.middleware.js';
 import { apiLimiter } from './middleware/rateLimiter.middleware.js';
 
 dotenv.config();
@@ -70,17 +71,20 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// 3. Request Payload Size Limiting (Defends against Buffer Overflow & ReDoS)
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+// 3. Request Payload Size Limiting (Defends MongoDB against Base64 image bombs, Buffer Overflow & ReDoS)
+app.use(express.json({ limit: '500kb' }));
+app.use(express.urlencoded({ extended: true, limit: '500kb' }));
 
 // 4. Global NoSQL Injection & Input Sanitizer (Recursively strips $ and . operators)
 app.use(sanitizeInputs);
 
-// 5. Centralized Request Logger (Sanitized, zero secret leakage)
+// 5. Anti-Bloat & Storage Exhaustion Guard (Rejects Base64 images, oversized strings, and deep JSON nesting)
+app.use(antiBloatGuard);
+
+// 6. Centralized Request Logger (Sanitized, zero secret leakage)
 app.use(requestLogger);
 
-// 6. Sacred Health Endpoint (Essential for Render keep-alive & uptime monitors)
+// 7. Sacred Health Endpoint (Essential for Render keep-alive & uptime monitors)
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
@@ -90,7 +94,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
-// 7. Protected Public & Admin API Routes with Global Rate Limiting
+// 8. Protected Public & Admin API Routes with Global Rate Limiting
 app.use('/api', apiLimiter, publicRoutes);
 
 // Root route
@@ -98,10 +102,10 @@ app.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Welcome to Ambition News Portal API (CG & MP 88 Districts)' });
 });
 
-// 8. 404 Catch-All for unmatched endpoints
+// 9. 404 Catch-All for unmatched endpoints
 app.use(notFoundHandler);
 
-// 9. Centralized Error Handling Middleware (Catches all sync & async errors, scrubs secrets)
+// 10. Centralized Error Handling Middleware (Catches all sync & async errors, scrubs secrets)
 app.use(errorHandler);
 
 // Start Server
