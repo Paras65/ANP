@@ -66,9 +66,9 @@ export function getSafeGeminiErrorMessage(err: any): string {
     return 'Gemini API का मुफ्त कोटा (Free Quota / Rate Limit) पूरा हो गया है। कृपया थोड़ी देर बाद पुनः प्रयास करें।';
   }
 
-  // Model not found or not supported
-  if (raw.includes('models/') && (raw.includes('not found') || raw.includes('404'))) {
-    return 'Gemini AI मॉडल अनुरोधित संस्करण में उपलब्ध नहीं है। सिस्टम दूसरे मॉडल पर स्विच कर रहा है...';
+  // Model not found, deprecated or not supported
+  if (raw.includes('models/') && (raw.includes('not found') || raw.includes('404') || raw.includes('no longer available'))) {
+    return 'अनुरोधित Gemini AI मॉडल संस्करण अनुपलब्ध है।';
   }
 
   // Content Safety Filters

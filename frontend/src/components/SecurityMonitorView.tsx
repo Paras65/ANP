@@ -365,7 +365,7 @@ export const SecurityMonitorView: React.FC<SecurityMonitorViewProps> = ({ isDark
             <div>
               <div className="text-[10px] text-slate-400">Gemini AI असिस्टेंट</div>
               <div className="font-bold text-indigo-400">
-                {stats.systemStatus.geminiConfigured ? '🟢 सक्रिय (Gemini 2.0 / 1.5 Flash)' : '🔴 कुँजी अनुपलब्ध'}
+                {stats.systemStatus.geminiConfigured ? '🟢 सक्रिय (Gemini 3.5 Flash)' : '🔴 कुँजी अनुपलब्ध'}
               </div>
             </div>
           </div>
