@@ -4,8 +4,21 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import publicRoutes from './routes/public.routes.js';
+import { logger } from './utils/logger.js';
+import { requestLogger } from './middleware/requestLogger.middleware.js';
+import { errorHandler } from './middleware/errorHandler.middleware.js';
+import { notFoundHandler } from './middleware/notFound.middleware.js';
 
 dotenv.config();
+
+// Process-level unhandled exception & rejection safety
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Promise Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', err);
+});
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,22 +40,22 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow non-browser requests (mobile app, curl, server-to-server)
     if (!origin) return callback(null, true);
-    // Allow Vercel preview & production deployments
     if (/\.vercel\.app$/.test(origin)) return callback(null, true);
-    // Allow registered origins
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Fallback in dev/preview mode
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
     return callback(null, true);
   },
   credentials: true
 }));
+
 app.use(express.json());
 
-// Rule 13: The /api/health endpoint is sacred for Render free-tier keep-alive
-app.get('/api/health', (req: Request, res: Response) => {
+// Centralized Request Logger (Sanitized, zero secret leakage)
+app.use(requestLogger);
+
+// Health Endpoint (Essential for Render keep-alive)
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     service: 'Ambition News Portal Backend',
@@ -55,17 +68,23 @@ app.get('/api/health', (req: Request, res: Response) => {
 app.use('/api', publicRoutes);
 
 // Root route
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Welcome to Ambition News Portal API (CG & MP 88 Districts)' });
 });
+
+// 404 Catch-All for unmatched routes
+app.use(notFoundHandler);
+
+// Centralized Error Handling Middleware (Catches all sync & async errors)
+app.use(errorHandler);
 
 // Start Server
 const startServer = async () => {
   app.listen(Number(PORT), '0.0.0.0', () => {
-    console.log(`🚀 [Server] Running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-    console.log(`📡 [Health] http://localhost:${PORT}/api/health`);
-    console.log(`📍 [Districts API] http://localhost:${PORT}/api/districts`);
-    console.log(`📰 [Articles API] http://localhost:${PORT}/api/articles`);
+    logger.info(`🚀 [Server] Running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+    logger.info(`📡 [Health] http://localhost:${PORT}/api/health`);
+    logger.info(`📍 [Districts API] http://localhost:${PORT}/api/districts`);
+    logger.info(`📰 [Articles API] http://localhost:${PORT}/api/articles`);
   });
   await connectDB();
 };

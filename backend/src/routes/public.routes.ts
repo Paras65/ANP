@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { State } from '../models/State.model.js';
@@ -13,7 +13,6 @@ import { MandiRate } from '../models/MandiRate.model.js';
 import { requireAdminAuth } from '../middleware/auth.middleware.js';
 import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI } from '../services/youtubeSync.js';
 import { processGeminiNewsTask } from '../services/gemini.service.js';
-import { getSafeGeminiErrorMessage, redactSecretKeys } from '../utils/sanitize.js';
 
 const router = Router();
 let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg';
@@ -948,7 +947,7 @@ router.post('/auth/change-pin', requireAdminAuth, async (req: Request, res: Resp
 });
 
 // 12. POST /api/ai/assistant - Secure Gemini AI News Assistant (Protected with requireAdminAuth)
-router.post('/ai/assistant', requireAdminAuth, async (req: Request, res: Response) => {
+router.post('/ai/assistant', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { action, topic, content, district, author } = req.body;
     if (!action) {
@@ -965,14 +964,7 @@ router.post('/ai/assistant', requireAdminAuth, async (req: Request, res: Respons
 
     res.json({ success: true, data: result });
   } catch (err: any) {
-    const safeError = getSafeGeminiErrorMessage(err);
-    // Guarantees zero credential leakage in server console/logs
-    console.warn('[Gemini AI Warning]:', redactSecretKeys(safeError));
-    // Guarantees zero credential leakage in Network Tab response payload
-    res.status(500).json({ 
-      success: false, 
-      message: safeError 
-    });
+    next(err);
   }
 });
 

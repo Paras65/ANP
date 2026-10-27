@@ -76,3 +76,4 @@ export function getSafeGeminiErrorMessage(err: any): string {
   // Generic fallback (Always redacted)
   return 'Gemini AI सेवा से उत्तर प्राप्त करने में विफल।';
 }
+
