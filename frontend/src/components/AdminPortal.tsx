@@ -125,6 +125,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [articleSearchQuery, setArticleSearchQuery] = useState('');
   const [articleDistrictFilter, setArticleDistrictFilter] = useState('सभी');
 
+  // Mobile UX States
+  const [tab1MobileView, setTab1MobileView] = useState<'form' | 'preview'>('form');
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 280);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Check whether Admin PIN is configured on the server & restore in-memory token
   useEffect(() => {
     let isMounted = true;
@@ -567,7 +579,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   }}
                   placeholder="अपना नया पिन दर्ज करें"
                   className="w-full text-center text-lg tracking-[0.3em] font-black bg-[#05070e] border border-white/20 focus:border-emerald-500 rounded-2xl py-2.5 px-3 text-white outline-none"
-                  autoFocus
                   required
                 />
               </div>
@@ -688,8 +699,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   }}
                   placeholder="एडमिन पिन दर्ज करें (4-6 अंक)"
                   className="w-full text-center text-xl tracking-[0.35em] font-black bg-[#05070e] border border-white/20 focus:border-red-500 rounded-2xl py-3 px-4 text-white outline-none shadow-inner"
-                  autoFocus
-                />
+                  />
               </div>
 
               {pinError && (
@@ -801,39 +811,39 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${
         isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-200 shadow-sm'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
           
           {/* Logo & Portal Identity */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <img 
-                src="/logo.png" 
-                alt="एम्बिशन न्यूज़" 
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-red-500/60 bg-white p-0.5 shadow shrink-0" 
-              />
-              <span className="bg-red-600 text-white font-black text-xl px-2.5 py-0.5 rounded-lg shadow">
-                एम्बिशन न्यूज़
+          <div className="flex items-center gap-2">
+            <img 
+              src="/logo.png" 
+              alt="एम्बिशन न्यूज़" 
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-2 ring-red-500/60 bg-white p-0.5 shadow shrink-0" 
+            />
+            <div className="flex items-center gap-1.5">
+              <span className="bg-red-600 text-white font-black text-sm sm:text-xl px-2 py-0.5 rounded-lg shadow leading-tight">
+                एम्बिशन
               </span>
-              <span className="text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded">
-                एडमिन व रिपोर्टर डेस्क
+              <span className="text-[10px] sm:text-xs font-bold bg-amber-500/20 text-amber-500 border border-amber-500/40 px-1.5 py-0.5 rounded">
+                एडमिन
               </span>
             </div>
-            <span className="hidden sm:inline text-slate-500">|</span>
-            <span className="hidden sm:inline text-xs text-slate-400">
+            <span className="hidden md:inline text-slate-500">|</span>
+            <span className="hidden md:inline text-xs text-slate-400">
               कवर्धा (कबीरधाम) मुख्य डेस्क
             </span>
           </div>
 
-          {/* Actions: Change PIN, Lock/Logout, and Live Site */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="hidden lg:flex items-center gap-1.5 bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 text-[11px] font-bold px-2.5 py-1 rounded-xl">
+          {/* Actions: Compact on mobile, detailed on desktop */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="hidden xl:flex items-center gap-1.5 bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 text-[11px] font-bold px-2 py-1 rounded-xl">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>संपादक सत्र सक्रिय</span>
+              <span>सत्र सक्रिय</span>
             </span>
 
             <button
               onClick={() => setShowChangePinModal(true)}
-              className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-slate-700 transition active:scale-95"
+              className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-700 transition active:scale-95"
               title="एडमिन पिन बदलें"
             >
               <Key size={13} className="text-amber-400" />
@@ -842,20 +852,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-rose-800/60 transition active:scale-95"
+              className="flex items-center gap-1 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-rose-800/60 transition active:scale-95"
               title="सुरक्षित लॉगआउट"
             >
               <LogOut size={13} />
-              <span className="hidden sm:inline">लॉक / लॉगआउट</span>
+              <span className="hidden sm:inline">लॉगआउट</span>
             </button>
 
             <button
               onClick={onBackToPublic}
-              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-700 transition active:scale-95 shadow"
+              className="flex items-center gap-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl transition active:scale-95 shadow"
+              title="लाइव पाठक पोर्टल"
             >
-              <ArrowLeft size={14} />
-              <span>पाठक पोर्टल</span>
-              <ExternalLink size={12} className="text-slate-400" />
+              <ArrowLeft size={13} />
+              <span className="hidden sm:inline">पाठक पोर्टल</span>
             </button>
           </div>
 
@@ -1066,12 +1076,41 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
         {/* TAB 1: CREATE / PUBLISH ARTICLE ("खबर भेजें" PORTAL) */}
         {activeTab === 'create' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Form Column (2 Cols) */}
-            <div className={`lg:col-span-2 p-5 sm:p-6 rounded-3xl border shadow-xl ${
-              isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
-            }`}>
+          <div>
+            {/* Mobile Form vs Preview Switcher */}
+            <div className="flex lg:hidden bg-slate-800/40 p-1 rounded-2xl mb-4 border border-white/10 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setTab1MobileView('form')}
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${
+                  tab1MobileView === 'form'
+                    ? 'bg-red-600 text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Edit3 size={13} />
+                <span>✍️ समाचार लिखें</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab1MobileView('preview')}
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${
+                  tab1MobileView === 'preview'
+                    ? 'bg-red-600 text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Eye size={13} />
+                <span>👁️ लाइव प्रीव्यू</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* Form Column (2 Cols) */}
+              <div className={`lg:col-span-2 p-4 sm:p-6 rounded-3xl border shadow-xl ${
+                isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
+              } ${tab1MobileView === 'preview' ? 'hidden lg:block' : 'block'}`}>
               <div className={`mb-4 pb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <h2 className={`text-base font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -1200,11 +1239,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                 {/* Full Article Content */}
                 <div>
-                  <label className="block text-slate-400 mb-1 font-semibold">
-                    विस्तृत समाचार सामग्री (Full Article Text)
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className={`block font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+                      विस्तृत समाचार सामग्री (Full Article Text)
+                    </label>
+                    <span className="text-[11px] text-slate-400">
+                      शब्द: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{content.trim() ? content.trim().split(/\s+/).length : 0}</strong> • अक्षर: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{content.length}</strong>
+                    </span>
+                  </div>
                   <textarea
-                    rows={5}
+                    rows={7}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="पूरी घटना, गवाहों के बयान, सरकारी आदेश, पृष्ठभूमि और तथ्य विस्तार से लिखें..."
@@ -1337,7 +1381,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
 
             {/* Preview Column (1 Col) */}
-            <div className="space-y-4">
+            <div className={`space-y-4 ${tab1MobileView === 'form' ? 'hidden lg:block' : 'block'}`}>
               <div className={`p-4 rounded-3xl border ${
                 isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
               }`}>
@@ -1397,9 +1441,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
             </div>
-
           </div>
-        )}
+        </div>
+      )}
 
         {/* TAB 2: MANAGE PUBLISHED ARTICLES */}
         {activeTab === 'articles' && (() => {
@@ -2539,6 +2583,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
 
           </div>
+        )}
+
+        {/* FLOATING BACK TO TOP BUTTON FOR MOBILE & DESKTOP */}
+        {showBackToTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-6 right-5 z-40 bg-red-600 hover:bg-red-500 text-white p-3 rounded-full shadow-2xl transition active:scale-90 flex items-center justify-center border border-white/20 animate-in fade-in"
+            title="पेज के ऊपर जाएं"
+          >
+            <ArrowLeft size={16} className="rotate-90" />
+          </button>
         )}
 
       </main>
