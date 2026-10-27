@@ -11,6 +11,7 @@ import { Reel } from '../models/Reel.model.js';
 import { Setting } from '../models/Setting.model.js';
 import { MandiRate } from '../models/MandiRate.model.js';
 import { requireAdminAuth } from '../middleware/auth.middleware.js';
+import { authLimiter, aiLimiter } from '../middleware/rateLimiter.middleware.js';
 import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI } from '../services/youtubeSync.js';
 import { processGeminiNewsTask } from '../services/gemini.service.js';
 
@@ -802,7 +803,30 @@ function hashPin(rawPin: string): string {
 
 function verifyPinMatch(inputPin: string, storedTarget: string): boolean {
   const hashedInput = hashPin(inputPin);
-  return hashedInput === storedTarget || String(inputPin).trim() === String(storedTarget).trim();
+  
+  // Constant-time comparison to defeat side-channel timing analysis attacks
+  try {
+    const bufA = Buffer.from(hashedInput);
+    const bufB = Buffer.from(storedTarget);
+    if (bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)) {
+      return true;
+    }
+  } catch {
+    // continue
+  }
+
+  // Safe constant-time fallback for legacy unhashed values
+  try {
+    const bufRaw = Buffer.from(String(inputPin).trim());
+    const bufTarget = Buffer.from(String(storedTarget).trim());
+    if (bufRaw.length === bufTarget.length && crypto.timingSafeEqual(bufRaw, bufTarget)) {
+      return true;
+    }
+  } catch {
+    // continue
+  }
+
+  return false;
 }
 
 function generateAdminJwt(): string {
@@ -826,7 +850,7 @@ router.get('/auth/pin-status', async (_req: Request, res: Response) => {
 });
 
 // 10b. POST /api/auth/setup-pin - Initial First-Time Setup of Admin PIN (Stored as One-Way HMAC-SHA256 Hash)
-router.post('/auth/setup-pin', async (req: Request, res: Response) => {
+router.post('/auth/setup-pin', authLimiter, async (req: Request, res: Response) => {
   try {
     const { newPin } = req.body;
     if (!newPin || String(newPin).trim().length < 4) {
@@ -862,7 +886,7 @@ router.post('/auth/setup-pin', async (req: Request, res: Response) => {
 });
 
 // 10c. POST /api/auth/verify-admin - Cryptographic Hash Verification & Signed JWT Issuance
-router.post('/auth/verify-admin', async (req: Request, res: Response) => {
+router.post('/auth/verify-admin', authLimiter, async (req: Request, res: Response) => {
   try {
     const { pin } = req.body;
     if (!pin) {
@@ -903,7 +927,7 @@ router.post('/auth/verify-admin', async (req: Request, res: Response) => {
 });
 
 // 10d. POST /api/auth/change-pin - Securely Update PIN Hash (Requires Active Admin Token)
-router.post('/auth/change-pin', requireAdminAuth, async (req: Request, res: Response) => {
+router.post('/auth/change-pin', requireAdminAuth, authLimiter, async (req: Request, res: Response) => {
   try {
     const { currentPin, newPin } = req.body;
     if (!currentPin || !newPin) {
@@ -946,8 +970,8 @@ router.post('/auth/change-pin', requireAdminAuth, async (req: Request, res: Resp
   }
 });
 
-// 12. POST /api/ai/assistant - Secure Gemini AI News Assistant (Protected with requireAdminAuth)
-router.post('/ai/assistant', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+// 12. POST /api/ai/assistant - Secure Gemini AI News Assistant (Protected with requireAdminAuth & aiLimiter)
+router.post('/ai/assistant', requireAdminAuth, aiLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { action, topic, content, district, author } = req.body;
     if (!action) {

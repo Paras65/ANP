@@ -8,10 +8,12 @@ import { logger } from './utils/logger.js';
 import { requestLogger } from './middleware/requestLogger.middleware.js';
 import { errorHandler } from './middleware/errorHandler.middleware.js';
 import { notFoundHandler } from './middleware/notFound.middleware.js';
+import { sanitizeInputs } from './middleware/sanitizeInput.middleware.js';
+import { apiLimiter } from './middleware/rateLimiter.middleware.js';
 
 dotenv.config();
 
-// Process-level unhandled exception & rejection safety
+// Process-level unhandled exception & rejection safety (Anti-Crash & Anti-Leak)
 process.on('unhandledRejection', (reason) => {
   logger.error('Unhandled Promise Rejection:', reason);
 });
@@ -23,12 +25,25 @@ process.on('uncaughtException', (err) => {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security & Middleware
+// 1. Enterprise HTTP Security Headers (OWASP Hardened via Helmet)
 app.use(helmet({
-  crossOriginResourcePolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allows news media images
+  hidePoweredBy: true, // Strips X-Powered-By: Express
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: {
+    action: 'deny' // Defends against Clickjacking attacks
+  },
+  noSniff: true, // X-Content-Type-Options: nosniff
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  }
 }));
 
-// CORS Configuration for Local, Vercel & Custom Domain
+// 2. Strict CORS Configuration for Local, Vercel & Production Domains
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
@@ -40,21 +55,32 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow non-browser requests (mobile native apps, curl, server-to-server)
     if (!origin) return callback(null, true);
+    // Allow Vercel preview & production deployments
     if (/\.vercel\.app$/.test(origin)) return callback(null, true);
+    // Allow registered whitelist domains
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Allow local development
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
-    return callback(null, true);
+    return callback(new Error('CORS blocked: अनधिकृत डोमेन से अनुरोध अस्वीकृत (Origin not allowed)'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+// 3. Request Payload Size Limiting (Defends against Buffer Overflow & ReDoS)
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
-// Centralized Request Logger (Sanitized, zero secret leakage)
+// 4. Global NoSQL Injection & Input Sanitizer (Recursively strips $ and . operators)
+app.use(sanitizeInputs);
+
+// 5. Centralized Request Logger (Sanitized, zero secret leakage)
 app.use(requestLogger);
 
-// Health Endpoint (Essential for Render keep-alive)
+// 6. Sacred Health Endpoint (Essential for Render keep-alive & uptime monitors)
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
@@ -64,18 +90,18 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
-// API Routes
-app.use('/api', publicRoutes);
+// 7. Protected Public & Admin API Routes with Global Rate Limiting
+app.use('/api', apiLimiter, publicRoutes);
 
 // Root route
 app.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Welcome to Ambition News Portal API (CG & MP 88 Districts)' });
 });
 
-// 404 Catch-All for unmatched routes
+// 8. 404 Catch-All for unmatched endpoints
 app.use(notFoundHandler);
 
-// Centralized Error Handling Middleware (Catches all sync & async errors)
+// 9. Centralized Error Handling Middleware (Catches all sync & async errors, scrubs secrets)
 app.use(errorHandler);
 
 // Start Server
