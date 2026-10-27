@@ -414,6 +414,17 @@ export const App: React.FC = () => {
     }
   };
 
+  // Update existing article live in MongoDB Atlas
+  const handleUpdateArticle = async (id: string, updatedData: Partial<Article>) => {
+    setArticles(prev => prev.map(a => a._id === id ? { ...a, ...updatedData } : a));
+    showToast('✅ खबर सफलतापूर्वक अपडेट हो गई!');
+    try {
+      await api.put(`/articles/${id}`, updatedData);
+    } catch {
+      // Handled
+    }
+  };
+
   // Offline Detection & Resilience
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -812,6 +823,7 @@ export const App: React.FC = () => {
         districts={districtsList}
         selectedState={selectedState}
         onPublishArticle={handleNewArticleSubmit}
+        onUpdateArticle={handleUpdateArticle}
         onDeleteArticle={handleDeleteArticle}
         onBackToPublic={handleBackToPublic}
         isDark={isDark}

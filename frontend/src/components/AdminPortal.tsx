@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, 
   ArrowLeft, 
@@ -34,7 +34,8 @@ import {
   Key,
   Search,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Upload
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate } from '../types';
 import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos } from '../utils/mediaUtils';
@@ -47,6 +48,7 @@ interface AdminPortalProps {
   districts: DistrictItem[];
   selectedState: 'chhattisgarh' | 'madhya-pradesh';
   onPublishArticle: (article: Partial<Article>) => void;
+  onUpdateArticle?: (id: string, article: Partial<Article>) => void;
   onDeleteArticle: (id: string) => void;
   onBackToPublic: () => void;
   isDark: boolean;
@@ -73,6 +75,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   districts,
   selectedState,
   onPublishArticle,
+  onUpdateArticle,
   onDeleteArticle,
   onBackToPublic,
   isDark,
@@ -366,6 +369,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [reelAudio, setReelAudio] = useState('Ambition News Original');
   const [parsedReel, setParsedReel] = useState<{ type: 'instagram' | 'youtube_short'; embedUrl: string; previewThumb?: string; rawId?: string } | null>(null);
   
+  // Editing Article State
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Form states for creating news
   const [title, setTitle] = useState('');
   const [excerpt, setExcerpt] = useState('');
@@ -384,13 +391,69 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Breaking flash quick input
   const [breakingHeadline, setBreakingHeadline] = useState('');
 
+  // Start editing existing article
+  const handleStartEdit = (art: Article) => {
+    setEditingArticleId(art._id);
+    setTitle(art.title || '');
+    setExcerpt(art.excerpt || '');
+    setContent(art.content || '');
+    setDistrict(art.district || 'कबीरधाम (कवर्धा)');
+    setCategory(art.category || '🔴 कवर्धा स्पेशल');
+    setAuthor(art.author || 'एम्बिशन ब्यूरो प्रतिनिधि');
+    setCoverImage(art.coverImage || 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80');
+    setIsBreaking(Boolean(art.isBreaking));
+    setIsFeatured(Boolean(art.isFeatured));
+    setActiveTab('create');
+    window.scrollTo({ top: 120, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingArticleId(null);
+    setTitle('');
+    setExcerpt('');
+    setContent('');
+    setDistrict('कबीरधाम (कवर्धा)');
+    setCategory('🔴 कवर्धा स्पेशल');
+    setAuthor('कवर्धा डेस्क प्रभारी (मुख्य संपादक)');
+    setCoverImage('https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80');
+    setIsBreaking(false);
+    setIsFeatured(false);
+  };
+
+  // Local File Upload Handler
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('कृपया 5 MB से छोटी फोटो चुनें');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setCoverImage(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Delete Confirmation Handler
+  const handleDeleteArticleConfirmed = (id: string, artTitle?: string) => {
+    const msg = artTitle 
+      ? `क्या आप सच में इस खबर को हटाना चाहते हैं?\n"${artTitle}"` 
+      : 'क्या आप सच में इस खबर को पोर्टल से हटाना चाहते हैं?';
+    if (window.confirm(msg)) {
+      onDeleteArticle(id);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !excerpt.trim()) return;
 
     setIsSubmitting(true);
     setTimeout(() => {
-      onPublishArticle({
+      const payload = {
         title,
         excerpt,
         content: content.trim() ? content : `${excerpt}\n\n[ग्राउंड रिपोर्ट: ${district} से विशेष संवाददाता द्वारा प्रेषित]\nस्थानीय नागरिकों एवं प्रशासन के अनुसार स्थिति पर लगातार नजर रखी जा रही है। अधिक जानकारी की प्रतीक्षा है।`,
@@ -403,7 +466,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         isFeatured,
         views: 1,
         publishedAt: new Date().toISOString()
-      });
+      };
+
+      if (editingArticleId && onUpdateArticle) {
+        onUpdateArticle(editingArticleId, payload);
+        setEditingArticleId(null);
+      } else {
+        onPublishArticle(payload);
+      }
 
       setIsSubmitting(false);
       setPublishedSuccess(true);
@@ -803,7 +873,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <span>कुल प्रकाशित खबरें</span>
               <FileText size={16} className="text-red-500" />
             </div>
-            <div className="text-xl sm:text-2xl font-black text-white mt-1">
+            <div className={`text-xl sm:text-2xl font-black mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {articles.length}
             </div>
           </div>
@@ -815,7 +885,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <span>सक्रिय ब्रेकिंग न्यूज़</span>
               <Radio size={16} className="text-amber-500 animate-pulse" />
             </div>
-            <div className="text-xl sm:text-2xl font-black text-amber-400 mt-1">
+            <div className={`text-xl sm:text-2xl font-black mt-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
               {breakingCount}
             </div>
           </div>
@@ -827,7 +897,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <span>कुल पाठक व्यूज</span>
               <Eye size={16} className="text-emerald-500" />
             </div>
-            <div className="text-xl sm:text-2xl font-black text-emerald-400 mt-1">
+            <div className={`text-xl sm:text-2xl font-black mt-1 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
               {totalViews.toLocaleString('en-IN')}
             </div>
           </div>
@@ -839,7 +909,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <span>सक्रिय रिपोर्टर नेटवर्क</span>
               <Users size={16} className="text-blue-500" />
             </div>
-            <div className="text-xl sm:text-2xl font-black text-blue-400 mt-1">
+            <div className={`text-xl sm:text-2xl font-black mt-1 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
               88 जिले (CG-MP)
             </div>
           </div>
@@ -847,53 +917,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       </div>
 
-
-      {/* 2b. QUICK ACTIONS BAR FOR BUSY EDITORS */}
-      <div className="max-w-7xl mx-auto px-4 pt-3 pb-1 w-full">
-        <div className={`p-2.5 rounded-2xl border flex items-center justify-between gap-2 overflow-x-auto no-scrollbar ${
-          isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'
-        }`}>
-          <div className="text-[11px] font-bold text-slate-400 whitespace-nowrap px-2 flex items-center gap-1">
-            <Zap size={13} className="text-amber-400" />
-            <span>त्वरित शॉर्टकट:</span>
-          </div>
-
-          <div className="flex items-center gap-2 whitespace-nowrap">
-            <button
-              onClick={() => setActiveTab('create')}
-              className="flex items-center gap-1 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
-            >
-              <Send size={12} />
-              <span>✍️ नई खबर लिखें</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('mandi')}
-              className="flex items-center gap-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/40 text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
-            >
-              <Wheat size={12} />
-              <span>🌾 मंडी भाव बदलें</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('breaking')}
-              className="flex items-center gap-1 bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/40 text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
-            >
-              <Radio size={12} />
-              <span>⚡ ब्रेकिंग टिकर</span>
-            </button>
-
-            <button
-              onClick={handleTriggerSync}
-              disabled={isSyncing}
-              className="flex items-center gap-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/40 text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95 disabled:opacity-50"
-            >
-              <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
-              <span>{isSyncing ? 'सिंक हो रहा...' : '📺 यूट्यूब सिंक'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
 
 
       {/* 2b. QUICK ACTIONS BAR FOR BUSY EDITORS */}
@@ -1049,13 +1072,31 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <div className={`lg:col-span-2 p-5 sm:p-6 rounded-3xl border shadow-xl ${
               isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
             }`}>
-              <div className="mb-4 pb-3 border-b border-slate-800">
-                <h2 className="text-base font-black text-white flex items-center gap-2">
-                  <Send size={16} className="text-red-500" />
-                  <span>संपादकीय समाचार प्रकाशन फॉर्म</span>
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  यह फॉर्म केवल अधिकृत रिपोर्टर्स और संपादकों के लिए है। सबमिट करते ही खबर लाइव हो जाएगी।
+              <div className={`mb-4 pb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className={`text-base font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {editingArticleId ? (
+                      <>
+                        <Edit3 size={18} className="text-amber-500" />
+                        <span>समाचार संपादन व संशोधन</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={16} className="text-red-500" />
+                        <span>संपादकीय समाचार प्रकाशन फॉर्म</span>
+                      </>
+                    )}
+                  </h2>
+                  {editingArticleId && (
+                    <span className="bg-amber-500/20 text-amber-500 border border-amber-500/40 text-[11px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1">
+                      ✏️ संशोधन मोड
+                    </span>
+                  )}
+                </div>
+                <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  {editingArticleId 
+                    ? 'आप इस समय चयनित समाचार के शीर्षक, विवरण या फोटो में संशोधन कर रहे हैं।' 
+                    : 'यह फॉर्म केवल अधिकृत रिपोर्टर्स और संपादकों के लिए है। सबमिट करते ही खबर लाइव हो जाएगी।'}
                 </p>
               </div>
 
@@ -1070,7 +1111,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     <select
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 font-medium"
+                      className={`w-full rounded-xl p-2.5 text-xs font-semibold outline-none transition ${
+    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+  }`}
                     >
                       <option value="कबीरधाम (कवर्धा)">कबीरधाम (कवर्धा) 👑 (मुख्यालय)</option>
                       {districts
@@ -1115,7 +1158,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="मुख्य शीर्षक हिंदी में लिखें (जैसे: कवर्धा में नए रिंग रोड परियोजना को मंजूरी...)"
                     required
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 text-xs font-semibold placeholder:text-slate-500"
+                    className={`w-full rounded-xl p-2.5 text-xs font-semibold outline-none transition ${
+    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
+  }`}
                   />
                 </div>
 
@@ -1130,7 +1175,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     onChange={(e) => setAuthor(e.target.value)}
                     placeholder="जैसे: अमित चंद्रवंशी (कवर्धा ब्यूरो चीफ)"
                     required
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 text-xs font-medium"
+                    className={`w-full rounded-xl p-2.5 text-xs font-medium outline-none transition ${
+    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+  }`}
                   />
                 </div>
 
@@ -1145,7 +1192,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     onChange={(e) => setExcerpt(e.target.value)}
                     placeholder="2-3 पंक्तियों में खबर का मुख्य बिंदु..."
                     required
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 text-xs placeholder:text-slate-500 leading-relaxed"
+                    className={`w-full rounded-xl p-2.5 text-xs outline-none transition leading-relaxed ${
+    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
+  }`}
                   ></textarea>
                 </div>
 
@@ -1163,11 +1212,29 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   ></textarea>
                 </div>
 
-                {/* Photo Presets & Custom URL */}
+                {/* Photo Presets & Local File Upload */}
                 <div>
-                  <label className="block text-slate-400 mb-1 font-semibold flex items-center gap-1">
-                    <Camera size={13} className="text-emerald-500" /> फोटो का चयन या URL
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className={`block font-semibold flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+                      <Camera size={13} className="text-emerald-500" /> समाचार फोटो (Upload or Preset)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm transition active:scale-95"
+                    >
+                      <Upload size={12} />
+                      <span>गैलरी / कैमरा से चुनें</span>
+                    </button>
+                    <input 
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleImageFileSelect}
+                      className="hidden"
+                    />
+                  </div>
+
                   <div className="flex flex-wrap gap-2 mb-2">
                     {[
                       { label: '🏛️ कवर्धा/भोरमदेव', url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80' },
@@ -1195,7 +1262,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     value={coverImage}
                     onChange={(e) => setCoverImage(e.target.value)}
                     placeholder="https://..."
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white outline-none focus:border-red-500 text-xs font-mono"
+                    className={`w-full rounded-xl p-2 text-xs font-mono outline-none transition ${
+    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+  }`}
                   />
                 </div>
 
@@ -1228,15 +1297,39 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </label>
                 </div>
 
-                {/* Submit Action */}
-                <div className="pt-3 border-t border-slate-800">
+                {/* Submit Action with Edit Mode Handling */}
+                <div className={`pt-3 border-t flex flex-col sm:flex-row gap-2.5 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                  {editingArticleId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className={`sm:w-1/3 py-3 rounded-2xl font-bold text-xs border transition active:scale-98 ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      ✕ संशोधन रद्द करें
+                    </button>
+                  )}
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-red-600 hover:bg-red-500 text-white font-bold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 transition active:scale-98 disabled:opacity-50"
+                    className={`flex-1 font-bold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition active:scale-98 disabled:opacity-50 text-white ${
+                      editingArticleId 
+                        ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30' 
+                        : 'bg-red-600 hover:bg-red-500 shadow-red-600/30'
+                    }`}
                   >
-                    <Send size={16} />
-                    <span>{isSubmitting ? 'प्रकाशित कर रहे हैं...' : 'सीधे लाइव पोर्टल पर प्रकाशित करें'}</span>
+                    {editingArticleId ? (
+                      <>
+                        <Save size={16} />
+                        <span>{isSubmitting ? 'अपडेट हो रहा है...' : '💾 संशोधन सुरक्षित करें (Update Live)'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        <span>{isSubmitting ? 'प्रकाशित कर रहे हैं...' : 'सीधे लाइव पोर्टल पर प्रकाशित करें'}</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -1324,8 +1417,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             }`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
                 <div>
-                  <h2 className="text-base font-black text-white flex items-center gap-2">
-                    <ShieldCheck size={18} className="text-emerald-400" />
+                  <h2 className={`text-base font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <ShieldCheck size={18} className="text-emerald-500" />
                     <span>पोर्टल पर प्रकाशित कुल खबरें ({articles.length})</span>
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">सभी 88 जिलों की प्रकाशित खबरों की खोज, समीक्षा व नियंत्रण</p>
@@ -1348,7 +1441,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     value={articleSearchQuery}
                     onChange={(e) => setArticleSearchQuery(e.target.value)}
                     placeholder="खबर के शीर्षक या रिपोर्टर के नाम से खोजें..."
-                    className="w-full bg-[#05070e] border border-white/15 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none focus:border-red-500 placeholder:text-slate-500"
+                    className={`w-full rounded-xl pl-9 pr-3 py-2 text-xs outline-none transition ${
+    isDark ? 'bg-[#05070e] border border-white/15 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
+  }`}
                   />
                 </div>
 
@@ -1356,7 +1451,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <select
                     value={articleDistrictFilter}
                     onChange={(e) => setArticleDistrictFilter(e.target.value)}
-                    className="w-full bg-[#05070e] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-red-500"
+                    className={`w-full rounded-xl px-3 py-2 text-xs outline-none transition ${
+    isDark ? 'bg-[#05070e] border border-white/15 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+  }`}
                   >
                     <option value="सभी">सभी जिले ({articles.length})</option>
                     <option value="कवर्धा">कवर्धा (कबीरधाम)</option>
@@ -1383,7 +1480,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 ) : filteredManagedArticles.map((art) => (
                   <div
                     key={art._id}
-                    className="p-3.5 rounded-2xl border border-slate-800/80 bg-slate-950/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-slate-700 transition"
+                    className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition ${
+    isDark ? 'border-slate-800/80 bg-slate-950/60 hover:border-slate-700' : 'border-slate-200 bg-slate-50/70 hover:border-slate-300 shadow-sm'
+  }`}
                   >
                     <div className="flex items-start gap-3">
                       {art.coverImage && (
@@ -1402,22 +1501,40 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             <span className="bg-red-600 text-white px-1 rounded text-[9px]">ब्रेकिंग</span>
                           )}
                         </div>
-                        <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-1">
+                        <h3 className={`text-xs sm:text-sm font-bold line-clamp-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                           {art.title}
                         </h3>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
+                        <div className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                           ✍️ {art.author} • {art.views || 100} व्यूज
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-center">
+                    <div className="flex items-center gap-1.5 self-end sm:self-center">
                       <button
-                        onClick={() => onDeleteArticle(art._id)}
-                        className="p-2 rounded-xl bg-red-950/40 hover:bg-red-900 text-red-400 hover:text-white transition"
-                        title="Delete Article"
+                        onClick={() => handleStartEdit(art)}
+                        className={`p-2 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
+                          isDark 
+                            ? 'bg-blue-950/50 hover:bg-blue-900 text-blue-300 border border-blue-800/60' 
+                            : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                        }`}
+                        title="खबर संपादित करें (Edit Article)"
                       >
-                        <Trash2 size={14} />
+                        <Edit3 size={13} />
+                        <span className="hidden sm:inline">एडिट</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteArticleConfirmed(art._id, art.title)}
+                        className={`p-2 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
+                          isDark 
+                            ? 'bg-rose-950/50 hover:bg-rose-900 text-rose-300 border border-rose-800/60' 
+                            : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-sm'
+                        }`}
+                        title="खबर हटाएं (Delete Article)"
+                      >
+                        <Trash2 size={13} />
+                        <span className="hidden sm:inline">हटाएं</span>
                       </button>
                     </div>
                   </div>
@@ -1435,7 +1552,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <div className={`p-5 rounded-3xl border ${
               isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
             }`}>
-              <h2 className="text-base font-black text-white flex items-center gap-2 mb-3">
+              <h2 className={`text-base font-black flex items-center gap-2 mb-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 <Radio size={16} className="text-red-500 animate-pulse" />
                 <span>तुरंत ब्रेकिंग फ्लैश जोड़ें (Live Ticker)</span>
               </h2>
@@ -1447,7 +1564,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   onChange={(e) => setBreakingHeadline(e.target.value)}
                   placeholder="जैसे: कवर्धा में भारी बारिश के बाद प्रशासन ने कलेक्टोरेट में कंट्रोल रूम बनाया..."
                   required
-                  className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white outline-none focus:border-red-500"
+                  className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold outline-none transition ${
+    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
+  }`}
                 />
                 <button
                   type="submit"
@@ -1471,14 +1590,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 {articles.filter(a => a.isBreaking).map((b) => (
                   <div
                     key={b._id}
-                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs"
+                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition ${
+    isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+  }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                       <span className="bg-red-950 text-red-300 font-bold px-1.5 py-0.5 rounded text-[10px]">
                         {b.district}
                       </span>
-                      <span className="text-white font-medium">{b.title}</span>
+                      <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{b.title}</span>
                     </div>
                     <button
                       onClick={() => onDeleteArticle(b._id)}
@@ -2117,7 +2238,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
             }`}>
               <div>
-                <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                <h3 className={`text-base sm:text-lg font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   <Wheat className="text-emerald-500" size={20} />
                   <span>दैनिक कृषि उपज मंडी भाव प्रबंधन (Live Mandi Desk)</span>
                 </h3>
@@ -2345,7 +2466,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-md">
                               📍 {item.mandi} ({item.state})
                             </span>
-                            <h4 className="text-sm font-black text-white mt-1.5">
+                            <h4 className={`text-sm font-black mt-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                               {item.crop}
                             </h4>
                           </div>
@@ -2379,7 +2500,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         </div>
 
                         <div className="mt-3 flex items-baseline justify-between pt-2 border-t border-white/5">
-                          <div className="text-xl font-black text-white tracking-tight">
+                          <div className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                             ₹{item.rate.toLocaleString('en-IN')}{' '}
                             <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span>
                           </div>
@@ -2401,7 +2522,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                             {onDeleteMandiRate && (
                               <button
-                                onClick={() => onDeleteMandiRate(item.id)}
+                                onClick={() => { if (window.confirm(`क्या आप ${item.crop} का मंडी भाव हटाना चाहते हैं?`)) onDeleteMandiRate(item.id); }}
                                 className="text-slate-500 hover:text-red-400 p-1 rounded transition"
                                 title="हटाएं"
                               >

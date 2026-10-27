@@ -266,6 +266,36 @@ router.delete('/articles/:id', requireAdminAuth, async (req: Request, res: Respo
   }
 });
 
+// 4c. PUT /api/articles/:id - Update existing article live in MongoDB Atlas
+router.put('/articles/:id', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, excerpt, content, district, category, author, state, isBreaking, isFeatured, coverImage } = req.body;
+    const updated = await Article.findByIdAndUpdate(
+      id,
+      {
+        ...(title && { title: title.trim() }),
+        ...(excerpt && { excerpt: excerpt.trim() }),
+        ...(content && { content }),
+        ...(district && { district: district.trim() }),
+        ...(category && { category: category.trim() }),
+        ...(author && { author: author.trim() }),
+        ...(state && { state }),
+        ...(isBreaking !== undefined && { isBreaking }),
+        ...(isFeatured !== undefined && { isFeatured }),
+        ...(coverImage && { coverImage })
+      },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'खबर नहीं मिली' });
+    }
+    res.json({ success: true, message: 'खबर सफलतापूर्वक अपडेट हो गई', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 5. GET /api/videos - List YouTube Bulletins live from MongoDB Atlas
 router.get('/videos', async (req: Request, res: Response) => {
   try {
