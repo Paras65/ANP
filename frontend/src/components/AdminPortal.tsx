@@ -31,7 +31,6 @@ import {
   PlusCircle,
   Lock,
   Unlock,
-  Key,
   Search,
   LogOut,
   ShieldCheck,
@@ -116,21 +115,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [pinError, setPinError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-
-  // Dynamic PIN Setup Status (Zero hardcoded credentials)
-  const [isPinConfigured, setIsPinConfigured] = useState<boolean | null>(null);
-  const [isCheckingPinStatus, setIsCheckingPinStatus] = useState<boolean>(true);
-  const [setupPinInput, setSetupPinInput] = useState('');
-  const [setupPinConfirm, setSetupPinConfirm] = useState('');
-  const [setupError, setSetupError] = useState<string | null>(null);
-  const [isSettingUp, setIsSettingUp] = useState(false);
-
-  // Change PIN State
-  const [showChangePinModal, setShowChangePinModal] = useState(false);
-  const [currentPinInput, setCurrentPinInput] = useState('');
-  const [newPinInput, setNewPinInput] = useState('');
-  const [changePinMsg, setChangePinMsg] = useState<{ text: string; isError: boolean } | null>(null);
-  const [isSavingPin, setIsSavingPin] = useState(false);
 
   // Articles Search & Filter State (Tab 2)
   const [articleSearchQuery, setArticleSearchQuery] = useState('');
@@ -228,71 +212,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Check whether Admin PIN is configured on the server & restore in-memory token
+  // Restore session token if available
   useEffect(() => {
-    let isMounted = true;
-
     // Strict Zero LocalStorage Token Policy: purge any persistent token
     localStorage.removeItem('anp_admin_token');
     const existingSessionToken = sessionStorage.getItem('anp_admin_token');
     if (existingSessionToken) {
       setAuthToken(existingSessionToken);
     }
-
-    const checkStatus = async () => {
-      try {
-        const res = await api.get('/auth/pin-status');
-        if (isMounted && res.data?.success) {
-          setIsPinConfigured(Boolean(res.data.isConfigured));
-        }
-      } catch (_err) {
-        if (isMounted) setIsPinConfigured(true);
-      } finally {
-        if (isMounted) setIsCheckingPinStatus(false);
-      }
-    };
-    checkStatus();
-    return () => { isMounted = false; };
   }, []);
 
-  // Initial First-Time Setup
-  const handleSetupPin = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!setupPinInput || setupPinInput.length < 4) {
-      setSetupError('कृपया कम से कम 4 अंकों का नया पिन दर्ज करें');
-      return;
-    }
-    if (setupPinInput !== setupPinConfirm) {
-      setSetupError('दोनों पिन मेल नहीं खा रहे हैं, कृपया पुनः जांचें');
-      return;
-    }
-
-    setIsSettingUp(true);
-    setSetupError(null);
-    try {
-      const res = await api.post('/auth/setup-pin', { newPin: setupPinInput.trim() });
-      if (res.data?.success) {
-        if (res.data?.token) {
-          setAuthToken(res.data.token);
-          sessionStorage.setItem('anp_admin_token', res.data.token);
-        }
-        localStorage.removeItem('anp_admin_token'); // NEVER store token in localStorage
-        if (rememberMe) {
-          localStorage.setItem('anp_admin_auth', 'true');
-        } else {
-          sessionStorage.setItem('anp_admin_auth', 'true');
-        }
-        setIsPinConfigured(true);
-        setIsAuthenticated(true);
-      }
-    } catch (err: any) {
-      setSetupError(err?.response?.data?.message || 'पिन सुरक्षित करने में त्रुटि हुई');
-    } finally {
-      setIsSettingUp(false);
-    }
-  };
-
-  // Verify PIN strictly with backend (Zero hardcoded fallbacks)
+  // Verify PIN strictly with backend (Validated exclusively via process.env.ADMIN_PIN)
   const handleVerifyPin = async (pinCandidate?: string) => {
     const pin = (pinCandidate !== undefined ? pinCandidate : enteredPin).trim();
     if (!pin) {
@@ -320,11 +250,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         return;
       }
     } catch (err: any) {
-      if (err?.response?.data?.needsSetup) {
-        setIsPinConfigured(false);
-        setSetupError('एडमिन पिन अभी सेट नहीं किया गया है, कृपया अपना पिन बनाएं');
-        return;
-      }
       setPinError(err?.response?.data?.message || 'अमान्य एडमिन पिन — कृपया सही पिन दर्ज करें');
     } finally {
       setIsVerifying(false);
@@ -339,45 +264,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     sessionStorage.removeItem('anp_admin_token');
     setIsAuthenticated(false);
     setEnteredPin('');
-  };
-
-  const handleChangePin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentPinInput || !newPinInput) {
-      setChangePinMsg({ text: 'कृपया वर्तमान और नया पिन दोनों दर्ज करें', isError: true });
-      return;
-    }
-    if (newPinInput.length < 4) {
-      setChangePinMsg({ text: 'नया पिन कम से कम 4 अंकों का होना चाहिए', isError: true });
-      return;
-    }
-
-    setIsSavingPin(true);
-    setChangePinMsg(null);
-    try {
-      const res = await api.post('/auth/change-pin', {
-        currentPin: currentPinInput.trim(),
-        newPin: newPinInput.trim()
-      });
-      if (res.data?.success) {
-        if (res.data?.token) {
-          setAuthToken(res.data.token);
-          sessionStorage.setItem('anp_admin_token', res.data.token);
-        }
-        localStorage.removeItem('anp_admin_token');
-        setChangePinMsg({ text: '✅ एडमिन पिन सफलतापूर्वक बदल दिया गया!', isError: false });
-        setTimeout(() => {
-          setShowChangePinModal(false);
-          setCurrentPinInput('');
-          setNewPinInput('');
-          setChangePinMsg(null);
-        }, 1800);
-      }
-    } catch (err: any) {
-      setChangePinMsg({ text: err?.response?.data?.message || 'वर्तमान पिन गलत है', isError: true });
-    } finally {
-      setIsSavingPin(false);
-    }
   };
 
 
@@ -613,130 +499,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const breakingCount = articles.filter(a => a.isBreaking).length;
 
 
-  // SECURITY GATE: Render login screen or initial setup screen if unauthenticated
+  // SECURITY GATE: Render login screen if unauthenticated (Strict ENV validation)
   if (!isAuthenticated) {
-    if (isCheckingPinStatus) {
-      return (
-        <div className={`min-h-screen font-devanagari flex flex-col items-center justify-center p-4 transition-colors ${
-          isDark ? 'bg-[#060911] text-slate-100' : 'bg-slate-100 text-slate-900'
-        }`}>
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-xs text-slate-400">सुरक्षा जांच हो रही है...</p>
-          </div>
-        </div>
-      );
-    }
-
-    // FIRST-TIME ADMIN SETUP CARD (If no PIN configured yet)
-    if (isPinConfigured === false) {
-      return (
-        <div className={`min-h-screen font-devanagari flex flex-col items-center justify-center p-4 transition-colors ${
-          isDark ? 'bg-[#060911] text-slate-100' : 'bg-slate-100 text-slate-900'
-        }`}>
-          <div className={`w-full max-w-md p-6 sm:p-8 rounded-3xl border shadow-2xl space-y-6 text-center ${
-            isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-white border-slate-200'
-          }`}>
-            {/* Header */}
-            <div className="flex flex-col items-center gap-2.5">
-              <div className="relative">
-                <img 
-                  src="/logo.png" 
-                  alt="Ambition News" 
-                  className="w-16 h-16 rounded-full object-cover ring-4 ring-emerald-500/80 bg-white p-1 shadow-xl"
-                />
-                <span className="absolute -bottom-1 -right-1 bg-emerald-600 text-white p-1 rounded-full shadow">
-                  <Key size={12} />
-                </span>
-              </div>
-              <div>
-                <span className="bg-emerald-600 text-white font-black text-xl px-2.5 py-0.5 rounded-lg shadow">
-                  प्रथम बार एडमिन सेटअप
-                </span>
-                <p className="text-xs text-slate-400 mt-2">
-                  🔐 पोर्टल की सुरक्षा के लिए पहली बार अपना 4 से 6 अंकों का नया गुप्त पिन बनाएं।
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSetupPin} className="space-y-3.5 text-left">
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">नया एडमिन पिन (4-6 अंक) *</label>
-                <input 
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={setupPinInput}
-                  onChange={(e) => {
-                    setSetupPinInput(e.target.value.replace(/\D/g, ''));
-                    if (setupError) setSetupError(null);
-                  }}
-                  placeholder="अपना नया पिन दर्ज करें"
-                  className="w-full text-center text-lg tracking-[0.3em] font-black bg-[#05070e] border border-white/20 focus:border-emerald-500 rounded-2xl py-2.5 px-3 text-white outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">पिन की पुष्टि करें (Confirm PIN) *</label>
-                <input 
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={setupPinConfirm}
-                  onChange={(e) => {
-                    setSetupPinConfirm(e.target.value.replace(/\D/g, ''));
-                    if (setupError) setSetupError(null);
-                  }}
-                  placeholder="वही पिन दोबारा दर्ज करें"
-                  className="w-full text-center text-lg tracking-[0.3em] font-black bg-[#05070e] border border-white/20 focus:border-emerald-500 rounded-2xl py-2.5 px-3 text-white outline-none"
-                  required
-                />
-              </div>
-
-              {setupError && (
-                <div className="text-xs font-bold text-rose-400 bg-rose-950/40 border border-rose-800/60 p-2 rounded-xl text-center">
-                  ⚠️ {setupError}
-                </div>
-              )}
-
-              {/* Remember Me Toggle */}
-              <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-1">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input 
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded accent-emerald-600 w-4 h-4"
-                  />
-                  <span>इस डिवाइस पर लॉगिन याद रखें</span>
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSettingUp || setupPinInput.length < 4 || setupPinInput !== setupPinConfirm}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-2xl transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <ShieldCheck size={16} />
-                <span>{isSettingUp ? 'पिन सुरक्षित हो रहा है...' : 'पिन सेट करें और पोर्टल में प्रवेश करें'}</span>
-              </button>
-            </form>
-
-            <div className="pt-2 border-t border-slate-800/60 flex flex-col gap-2">
-              <button
-                onClick={onBackToPublic}
-                className="text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition py-1"
-              >
-                <ArrowLeft size={13} />
-                <span>पाठक पोर्टल पर वापस जाएं</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className={`min-h-screen font-devanagari flex flex-col items-center justify-center p-4 transition-colors ${
         isDark ? 'bg-[#060911] text-slate-100' : 'bg-slate-100 text-slate-900'
@@ -934,15 +698,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>सत्र सक्रिय</span>
             </span>
-
-            <button
-              onClick={() => setShowChangePinModal(true)}
-              className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-700 transition active:scale-95"
-              title="एडमिन पिन बदलें"
-            >
-              <Key size={13} className="text-amber-400" />
-              <span className="hidden sm:inline">पिन बदलें</span>
-            </button>
 
             <button
               onClick={handleLogout}
@@ -3022,24 +2777,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <button
                 onClick={() => {
                   setShowMobileMoreDrawer(false);
-                  setShowChangePinModal(true);
-                }}
-                className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
-                  isDark ? 'border-slate-800 bg-slate-800/60 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-800'
-                }`}
-              >
-                <div className="w-8 h-8 rounded-xl bg-amber-600/20 text-amber-500 flex items-center justify-center shrink-0">
-                  <Key size={16} />
-                </div>
-                <div>
-                  <div className="font-bold text-[11px] leading-tight">एडमिन पिन बदलें</div>
-                  <div className="text-[9px] text-slate-400 mt-0.5">HMAC-SHA256</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowMobileMoreDrawer(false);
                   onBackToPublic();
                 }}
                 className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
@@ -3092,82 +2829,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           isDark={isDark}
           onClose={() => setCardArticle(null)}
         />
-      )}
-
-      {/* CHANGE PIN MODAL */}
-      {showChangePinModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`w-full max-w-sm p-6 rounded-3xl border shadow-2xl space-y-4 ${
-            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-          }`}>
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-black text-white flex items-center gap-1.5">
-                <Key size={16} className="text-amber-400" />
-                <span>एडमिन डेस्क पिन बदलें</span>
-              </h3>
-              <button 
-                onClick={() => setShowChangePinModal(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleChangePin} className="space-y-3">
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">वर्तमान पिन *</label>
-                <input 
-                  type="password"
-                  inputMode="numeric"
-                  value={currentPinInput}
-                  onChange={(e) => setCurrentPinInput(e.target.value.replace(/\D/g, ''))}
-                  placeholder="वर्तमान पिन दर्ज करें"
-                  className="w-full bg-[#05070e] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-500 font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">नया पिन (4-6 अंक) *</label>
-                <input 
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={newPinInput}
-                  onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, ''))}
-                  placeholder="नया 4 से 6 अंकों का पिन"
-                  className="w-full bg-[#05070e] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500 font-mono font-bold"
-                  required
-                />
-              </div>
-
-              {changePinMsg && (
-                <div className={`text-xs p-2 rounded-xl font-bold ${
-                  changePinMsg.isError ? 'bg-rose-950/50 text-rose-300 border border-rose-800' : 'bg-emerald-950/50 text-emerald-300 border border-emerald-800'
-                }`}>
-                  {changePinMsg.text}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setShowChangePinModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
-                >
-                  रद्द करें
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingPin || newPinInput.length < 4}
-                  className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs px-4 py-1.5 rounded-xl transition shadow active:scale-95"
-                >
-                  {isSavingPin ? 'सुरक्षित हो रहा...' : 'पिन सहेजें'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
 
     </div>

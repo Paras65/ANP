@@ -19,6 +19,7 @@ import { VideoSection } from './components/VideoSection';
 import { InstagramSection } from './components/InstagramSection';
 import { ArticleModal } from './components/ArticleModal';
 import { AdminPortal } from './components/AdminPortal';
+import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { Footer } from './components/Footer';
 import { StoriesTray } from './components/StoriesTray';
 import { StoryViewerModal } from './components/StoryViewerModal';
@@ -49,7 +50,7 @@ export const App: React.FC = () => {
   const [isDark, setIsDark] = useState<boolean>(() => {
     return localStorage.getItem('anp_theme') === 'dark';
   });
-  const [currentView, setCurrentView] = useState<'public' | 'admin'>('public');
+  const [currentView, setCurrentView] = useState<'public' | 'admin' | 'super-admin'>('public');
   const [selectedState, setSelectedState] = useState<'chhattisgarh' | 'madhya-pradesh'>('chhattisgarh');
   const [currentDistrict, setCurrentDistrict] = useState<string>('सभी');
   const [selectedCategory, setSelectedCategory] = useState<string>('सभी खबरें');
@@ -451,7 +452,9 @@ export const App: React.FC = () => {
       const path = window.location.pathname.replace(/\/$/, '');
       const hash = window.location.hash;
       const search = window.location.search;
-      if (path === '/admin' || hash === '#admin' || search.includes('portal=admin')) {
+      if (path === '/super-admin' || hash === '#super-admin' || search.includes('portal=super-admin')) {
+        setCurrentView('super-admin');
+      } else if (path === '/admin' || hash === '#admin' || search.includes('portal=admin')) {
         setCurrentView('admin');
       } else {
         setCurrentView('public');
@@ -469,7 +472,7 @@ export const App: React.FC = () => {
 
   // Content Copy Prevention & Right-Click Disabling (Immunity for Admin Portal and Form Controls)
   useEffect(() => {
-    if (currentView === 'admin') {
+    if (currentView === 'admin' || currentView === 'super-admin') {
       document.body.classList.add('admin-mode');
       return () => {
         document.body.classList.remove('admin-mode');
@@ -815,6 +818,15 @@ export const App: React.FC = () => {
   const breakingList = articles.filter(a => a.isBreaking);
 
   const popularDistricts = selectedState === 'chhattisgarh' ? POPULAR_DISTRICTS_CG : POPULAR_DISTRICTS_MP;
+
+  if (currentView === 'super-admin') {
+    return (
+      <SuperAdminPortal 
+        onBackToPublic={handleBackToPublic}
+        isDark={isDark}
+      />
+    );
+  }
 
   if (currentView === 'admin') {
     return (

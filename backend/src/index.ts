@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import publicRoutes from './routes/public.routes.js';
+import superAdminRoutes from './routes/superAdmin.routes.js';
 import { logger } from './utils/logger.js';
 import { requestLogger } from './middleware/requestLogger.middleware.js';
 import { errorHandler } from './middleware/errorHandler.middleware.js';
@@ -96,6 +97,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 // 8. Protected Public & Admin API Routes with Global Rate Limiting
 app.use('/api', apiLimiter, publicRoutes);
+
+// 8b. Dedicated Super Admin & Governance API Routes
+app.use('/api/super-admin', apiLimiter, superAdminRoutes);
 
 // Root route
 app.get('/', (_req: Request, res: Response) => {

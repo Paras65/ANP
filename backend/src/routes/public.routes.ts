@@ -14,6 +14,11 @@ import { requireAdminAuth } from '../middleware/auth.middleware.js';
 import { authLimiter, aiLimiter, contentCreationLimiter } from '../middleware/rateLimiter.middleware.js';
 import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI } from '../services/youtubeSync.js';
 import { processGeminiNewsTask } from '../services/gemini.service.js';
+import { 
+  recordSecurityIncident, 
+  getSecurityDashboardStats, 
+  clearSecurityLogs 
+} from '../services/securityAudit.service.js';
 
 const router = Router();
 let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg';
@@ -806,40 +811,8 @@ router.delete('/mandi/:id', requireAdminAuth, contentCreationLimiter, async (req
   }
 });
 
-// --- ADMIN SECURITY & CRYPTOGRAPHIC AUTHENTICATION ---
+// --- ADMIN SECURITY & CRYPTOGRAPHIC AUTHENTICATION (STRICT ENV ONLY) ---
 const PIN_SALT = process.env.JWT_SECRET || 'anp_editorial_desk_pin_hmac_salt_2026';
-
-function hashPin(rawPin: string): string {
-  return crypto.createHmac('sha256', PIN_SALT).update(String(rawPin).trim()).digest('hex');
-}
-
-function verifyPinMatch(inputPin: string, storedTarget: string): boolean {
-  const hashedInput = hashPin(inputPin);
-  
-  // Constant-time comparison to defeat side-channel timing analysis attacks
-  try {
-    const bufA = Buffer.from(hashedInput);
-    const bufB = Buffer.from(storedTarget);
-    if (bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)) {
-      return true;
-    }
-  } catch {
-    // continue
-  }
-
-  // Safe constant-time fallback for legacy unhashed values
-  try {
-    const bufRaw = Buffer.from(String(inputPin).trim());
-    const bufTarget = Buffer.from(String(storedTarget).trim());
-    if (bufRaw.length === bufTarget.length && crypto.timingSafeEqual(bufRaw, bufTarget)) {
-      return true;
-    }
-  } catch {
-    // continue
-  }
-
-  return false;
-}
 
 function generateAdminJwt(): string {
   const secret = process.env.JWT_SECRET || 'anp_editorial_desk_pin_hmac_salt_2026';
@@ -850,54 +823,13 @@ function generateAdminJwt(): string {
   );
 }
 
-// 10a. GET /api/auth/pin-status - Check if an admin PIN is configured (NEVER returns the PIN or hash)
+// 10a. GET /api/auth/pin-status - Check if ADMIN_PIN is present in server environment
 router.get('/auth/pin-status', async (_req: Request, res: Response) => {
-  try {
-    const setting = await Setting.findOne({ key: 'admin_pin' });
-    const isConfigured = Boolean((setting?.value && String(setting.value).trim()) || (process.env.ADMIN_PIN && process.env.ADMIN_PIN.trim()));
-    res.json({ success: true, isConfigured });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+  const isConfigured = Boolean(process.env.ADMIN_PIN && process.env.ADMIN_PIN.trim());
+  res.json({ success: true, isConfigured });
 });
 
-// 10b. POST /api/auth/setup-pin - Initial First-Time Setup of Admin PIN (Stored as One-Way HMAC-SHA256 Hash)
-router.post('/auth/setup-pin', authLimiter, async (req: Request, res: Response) => {
-  try {
-    const { newPin } = req.body;
-    if (!newPin || String(newPin).trim().length < 4) {
-      return res.status(400).json({ success: false, message: 'नया एडमिन पिन कम से कम 4 अंकों का होना चाहिए' });
-    }
-
-    const existingSetting = await Setting.findOne({ key: 'admin_pin' });
-    const isConfigured = Boolean((existingSetting?.value && String(existingSetting.value).trim()) || (process.env.ADMIN_PIN && process.env.ADMIN_PIN.trim()));
-
-    if (isConfigured) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'एडमिन पिन पहले से कॉन्फ़िगर है। इसे बदलने के लिए पिन बदलें (Change PIN) का उपयोग करें।' 
-      });
-    }
-
-    // Store strictly as a salted cryptographic hash
-    const hashed = hashPin(newPin);
-    await Setting.findOneAndUpdate(
-      { key: 'admin_pin' },
-      { value: hashed, updatedAt: new Date() },
-      { upsert: true, new: true }
-    );
-
-    res.json({ 
-      success: true, 
-      message: 'एडमिन पिन सुरक्षित रूप से सेट किया गया!',
-      token: generateAdminJwt()
-    });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// 10c. POST /api/auth/verify-admin - Cryptographic Hash Verification & Signed JWT Issuance
+// 10b. POST /api/auth/verify-admin - Cryptographic Verification STRICTLY against process.env.ADMIN_PIN
 router.post('/auth/verify-admin', authLimiter, async (req: Request, res: Response) => {
   try {
     const { pin } = req.body;
@@ -905,78 +837,43 @@ router.post('/auth/verify-admin', authLimiter, async (req: Request, res: Respons
       return res.status(400).json({ success: false, message: 'पिन आवश्यक है' });
     }
 
-    const setting = await Setting.findOne({ key: 'admin_pin' });
-    const expectedPin = setting?.value || process.env.ADMIN_PIN;
+    const expectedPin = process.env.ADMIN_PIN?.trim();
 
     if (!expectedPin) {
-      return res.status(400).json({ 
+      return res.status(503).json({ 
         success: false, 
-        needsSetup: true,
-        message: 'एडमिन सुरक्षा पिन अभी सेट नहीं किया गया है। कृपया पहले पिन सेटअप करें।' 
+        message: 'सर्वर सुरक्षा अलर्ट: एडमिन पिन सर्वर एनवायरनमेंट (ADMIN_PIN) में सेट नहीं है।' 
       });
     }
 
-    if (verifyPinMatch(pin, String(expectedPin))) {
-      // If previous entry was plain text, seamlessly upgrade to hash
-      if (String(expectedPin) !== hashPin(pin)) {
-        await Setting.findOneAndUpdate(
-          { key: 'admin_pin' },
-          { value: hashPin(pin), updatedAt: new Date() }
-        );
-      }
+    // Constant-time cryptographic comparison (Defeats timing attacks, validates ONLY from ENV)
+    const bufInput = Buffer.from(crypto.createHmac('sha256', PIN_SALT).update(String(pin).trim()).digest('hex'));
+    const bufExpected = Buffer.from(crypto.createHmac('sha256', PIN_SALT).update(expectedPin).digest('hex'));
+    const isMatch = bufInput.length === bufExpected.length && crypto.timingSafeEqual(bufInput, bufExpected);
 
+    if (isMatch) {
       return res.json({ 
         success: true, 
-        message: 'प्रमाणीकरण सफल',
+        message: 'प्रमाणीकरण सफल (ENV Validated)',
         token: generateAdminJwt()
       });
     } else {
+      const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+      const userAgent = String(req.headers['user-agent'] || 'unknown').slice(0, 120);
+
+      recordSecurityIncident({
+        eventType: 'AUTH_PIN_FAILED',
+        severity: 'HIGH',
+        ip: clientIp,
+        userAgent,
+        method: 'POST',
+        path: '/api/auth/verify-admin',
+        statusCode: 401,
+        message: 'गलत एडमिन पिन दर्ज किया गया (Invalid PIN attempt)'
+      });
+
       return res.status(401).json({ success: false, message: 'गलत एडमिन पिन दर्ज किया गया' });
     }
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// 10d. POST /api/auth/change-pin - Securely Update PIN Hash (Requires Active Admin Token)
-router.post('/auth/change-pin', requireAdminAuth, authLimiter, async (req: Request, res: Response) => {
-  try {
-    const { currentPin, newPin } = req.body;
-    if (!currentPin || !newPin) {
-      return res.status(400).json({ success: false, message: 'वर्तमान और नया पिन दोनों आवश्यक हैं' });
-    }
-    if (String(newPin).trim().length < 4) {
-      return res.status(400).json({ success: false, message: 'नया पिन कम से कम 4 अंकों का होना चाहिए' });
-    }
-
-    const setting = await Setting.findOne({ key: 'admin_pin' });
-    const expectedPin = setting?.value || process.env.ADMIN_PIN;
-
-    if (!expectedPin) {
-      return res.status(400).json({ 
-        success: false, 
-        needsSetup: true,
-        message: 'एडमिन सुरक्षा पिन पहले से सेट नहीं है।' 
-      });
-    }
-
-    if (!verifyPinMatch(currentPin, String(expectedPin))) {
-      return res.status(401).json({ success: false, message: 'वर्तमान पिन गलत है' });
-    }
-
-    // Save as cryptographic hash
-    const hashedNew = hashPin(newPin);
-    await Setting.findOneAndUpdate(
-      { key: 'admin_pin' },
-      { value: hashedNew, updatedAt: new Date() },
-      { upsert: true, new: true }
-    );
-
-    res.json({ 
-      success: true, 
-      message: 'एडमिन पिन सफलतापूर्वक बदल दिया गया',
-      token: generateAdminJwt()
-    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1001,6 +898,53 @@ router.post('/ai/assistant', requireAdminAuth, aiLimiter, async (req: Request, r
     res.json({ success: true, data: result });
   } catch (err: any) {
     next(err);
+  }
+});
+
+// 13a. GET /api/admin/security/stats - Super Admin Security Telemetry & Live Incidents
+router.get('/admin/security/stats', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const stats = await getSecurityDashboardStats();
+    res.json({ success: true, data: stats });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 13b. DELETE /api/admin/security/logs - Super Admin Flush Security Incident Logs
+router.delete('/admin/security/logs', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const deletedCount = await clearSecurityLogs();
+    res.json({ 
+      success: true, 
+      message: `सफलतापूर्वक ${deletedCount} सुरक्षा लॉग साफ़ कर दिए गए।`,
+      deletedCount 
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 13c. POST /api/admin/security/test-probe - Super Admin Security Probe Simulation
+router.post('/admin/security/test-probe', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+    const userAgent = String(req.headers['user-agent'] || 'unknown').slice(0, 120);
+
+    recordSecurityIncident({
+      eventType: 'SECURITY_AUDIT_PROBE',
+      severity: 'LOW',
+      ip: clientIp,
+      userAgent,
+      method: 'POST',
+      path: '/api/admin/security/test-probe',
+      statusCode: 200,
+      message: 'एडमिन द्वारा सुरक्षा मॉनिटर टेस्ट प्रोब सफलतापूर्वक निष्पादित (Admin Security Test Probe)'
+    });
+
+    res.json({ success: true, message: 'सुरक्षा टेस्ट प्रोब रिकॉर्ड हो गया! नीचे सूची रिफ्रेश करें।' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

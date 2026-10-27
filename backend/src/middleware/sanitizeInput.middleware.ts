@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger.js';
+import { recordSecurityIncident } from '../services/securityAudit.service.js';
 
 function cleanObject(obj: any, onThreatDetected?: (key: string) => void): any {
   if (!obj || typeof obj !== 'object') {
@@ -39,7 +40,7 @@ function cleanObject(obj: any, onThreatDetected?: (key: string) => void): any {
 /**
  * Global Request Sanitizer Middleware
  * Protects MongoDB against NoSQL Injection and null-byte bypasses.
- * Logs forensic security warnings when malicious operators are stripped.
+ * Logs and persists forensic security warnings when malicious operators are stripped.
  */
 export function sanitizeInputs(req: Request, _res: Response, next: NextFunction) {
   const threats: string[] = [];
@@ -62,9 +63,23 @@ export function sanitizeInputs(req: Request, _res: Response, next: NextFunction)
   if (threats.length > 0) {
     const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
     const userAgent = String(req.headers['user-agent'] || 'unknown').slice(0, 120);
+    
     logger.warn(
       `🛡️ [NOSQL_INJECTION_DEFLECTED] IP=${clientIp} UA="${userAgent}" ${req.method} ${req.originalUrl} - Stripped operators: [${threats.join(', ')}]`
     );
+
+    // Save incident to MongoDB Atlas
+    recordSecurityIncident({
+      eventType: 'NOSQL_INJECTION_DEFLECTED',
+      severity: 'HIGH',
+      ip: clientIp,
+      userAgent,
+      method: req.method,
+      path: req.originalUrl,
+      statusCode: 200,
+      message: `NoSQL Injection operators stripped: [${threats.join(', ')}]`,
+      details: threats.join(', ')
+    });
   }
 
   next();

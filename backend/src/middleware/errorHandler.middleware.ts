@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../errors/AppError.js';
 import { logger } from '../utils/logger.js';
 import { redactSecretKeys, getSafeGeminiErrorMessage } from '../utils/sanitize.js';
+import { recordSecurityIncident } from '../services/securityAudit.service.js';
 
 export function errorHandler(
   err: any,
@@ -79,6 +80,37 @@ export function errorHandler(
     logger.warn(
       `🛡️ [BLOCKED_${statusCode}] [${errorCode}] IP=${clientIp} UA="${userAgent}" ${req.method} ${req.originalUrl} - ${sanitizedMessage}`
     );
+
+    // Save security incidents to MongoDB Atlas for Super Admin monitoring
+    const securityEventCodes = [
+      'BASE64_PAYLOAD_FORBIDDEN',
+      'PAYLOAD_TOO_LARGE',
+      'PAYLOAD_TOO_COMPLEX',
+      'STRING_LENGTH_EXCEEDED',
+      'INVALID_URL_SCHEME',
+      'AUTH_RATE_LIMIT_EXCEEDED',
+      'AI_RATE_LIMIT_EXCEEDED',
+      'CONTENT_WRITE_LIMIT_EXCEEDED',
+      'TOKEN_EXPIRED_OR_INVALID',
+      'INVALID_JSON'
+    ];
+
+    if (securityEventCodes.includes(errorCode)) {
+      const severity = ['BASE64_PAYLOAD_FORBIDDEN', 'PAYLOAD_TOO_COMPLEX', 'AUTH_RATE_LIMIT_EXCEEDED'].includes(errorCode)
+        ? 'CRITICAL'
+        : 'HIGH';
+
+      recordSecurityIncident({
+        eventType: errorCode,
+        severity,
+        ip: clientIp,
+        userAgent,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode,
+        message: sanitizedMessage
+      });
+    }
   } else {
     logger.error(
       `💥 [ERROR_${statusCode}] [${errorCode}] IP=${clientIp} UA="${userAgent}" ${req.method} ${req.originalUrl} - ${sanitizedMessage}`

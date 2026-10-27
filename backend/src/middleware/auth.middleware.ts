@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { Setting } from '../models/Setting.model.js';
 
 export interface AdminAuthRequest extends Request {
   adminUser?: {
@@ -10,13 +9,17 @@ export interface AdminAuthRequest extends Request {
   };
 }
 
+export interface SuperAdminAuthRequest extends Request {
+  superAdminUser?: {
+    role: string;
+    level: string;
+    iat?: number;
+  };
+}
+
 /**
  * Robust JWT Authentication Middleware for Editorial Desk
- * Defends against:
- * 1. None-algorithm bypass (strict HS256 enforcement)
- * 2. Signature forgery & tampering
- * 3. Expired tokens
- * 4. Stale tokens after PIN change (instant revocation check against DB)
+ * Validates HS256 signed tokens for admin or super_admin
  */
 export async function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
   try {
@@ -38,38 +41,25 @@ export async function requireAdminAuth(req: Request, res: Response, next: NextFu
 
     const secret = process.env.JWT_SECRET || 'anp_editorial_desk_pin_hmac_salt_2026';
 
-    // Strictly enforce HS256 algorithm to defeat 'none' algorithm and signature confusion attacks
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] }) as {
       role: string;
-      desk: string;
+      desk?: string;
       iat?: number;
     };
 
-    if (decoded.role !== 'admin') {
+    // Both 'admin' and 'super_admin' can access regular admin routes
+    if (decoded.role !== 'admin' && decoded.role !== 'super_admin') {
       return res.status(403).json({
         success: false,
         error: 'Forbidden: इस कार्य हेतु एडमिन अधिकार आवश्यक हैं'
       });
     }
 
-    // Instant Token Revocation Check:
-    // If the Admin PIN was changed after this token was issued, immediately invalidate it
-    if (decoded.iat) {
-      const pinSetting = await Setting.findOne({ key: 'admin_pin' });
-      if (pinSetting && pinSetting.updatedAt) {
-        const pinUpdatedAtSeconds = Math.floor(new Date(pinSetting.updatedAt).getTime() / 1000);
-        // 2-second grace margin for server clock drift
-        if (decoded.iat < pinUpdatedAtSeconds - 2) {
-          return res.status(401).json({
-            success: false,
-            revoked: true,
-            error: 'Session Expired: एडमिन पिन बदल दिया गया है, कृपया नए पिन से पुनः लॉगिन करें'
-          });
-        }
-      }
-    }
-
-    (req as AdminAuthRequest).adminUser = decoded;
+    (req as AdminAuthRequest).adminUser = {
+      role: decoded.role,
+      desk: decoded.desk || 'editorial',
+      iat: decoded.iat
+    };
     next();
   } catch (err: any) {
     if (err.name === 'TokenExpiredError') {
@@ -86,3 +76,60 @@ export async function requireAdminAuth(req: Request, res: Response, next: NextFu
   }
 }
 
+/**
+ * Strict Super Admin / Root Privilege Authorization Middleware
+ * Disallows regular editorial admins from accessing security governance and telemetry.
+ */
+export async function requireSuperAdminAuth(req: Request, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: सुपर एडमिन प्रमाणीकरण टोकन (JWT) आवश्यक है'
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: अमान्य टोकन प्रारूप'
+      });
+    }
+
+    const secret = process.env.JWT_SECRET || 'anp_editorial_desk_pin_hmac_salt_2026';
+
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] }) as {
+      role: string;
+      level?: string;
+      iat?: number;
+    };
+
+    if (decoded.role !== 'super_admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: इस कार्य हेतु सुपर एडमिन (Root) विशेषाधिकार आवश्यक हैं'
+      });
+    }
+
+    (req as SuperAdminAuthRequest).superAdminUser = {
+      role: decoded.role,
+      level: decoded.level || 'root',
+      iat: decoded.iat
+    };
+    next();
+  } catch (err: any) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        expired: true,
+        error: 'Session Expired: सुपर एडमिन सत्र समाप्त हो गया है'
+      });
+    }
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized: अमान्य सुपर एडमिन टोकन'
+    });
+  }
+}
