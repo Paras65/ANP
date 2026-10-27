@@ -759,4 +759,59 @@ router.delete('/mandi/:id', async (req: Request, res: Response) => {
   }
 });
 
+// 10. POST /api/auth/verify-admin - Secure PIN Verification for Editorial Desk
+router.post('/auth/verify-admin', async (req: Request, res: Response) => {
+  try {
+    const { pin } = req.body;
+    if (!pin) {
+      return res.status(400).json({ success: false, message: 'पिन आवश्यक है' });
+    }
+
+    const setting = await Setting.findOne({ key: 'admin_pin' });
+    const expectedPin = setting?.value || process.env.ADMIN_PIN || '7788';
+
+    if (String(pin).trim() === String(expectedPin).trim()) {
+      return res.json({ 
+        success: true, 
+        message: 'प्रमाणीकरण सफल',
+        token: `anp_auth_${Date.now()}`
+      });
+    } else {
+      return res.status(401).json({ success: false, message: 'गलत एडमिन पिन दर्ज किया गया' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10b. POST /api/auth/change-pin - Change Admin PIN
+router.post('/auth/change-pin', async (req: Request, res: Response) => {
+  try {
+    const { currentPin, newPin } = req.body;
+    if (!currentPin || !newPin) {
+      return res.status(400).json({ success: false, message: 'वर्तमान और नया पिन दोनों आवश्यक हैं' });
+    }
+    if (String(newPin).trim().length < 4) {
+      return res.status(400).json({ success: false, message: 'नया पिन कम से कम 4 अंकों का होना चाहिए' });
+    }
+
+    const setting = await Setting.findOne({ key: 'admin_pin' });
+    const expectedPin = setting?.value || process.env.ADMIN_PIN || '7788';
+
+    if (String(currentPin).trim() !== String(expectedPin).trim()) {
+      return res.status(401).json({ success: false, message: 'वर्तमान पिन गलत है' });
+    }
+
+    await Setting.findOneAndUpdate(
+      { key: 'admin_pin' },
+      { value: String(newPin).trim(), updatedAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    res.json({ success: true, message: 'एडमिन पिन सफलतापूर्वक बदल दिया गया' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

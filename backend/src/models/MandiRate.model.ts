@@ -25,3 +25,4 @@ const MandiRateSchema = new Schema<IMandiRate>({
 MandiRateSchema.index({ crop: 1, mandi: 1 });
 
 export const MandiRate = model<IMandiRate>('MandiRate', MandiRateSchema);
+
