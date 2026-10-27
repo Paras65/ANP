@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Heart, 
@@ -50,6 +50,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     return idx >= 0 ? idx : 0;
   });
 
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>(() => {
@@ -88,8 +89,46 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   });
   const [newComment, setNewComment] = useState('');
   const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
+
+  // Send control commands directly into YouTube IFrame without reload/restart
+  const sendYouTubeCommand = (func: string, args: any[] = []) => {
+    try {
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ event: 'command', func, args }),
+        '*'
+      );
+    } catch (err) {
+      console.warn('YouTube postMessage error:', err);
+    }
+  };
+
+  // Toggle Mute without restarting the video
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (nextMuted) {
+      sendYouTubeCommand('mute');
+    } else {
+      sendYouTubeCommand('unMute');
+      sendYouTubeCommand('setVolume', [100]);
+      sendYouTubeCommand('playVideo');
+    }
+  };
+
+  // Toggle Play / Pause without restarting
+  const togglePlay = () => {
+    const nextPlaying = !isPlaying;
+    setIsPlaying(nextPlaying);
+    if (nextPlaying) {
+      sendYouTubeCommand('playVideo');
+    } else {
+      sendYouTubeCommand('pauseVideo');
+    }
+  };
 
   const currentReel = posts[currentIndex] || posts[0];
   const isCurrentLiked = !!likedPosts[currentReel.id];
@@ -159,24 +198,31 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     return () => window.removeEventListener('wheel', handleWheel);
   }, [currentIndex]);
 
-  // Touch Swipe detection
+  // Touch Swipe detection (Ultra-responsive on mobile screens)
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartY(e.touches[0].clientY);
+    const touch = e.touches[0];
+    setTouchStartY(touch.clientY);
+    setTouchStartX(touch.clientX);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartY === null) return;
-    const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchStartY - touchEndY;
+    if (touchStartY === null || touchStartX === null) return;
+    const touch = e.changedTouches[0];
+    const diffY = touchStartY - touch.clientY;
+    const diffX = touchStartX - touch.clientX;
 
-    if (diff > 40) {
-      // Swiped UP -> Next Reel
-      handleNext();
-    } else if (diff < -40) {
-      // Swiped DOWN -> Previous Reel
-      handlePrev();
+    // Detect vertical swipe (diffY threshold: 30px, vertical dominance over horizontal)
+    if (Math.abs(diffY) > 30 && Math.abs(diffY) > Math.abs(diffX) * 0.7) {
+      if (diffY > 0) {
+        // Swiped UP -> Next Reel
+        handleNext();
+      } else {
+        // Swiped DOWN -> Previous Reel
+        handlePrev();
+      }
     }
     setTouchStartY(null);
+    setTouchStartX(null);
   };
 
   // Like Toggle with LocalStorage persistence
@@ -245,27 +291,25 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
       {/* REEL PHONE CONTAINER */}
       <div 
         className="relative w-full h-full sm:h-[92vh] sm:max-w-[410px] sm:rounded-[36px] overflow-hidden shadow-2xl bg-slate-950 flex flex-col justify-between z-10 border border-slate-800"
+        style={{ touchAction: 'none' }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
         
-        {/* REEL VIDEO / VISUAL BACKGROUND */}
-        <div 
-          className="absolute inset-0 bg-black overflow-hidden cursor-pointer"
-          onClick={() => setIsPlaying(!isPlaying)}
-          onDoubleClick={handleDoubleTap}
-        >
+        {/* 1. REEL VIDEO / VISUAL BACKGROUND (Z-0, POINTER-EVENTS-NONE) */}
+        <div className="absolute inset-0 bg-black overflow-hidden pointer-events-none select-none z-0">
           {/* Video, YouTube Shorts, Instagram Embed, or Image Background */}
           {(() => {
             const ytId = currentReel.youtubeId || (currentReel.embedUrl?.includes('/embed/') ? currentReel.embedUrl.split('/embed/')[1]?.split('?')[0] : null);
             if (ytId) {
               return (
-                <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
+                <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center pointer-events-none">
                   <iframe
-                    key={`${ytId}-${isMuted ? 'muted' : 'sound'}`}
-                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${isMuted ? '1' : '0'}&controls=0&loop=1&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3`}
+                    ref={iframeRef}
+                    key={ytId}
+                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${isMuted ? '1' : '0'}&controls=0&loop=1&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
                     title={currentReel.caption}
-                    className="w-[170%] h-[120%] -ml-[35%] -mt-[10%] object-cover border-0"
+                    className="w-[170%] h-[120%] -ml-[35%] -mt-[10%] object-cover border-0 pointer-events-none"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   ></iframe>
@@ -274,11 +318,11 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
             }
             if (currentReel.postUrl && currentReel.postUrl.includes('instagram.com/reel/')) {
               return (
-                <div className="w-full h-full flex items-center justify-center bg-black">
+                <div className="w-full h-full flex items-center justify-center bg-black pointer-events-none">
                   <iframe
                     src={`${currentReel.postUrl.replace(/\/$/, '')}/embed`}
                     title={currentReel.caption}
-                    className="w-full h-full border-0"
+                    className="w-full h-full border-0 pointer-events-none"
                     allowFullScreen
                     scrolling="no"
                     allow="autoplay; encrypted-media"
@@ -302,59 +346,67 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
               <img 
                 src={currentReel.imageUrl} 
                 alt={currentReel.caption}
-                className="w-full h-full object-cover animate-in fade-in duration-500" 
+                className="w-full h-full object-cover animate-in fade-in duration-500 pointer-events-none" 
               />
             );
           })()}
 
           {/* Vignette Overlay Gradients */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90 pointer-events-none"></div>
-
-          {/* Floating Tap-to-Unmute Pill when sound is muted */}
-          {isMuted && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMuted(false);
-              }}
-              className="absolute top-16 left-1/2 -translate-x-1/2 z-30 bg-black/80 hover:bg-black backdrop-blur-md border border-pink-500/50 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl transition active:scale-95 animate-pulse"
-            >
-              <VolumeX size={14} className="text-pink-400" />
-              <span>🔊 टैप करके आवाज़ चालू करें</span>
-            </button>
-          )}
-
-          {/* Floating Swipe Up Hint Badge */}
-          {showSwipeHint && (
-            <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 pointer-events-none animate-bounce bg-black/80 backdrop-blur-md border border-pink-500/50 text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl">
-              <ChevronUp size={14} className="text-pink-400 animate-pulse" />
-              <span>ऊपर स्वाइप करें अगली रील के लिए</span>
-            </div>
-          )}
-
-          {/* Big Center Heart Burst Animation on Like */}
-          {showHeartBurst && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-              <Heart size={90} className="fill-red-500 text-red-500 animate-ping opacity-90 filter drop-shadow-lg" />
-            </div>
-          )}
-
-          {/* Play / Pause Indicator on Tap */}
-          {!isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-              <div className="w-16 h-16 rounded-full bg-black/60 backdrop-blur text-white flex items-center justify-center shadow-2xl">
-                <Play size={28} className="fill-white ml-1" />
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* 1. TOP CONTROLS BAR */}
-        <div className="relative z-30 p-4 pt-5 flex items-center justify-between text-white">
+        {/* 2. FULLSCREEN GESTURE LAYER FOR TOUCH SWIPES & TAPS (Z-20) */}
+        <div 
+          className="absolute inset-0 z-20 cursor-pointer"
+          style={{ touchAction: 'none' }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onClick={togglePlay}
+          onDoubleClick={handleDoubleTap}
+        />
+
+        {/* 3. FLOATING HUD NOTIFICATIONS & BADGES (Z-30) */}
+        {/* Floating Tap-to-Unmute Pill when sound is muted */}
+        {isMuted && (
+          <button
+            onClick={toggleMute}
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-30 bg-black/85 hover:bg-black backdrop-blur-md border border-pink-500/50 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl transition active:scale-95 animate-pulse cursor-pointer pointer-events-auto"
+          >
+            <VolumeX size={14} className="text-pink-400" />
+            <span>🔊 टैप करके आवाज़ चालू करें</span>
+          </button>
+        )}
+
+        {/* Floating Swipe Up Hint Badge */}
+        {showSwipeHint && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 pointer-events-none animate-bounce bg-black/80 backdrop-blur-md border border-pink-500/50 text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl">
+            <ChevronUp size={14} className="text-pink-400 animate-pulse" />
+            <span>ऊपर स्वाइप करें अगली रील के लिए</span>
+          </div>
+        )}
+
+        {/* Big Center Heart Burst Animation on Like */}
+        {showHeartBurst && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+            <Heart size={90} className="fill-red-500 text-red-500 animate-ping opacity-90 filter drop-shadow-lg" />
+          </div>
+        )}
+
+        {/* Play / Pause Indicator on Tap */}
+        {!isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <div className="w-16 h-16 rounded-full bg-black/60 backdrop-blur text-white flex items-center justify-center shadow-2xl">
+              <Play size={28} className="fill-white ml-1" />
+            </div>
+          </div>
+        )}
+
+        {/* 4. TOP CONTROLS BAR (Z-30) */}
+        <div className="relative z-30 p-4 pt-5 flex items-center justify-between text-white pointer-events-auto">
           <div className="flex items-center gap-2">
             <button 
               onClick={onClose}
-              className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur text-white transition active:scale-90"
+              className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur text-white transition active:scale-90 cursor-pointer"
               title="Close Reels"
             >
               <X size={20} />
@@ -369,8 +421,8 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           <div className="flex items-center gap-2">
             {/* Audio Mute/Unmute */}
             <button 
-              onClick={() => setIsMuted(!isMuted)}
-              className="p-2 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur text-white transition active:scale-90"
+              onClick={toggleMute}
+              className="p-2 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur text-white transition active:scale-90 cursor-pointer"
               title={isMuted ? "Unmute" : "Mute"}
             >
               {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
