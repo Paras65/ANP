@@ -44,13 +44,24 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
 }) => {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('anp_super_admin_auth') === 'true' || 
-           sessionStorage.getItem('anp_super_admin_auth') === 'true';
+    const token = sessionStorage.getItem('anp_super_admin_token') || localStorage.getItem('anp_super_admin_token');
+    return Boolean(token);
   });
   const [masterPin, setMasterPin] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
+
+  // Restore session token if available
+  useEffect(() => {
+    const token = sessionStorage.getItem('anp_super_admin_token') || localStorage.getItem('anp_super_admin_token');
+    if (token) {
+      setSuperAdminToken(token);
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
 
   // Navigation State (Strict ENV Control — No setup/reset tabs)
   const [activeTab, setActiveTab] = useState<'security' | 'database'>('security');
@@ -96,8 +107,10 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
       if (res.data?.success && res.data?.token) {
         setSuperAdminToken(res.data.token);
         if (rememberSession) {
+          localStorage.setItem('anp_super_admin_token', res.data.token);
           localStorage.setItem('anp_super_admin_auth', 'true');
         } else {
+          sessionStorage.setItem('anp_super_admin_token', res.data.token);
           sessionStorage.setItem('anp_super_admin_auth', 'true');
         }
         setIsAuthenticated(true);
@@ -115,6 +128,8 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
   // Logout Handler
   const handleLogout = () => {
     setSuperAdminToken(null);
+    localStorage.removeItem('anp_super_admin_token');
+    sessionStorage.removeItem('anp_super_admin_token');
     localStorage.removeItem('anp_super_admin_auth');
     sessionStorage.removeItem('anp_super_admin_auth');
     setIsAuthenticated(false);

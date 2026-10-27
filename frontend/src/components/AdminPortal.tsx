@@ -107,9 +107,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onDeleteMandiRate
 }) => {
   const [activeTab, setActiveTab] = useState<'create' | 'articles' | 'breaking' | 'reporters' | 'media' | 'mandi'>('create');
-  // Security & Authentication State
+  // Security & Authentication State (Strict Token-Based State)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('anp_admin_auth') === 'true' || sessionStorage.getItem('anp_admin_auth') === 'true';
+    const token = sessionStorage.getItem('anp_admin_token') || localStorage.getItem('anp_admin_token');
+    return Boolean(token);
   });
   const [enteredPin, setEnteredPin] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
@@ -214,11 +215,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // Restore session token if available
   useEffect(() => {
-    // Strict Zero LocalStorage Token Policy: purge any persistent token
-    localStorage.removeItem('anp_admin_token');
-    const existingSessionToken = sessionStorage.getItem('anp_admin_token');
-    if (existingSessionToken) {
-      setAuthToken(existingSessionToken);
+    const token = sessionStorage.getItem('anp_admin_token') || localStorage.getItem('anp_admin_token');
+    if (token) {
+      setAuthToken(token);
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
     }
   }, []);
 
@@ -238,13 +240,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       if (res.data?.success) {
         if (res.data?.token) {
           setAuthToken(res.data.token);
-          sessionStorage.setItem('anp_admin_token', res.data.token);
-        }
-        localStorage.removeItem('anp_admin_token'); // NEVER store token in localStorage
-        if (rememberMe) {
-          localStorage.setItem('anp_admin_auth', 'true');
-        } else {
-          sessionStorage.setItem('anp_admin_auth', 'true');
+          if (rememberMe) {
+            localStorage.setItem('anp_admin_token', res.data.token);
+            localStorage.setItem('anp_admin_auth', 'true');
+          } else {
+            sessionStorage.setItem('anp_admin_token', res.data.token);
+            sessionStorage.setItem('anp_admin_auth', 'true');
+          }
         }
         setIsAuthenticated(true);
         return;

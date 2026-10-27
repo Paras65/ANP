@@ -25,7 +25,15 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   const [likes, setLikes] = useState(() => Math.floor((article.views || 1000) / 12) + 42);
   const [isLiked, setIsLiked] = useState(false);
 
-  // Prevent background page from rubber-banding / scrolling while modal is open
+  // Stop any active speech synthesis
+  const stopAudio = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsPlayingAudio(false);
+  };
+
+  // Prevent background page from rubber-banding / scrolling & cancel speech on modal unmount
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -33,11 +41,82 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     return () => {
       document.body.style.overflow = originalOverflow;
       document.body.classList.remove('modal-open');
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
 
+  // Real Hindi AI Audio Reader (Web Speech API)
   const toggleAudio = () => {
-    setIsPlayingAudio(!isPlayingAudio);
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      alert('आपके ब्राउज़र में AI ऑडियो वाचक (Text-to-Speech) समर्थित नहीं है।');
+      return;
+    }
+
+    if (isPlayingAudio) {
+      stopAudio();
+      return;
+    }
+
+    // Clean & normalize Hindi news text for speech
+    const headline = article.title ? `${article.title}। ` : '';
+    const excerpt = article.excerpt ? `${article.excerpt}। ` : '';
+    const body = article.content || '';
+    const fullRaw = `${headline}${excerpt}${body}`;
+    const cleanText = fullRaw
+      .replace(/<[^>]+>/g, '') // strip HTML tags
+      .replace(/https?:\/\/\S+/g, '') // strip URLs
+      .replace(/[*_#`~[\]()]/g, ' ') // strip markdown
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) return;
+
+    // Reset previous utterances
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'hi-IN';
+    utterance.rate = 0.95; // Natural Hindi news pace
+    utterance.pitch = 1.0;
+
+    // Pick a natural Hindi voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const hindiVoice = voices.find(v => 
+      v.lang === 'hi-IN' || 
+      v.lang === 'hi_IN' || 
+      v.lang.startsWith('hi') || 
+      v.name.toLowerCase().includes('hindi') ||
+      v.name.toLowerCase().includes('swara') ||
+      v.name.toLowerCase().includes('lekha')
+    );
+    if (hindiVoice) {
+      utterance.voice = hindiVoice;
+    }
+
+    utterance.onstart = () => {
+      setIsPlayingAudio(true);
+    };
+
+    utterance.onend = () => {
+      setIsPlayingAudio(false);
+    };
+
+    utterance.onerror = (e) => {
+      if (e.error !== 'interrupted' && e.error !== 'canceled') {
+        console.warn('SpeechSynthesis error:', e);
+      }
+      setIsPlayingAudio(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+    setIsPlayingAudio(true);
+  };
+
+  const handleClose = () => {
+    stopAudio();
+    onClose();
   };
 
   const handleLike = () => {
@@ -62,7 +141,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
       
       {/* Backdrop click to close */}
-      <div className="absolute inset-0" onClick={onClose}></div>
+      <div className="absolute inset-0" onClick={handleClose}></div>
 
       {/* Sheet Container: Bottom Sheet on Mobile, Centered Modal on Tablet/Desktop */}
       <div className={`relative w-full max-w-2xl sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl border transition-all z-10 max-h-[92vh] sm:max-h-[85vh] flex flex-col ${
@@ -114,23 +193,25 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
               </button>
             </div>
 
-            {/* Audio Listen Simulation */}
+            {/* Audio Listen Button */}
             <button 
               onClick={toggleAudio}
-              className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition ${
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl transition active:scale-95 shadow cursor-pointer ${
                 isPlayingAudio 
-                  ? 'bg-amber-600 text-white animate-pulse' 
-                  : isDark ? 'bg-slate-800 text-slate-300 hover:text-white' : 'bg-slate-200 text-slate-700'
+                  ? 'bg-amber-600 hover:bg-amber-500 text-white animate-pulse' 
+                  : isDark 
+                    ? 'bg-slate-800 text-amber-400 hover:bg-slate-700 hover:text-white border border-slate-700' 
+                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300'
               }`}
-              title="Listen to News (Hindi TTS)"
+              title={isPlayingAudio ? 'ऑडियो रोकें' : 'हिंदी AI वाचक (खबर सुनें)'}
             >
-              {isPlayingAudio ? <VolumeX size={13} /> : <Volume2 size={13} />}
-              <span className="hidden sm:inline">{isPlayingAudio ? 'रुकें' : 'सुनें'}</span>
+              {isPlayingAudio ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              <span>{isPlayingAudio ? 'रुकें' : '🎧 सुनें'}</span>
             </button>
 
             {/* Close Button */}
             <button 
-              onClick={onClose}
+              onClick={handleClose}
               className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition ml-1"
             >
               <X size={20} />
@@ -143,12 +224,19 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           
           {/* Audio Player notification banner if active */}
           {isPlayingAudio && (
-            <div className="p-3 bg-amber-950/50 border border-amber-800 rounded-2xl flex items-center justify-between text-xs text-amber-300 animate-in fade-in">
-              <span className="flex items-center gap-2">
-                <Volume2 size={15} className="animate-spin text-amber-400" />
-                <span>AI ऑडियो वाचक: खबर का पाठ किया जा रहा है...</span>
+            <div className="p-3 bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border border-amber-600/60 rounded-2xl flex items-center justify-between gap-3 text-xs text-amber-200 animate-in fade-in shadow-lg">
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                </span>
+                <Volume2 size={16} className="text-amber-400 shrink-0 animate-pulse" />
+                <span className="font-bold truncate">AI ऑडियो वाचक: समाचार का पाठ चल रहा है...</span>
               </span>
-              <button onClick={() => setIsPlayingAudio(false)} className="text-amber-400 font-bold hover:underline">
+              <button 
+                onClick={stopAudio} 
+                className="shrink-0 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition active:scale-95 shadow cursor-pointer"
+              >
                 बंद करें
               </button>
             </div>
