@@ -59,6 +59,14 @@ export const Header: React.FC<HeaderProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Real-time dynamic Hindi date (e.g. मंगलवार, 27 अक्टूबर 2026)
+  const todayHindiDate = new Date().toLocaleDateString('hi-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
   const handleCategoryClick = (cat: string) => {
     setSelectedCategory(cat);
     if (setActiveTab && activeTab !== 'home') {
@@ -95,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">मुख्यालय: कवर्धा (कबीरधाम)</span>
             </span>
             <span className="hidden md:inline text-slate-500">|</span>
-            <span className="hidden md:inline">12 अक्टूबर 2026</span>
+            <span className="hidden md:inline capitalize">{todayHindiDate}</span>
             <span className="hidden lg:inline text-slate-500">|</span>
             <span className="hidden lg:inline text-amber-500 font-medium">🌤️ 28°C</span>
           </div>
