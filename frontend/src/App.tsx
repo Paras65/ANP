@@ -9,7 +9,8 @@ import {
   Bookmark,
   Sparkles,
   Search,
-  TrendingUp
+  TrendingUp,
+  Mic
 } from 'lucide-react';
 
 import { Header } from './components/Header';
@@ -28,6 +29,7 @@ import { DistrictPickerModal } from './components/DistrictPickerModal';
 import { BottomNav } from './components/BottomNav';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import type { TabType } from './components/BottomNav';
+import { useVoiceTyping } from './hooks/useVoiceTyping';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './components/SocialIcons';
 
 import { 
@@ -72,6 +74,19 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [showDistrictModal, setShowDistrictModal] = useState(false);
+
+  // Voice Search Hook for Public Portal
+  const {
+    isListening: isListeningSearch,
+    isSupported: isVoiceSupported,
+    toggleListening: toggleVoiceSearch
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setSearchQuery(text.replace(/[.,]/g, '').trim());
+      setIsSearching(true);
+    }
+  });
 
   // Auto-Sync YouTube Channel ID (Ambition News)
   const [youtubeChannelId, setYoutubeChannelId] = useState<string>(() => {
@@ -1108,15 +1123,27 @@ export const App: React.FC = () => {
 
                   {/* Inline Search Input if open */}
                   {isSearching && (
-                    <div className="w-full md:w-64 animate-in fade-in">
+                    <div className="w-full md:w-64 animate-in fade-in relative">
                       <input 
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="खबरें खोजें (जैसे: कवर्धा, बोनस, मंडी)..."
-                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-red-500 font-medium placeholder:text-slate-500"
+                        placeholder="खबरें खोजें (जैसे: कवर्धा, बोनस)..."
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-3 pr-8 py-1.5 text-xs text-white outline-none focus:border-red-500 font-medium placeholder:text-slate-500"
                         autoFocus
                       />
+                      {isVoiceSupported && (
+                        <button
+                          type="button"
+                          onClick={toggleVoiceSearch}
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center transition ${
+                            isListeningSearch ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-white'
+                          }`}
+                          title="बोलकर खबर खोजें (Voice Search)"
+                        >
+                          <Mic size={13} className={isListeningSearch ? 'animate-bounce text-red-500' : ''} />
+                        </button>
+                      )}
                     </div>
                   )}
 

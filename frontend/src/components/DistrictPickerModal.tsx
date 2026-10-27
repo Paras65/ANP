@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, MapPin, Check, Building2, Sparkles } from 'lucide-react';
+import { X, Search, MapPin, Check, Building2, Sparkles, Mic } from 'lucide-react';
 import type { DistrictItem } from '../types';
+import { useVoiceTyping } from '../hooks/useVoiceTyping';
 
 export const ALL_CG_DISTRICTS: DistrictItem[] = [
   { _id: 'cg-kwd', name: 'Kabirdham', nameHindi: 'कबीरधाम (कवर्धा)', slug: 'kabirdham', state: 'chhattisgarh' },
@@ -119,6 +120,17 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
   const [activeTab, setActiveTab] = useState<'chhattisgarh' | 'madhya-pradesh'>(selectedState);
   const [search, setSearch] = useState('');
 
+  const {
+    isListening: isListeningDistrict,
+    isSupported: isVoiceSupported,
+    toggleListening: toggleVoiceDistrict
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setSearch(text.replace(/[.,]/g, '').trim());
+    }
+  });
+
   useEffect(() => {
     setActiveTab(selectedState);
   }, [selectedState]);
@@ -217,17 +229,31 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={`जिला खोजें (उदा. कवर्धा, रायपुर, भोपाल, इंदौर)...`}
-              className="w-full bg-[#05070e] border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition"
+              className="w-full bg-[#05070e] border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-20 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition"
               autoFocus
             />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs"
-              >
-                हटाएं
-              </button>
-            )}
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              {isVoiceSupported && (
+                <button
+                  type="button"
+                  onClick={toggleVoiceDistrict}
+                  className={`p-1 rounded transition ${
+                    isListeningDistrict ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="बोलकर जिला खोजें"
+                >
+                  <Mic size={14} className={isListeningDistrict ? 'animate-bounce text-red-500' : ''} />
+                </button>
+              )}
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="text-slate-400 hover:text-white text-xs px-1"
+                >
+                  हटाएं
+                </button>
+              )}
+            </div>
           </div>
 
         </div>

@@ -188,6 +188,62 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   });
 
+  // Voice Typing for Quick Breaking Ticker
+  const [breakingInterim, setBreakingInterim] = useState('');
+  const {
+    isListening: isListeningBreaking,
+    toggleListening: toggleVoiceBreaking
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setBreakingHeadline((prev) => (prev ? prev + ' ' + text : text));
+    },
+    onInterim: (text) => {
+      setBreakingInterim(text);
+    }
+  });
+
+  // Voice Typing for YouTube Video Headline
+  const [ytTitleInterim, setYtTitleInterim] = useState('');
+  const {
+    isListening: isListeningYtTitle,
+    toggleListening: toggleVoiceYtTitle
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setYtTitle((prev) => (prev ? prev + ' ' + text : text));
+    },
+    onInterim: (text) => {
+      setYtTitleInterim(text);
+    }
+  });
+
+  // Voice Typing for Reel Caption
+  const [reelCaptionInterim, setReelCaptionInterim] = useState('');
+  const {
+    isListening: isListeningReelCaption,
+    toggleListening: toggleVoiceReelCaption
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setReelCaption((prev) => (prev ? prev + ' ' + text : text));
+    },
+    onInterim: (text) => {
+      setReelCaptionInterim(text);
+    }
+  });
+
+  // Voice Typing for Admin Article Search
+  const {
+    isListening: isListeningArticleSearch,
+    toggleListening: toggleVoiceArticleSearch
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setArticleSearchQuery(text);
+    }
+  });
+
   // AI Assistant Handlers (Dynamic Google Gemini Backend)
   const handleGenerateHeadlines = async () => {
     setIsGeneratingAI(true);
@@ -1509,10 +1565,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     value={articleSearchQuery}
                     onChange={(e) => setArticleSearchQuery(e.target.value)}
                     placeholder="खबर के शीर्षक या रिपोर्टर के नाम से खोजें..."
-                    className={`w-full rounded-xl pl-9 pr-3 py-2 text-xs outline-none transition ${
+                    className={`w-full rounded-xl pl-9 pr-9 py-2 text-xs outline-none transition ${
     isDark ? 'bg-[#05070e] border border-white/15 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
   }`}
                   />
+                  {isVoiceSupported && (
+                    <button
+                      type="button"
+                      onClick={toggleVoiceArticleSearch}
+                      className={`absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center transition ${
+                        isListeningArticleSearch ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="बोलकर खबर खोजें"
+                    >
+                      <Mic size={13} className={isListeningArticleSearch ? 'animate-bounce text-red-500' : ''} />
+                    </button>
+                  )}
                 </div>
 
                 <div>
@@ -1636,24 +1704,49 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <span>तुरंत ब्रेकिंग फ्लैश जोड़ें (Live Ticker)</span>
               </h2>
 
-              <form onSubmit={handleAddQuickBreaking} className="flex gap-2 text-xs">
-                <input
-                  type="text"
-                  value={breakingHeadline}
-                  onChange={(e) => setBreakingHeadline(e.target.value)}
-                  placeholder="जैसे: कवर्धा में भारी बारिश के बाद प्रशासन ने कलेक्टोरेट में कंट्रोल रूम बनाया..."
-                  required
-                  className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold outline-none transition ${
-    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
-  }`}
-                />
-                <button
-                  type="submit"
-                  className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow"
-                >
-                  <Plus size={14} />
-                  <span>टिकर में जोड़ें</span>
-                </button>
+              <form onSubmit={handleAddQuickBreaking} className="space-y-2 text-xs">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={breakingHeadline}
+                      onChange={(e) => setBreakingHeadline(e.target.value)}
+                      placeholder="जैसे: कवर्धा में भारी बारिश के बाद प्रशासन ने कलेक्टोरेट में कंट्रोल रूम बनाया..."
+                      required
+                      className={`w-full rounded-xl pl-3 pr-9 py-2.5 text-xs font-semibold outline-none transition ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
+                      }`}
+                    />
+                    {isVoiceSupported && (
+                      <button
+                        type="button"
+                        onClick={toggleVoiceBreaking}
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center transition active:scale-90 ${
+                          isListeningBreaking
+                            ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40 ring-2 ring-red-400'
+                            : 'text-slate-400 hover:text-red-400 hover:bg-slate-700/50'
+                        }`}
+                        title={isListeningBreaking ? 'सुन रहा हूँ... बोलिए' : 'बोलकर ब्रेकिंग न्यूज़ लिखें'}
+                      >
+                        <Mic size={14} className={isListeningBreaking ? 'animate-bounce text-white' : ''} />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow shrink-0"
+                  >
+                    <Plus size={14} />
+                    <span>टिकर में जोड़ें</span>
+                  </button>
+                </div>
+                {isListeningBreaking && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                    <span className="font-bold">🎙️ ब्रेकिंग बोलिए:</span>
+                    <span className="text-slate-200 italic truncate">{breakingInterim || 'बोलना शुरू करें...'}</span>
+                  </div>
+                )}
               </form>
             </div>
 
@@ -2031,17 +2124,39 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      वीडियो शीर्षक (Headline)
-                    </label>
-                    <input 
-                      type="text"
-                      value={ytTitle}
-                      onChange={(e) => setYtTitle(e.target.value)}
-                      placeholder="उदा. कवर्धा में किसानों की बड़ी रैली..."
-                      className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                      required
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-semibold text-slate-300">
+                        वीडियो शीर्षक (Headline)
+                      </label>
+                      {isVoiceSupported && (
+                        <button
+                          type="button"
+                          onClick={toggleVoiceYtTitle}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition ${
+                            isListeningYtTitle ? 'bg-red-600 text-white animate-pulse' : 'text-slate-400 hover:text-red-400'
+                          }`}
+                        >
+                          <Mic size={11} className={isListeningYtTitle ? 'animate-bounce text-white' : ''} />
+                          <span>{isListeningYtTitle ? 'बोलना बंद करें ⏹️' : '🎙️ बोलकर लिखें'}</span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input 
+                        type="text"
+                        value={ytTitle}
+                        onChange={(e) => setYtTitle(e.target.value)}
+                        placeholder="उदा. कवर्धा में किसानों की बड़ी रैली..."
+                        className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                        required
+                      />
+                    </div>
+                    {isListeningYtTitle && (
+                      <div className="mt-1 flex items-center gap-1.5 text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                        <span>🎙️ सुन रहा हूँ: {ytTitleInterim || 'बोलिए...'}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2215,17 +2330,39 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      कैप्शन (Caption)
-                    </label>
-                    <input 
-                      type="text"
-                      value={reelCaption}
-                      onChange={(e) => setReelCaption(e.target.value)}
-                      placeholder="उदा. कवर्धा भोरमदेव मंदिर की भव्य आरती..."
-                      className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                      required
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-semibold text-slate-300">
+                        कैप्शन (Caption)
+                      </label>
+                      {isVoiceSupported && (
+                        <button
+                          type="button"
+                          onClick={toggleVoiceReelCaption}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition ${
+                            isListeningReelCaption ? 'bg-pink-600 text-white animate-pulse' : 'text-slate-400 hover:text-pink-400'
+                          }`}
+                        >
+                          <Mic size={11} className={isListeningReelCaption ? 'animate-bounce text-white' : ''} />
+                          <span>{isListeningReelCaption ? 'बोलना बंद करें ⏹️' : '🎙️ बोलकर लिखें'}</span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input 
+                        type="text"
+                        value={reelCaption}
+                        onChange={(e) => setReelCaption(e.target.value)}
+                        placeholder="उदा. कवर्धा भोरमदेव मंदिर की भव्य आरती..."
+                        className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                        required
+                      />
+                    </div>
+                    {isListeningReelCaption && (
+                      <div className="mt-1 flex items-center gap-1.5 text-[10px] text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping" />
+                        <span>🎙️ सुन रहा हूँ: {reelCaptionInterim || 'बोलिए...'}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

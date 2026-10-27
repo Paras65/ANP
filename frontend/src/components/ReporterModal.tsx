@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Send, X, Camera, MapPin, Tag, User } from 'lucide-react';
+import { Send, X, Camera, MapPin, Tag, User, Mic } from 'lucide-react';
 import type { Article, DistrictItem } from '../types';
+import { useVoiceTyping } from '../hooks/useVoiceTyping';
 
 interface ReporterModalProps {
   districts: DistrictItem[];
@@ -26,6 +27,36 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
     'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1000&auto=format&fit=crop&q=80'
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Voice Typing Hooks
+  const [headlineInterim, setHeadlineInterim] = useState('');
+  const {
+    isListening: isListeningHeadline,
+    isSupported: isVoiceSupported,
+    toggleListening: toggleVoiceHeadline
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setTitle((prev) => (prev ? prev + ' ' + text : text));
+    },
+    onInterim: (text) => {
+      setHeadlineInterim(text);
+    }
+  });
+
+  const [excerptInterim, setExcerptInterim] = useState('');
+  const {
+    isListening: isListeningExcerpt,
+    toggleListening: toggleVoiceExcerpt
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setExcerpt((prev) => (prev ? prev + ' ' + text : text));
+    },
+    onInterim: (text) => {
+      setExcerptInterim(text);
+    }
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,17 +162,40 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
 
           {/* Row 2: Headline */}
           <div>
-            <label className="block text-slate-400 mb-1 font-semibold">
-              खबर की मुख्य हेडलाइन (Title) *
-            </label>
-            <input 
-              type="text" 
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="जैसे: कवर्धा में नए बस स्टैंड के निर्माण का टेंडर जारी..." 
-              required 
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 text-xs font-medium placeholder:text-slate-500" 
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-slate-400 font-semibold text-xs">
+                खबर की मुख्य हेडलाइन (Title) *
+              </label>
+              {isVoiceSupported && (
+                <button
+                  type="button"
+                  onClick={toggleVoiceHeadline}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition ${
+                    isListeningHeadline ? 'bg-red-600 text-white animate-pulse' : 'text-slate-400 hover:text-red-400'
+                  }`}
+                  title="बोलकर हेडलाइन लिखें"
+                >
+                  <Mic size={11} className={isListeningHeadline ? 'animate-bounce text-white' : ''} />
+                  <span>{isListeningHeadline ? 'बोलना बंद करें ⏹️' : '🎙️ बोलकर लिखें'}</span>
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <input 
+                type="text" 
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="जैसे: कवर्धा में नए बस स्टैंड के निर्माण का टेंडर जारी..." 
+                required 
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 text-xs font-medium placeholder:text-slate-500" 
+              />
+            </div>
+            {isListeningHeadline && (
+              <div className="mt-1 flex items-center gap-1.5 text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                <span>🎙️ सुन रहा हूँ: {headlineInterim || 'बोलिए...'}</span>
+              </div>
+            )}
           </div>
 
           {/* Row 3: Reporter Byline */}
@@ -161,17 +215,40 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
 
           {/* Row 4: Excerpt */}
           <div>
-            <label className="block text-slate-400 mb-1 font-semibold">
-              घटना का विवरण (News Content) *
-            </label>
-            <textarea 
-              rows={3} 
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              placeholder="घटना की पूरी जानकारी, समय, स्थान और प्रत्यक्षदर्शियों का बयान लिखें..." 
-              required 
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 text-xs placeholder:text-slate-500 leading-relaxed"
-            ></textarea>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-slate-400 font-semibold text-xs">
+                घटना का विवरण (News Content) *
+              </label>
+              {isVoiceSupported && (
+                <button
+                  type="button"
+                  onClick={toggleVoiceExcerpt}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition ${
+                    isListeningExcerpt ? 'bg-red-600 text-white animate-pulse' : 'text-slate-400 hover:text-red-400'
+                  }`}
+                  title="बोलकर विवरण लिखें"
+                >
+                  <Mic size={11} className={isListeningExcerpt ? 'animate-bounce text-white' : ''} />
+                  <span>{isListeningExcerpt ? 'बोलना बंद करें ⏹️' : '🎙️ बोलकर लिखें'}</span>
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <textarea 
+                rows={3} 
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                placeholder="घटना की पूरी जानकारी, समय, स्थान और प्रत्यक्षदर्शियों का बयान लिखें..." 
+                required 
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 text-xs placeholder:text-slate-500 leading-relaxed"
+              ></textarea>
+            </div>
+            {isListeningExcerpt && (
+              <div className="mt-1 flex items-center gap-1.5 text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                <span>🎙️ सुन रहा हूँ: {excerptInterim || 'बोलिए, विवरण टाइप हो रहा है...'}</span>
+              </div>
+            )}
           </div>
 
           {/* Row 5: Photo Preset selector */}
