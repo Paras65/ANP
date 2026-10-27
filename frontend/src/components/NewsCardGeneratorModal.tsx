@@ -342,3 +342,4 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
     </div>
   );
 };
+

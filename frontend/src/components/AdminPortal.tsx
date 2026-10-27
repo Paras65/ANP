@@ -141,6 +141,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [showBackToTop, setShowBackToTop] = useState(false);
   // Power Features State: WhatsApp, Photo Card, AI, Voice & Push
   const [sendPushAlert, setSendPushAlert] = useState(false);
+  const [showAiTools, setShowAiTools] = useState(false);
   const [whatsAppArticle, setWhatsAppArticle] = useState<Article | null>(null);
   const [cardArticle, setCardArticle] = useState<Article | null>(null);
   const [aiHeadlineSuggestions, setAiHeadlineSuggestions] = useState<AIHeadlineSuggestion[]>([]);
@@ -1259,108 +1260,116 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
                 </div>
 
-                                {/* 0. AI NEWS ASSISTANT BAR */}
-                <div className={`p-3 rounded-2xl border flex flex-col gap-2 ${
-                  isDark ? 'bg-gradient-to-r from-red-950/30 via-slate-900 to-amber-950/20 border-red-900/40' : 'bg-gradient-to-r from-red-50 via-white to-amber-50 border-red-200'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs font-black text-red-500">
-                      <Sparkles size={14} className="text-amber-400" />
-                      <span>🤖 AI न्यूज़ असिस्टेंट (Smart Hindi Assistant)</span>
+                                {/* 0. MINIMALIST COLLAPSIBLE AI ASSISTANT STRIP */}
+                <div className="rounded-2xl border border-dashed border-red-500/30 overflow-hidden bg-red-500/5 transition-all">
+                  <button
+                    type="button"
+                    onClick={() => setShowAiTools(prev => !prev)}
+                    className="w-full px-3 py-2 flex items-center justify-between text-xs font-bold text-red-500 hover:bg-red-500/10 transition"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles size={13} className="text-amber-400" />
+                      <span>स्मार्ट AI न्यूज़ असिस्टेंट</span>
+                      <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">(हेडलाइन्स, सारांश, प्रूफरीडिंग)</span>
                     </div>
-                    <span className="text-[10px] text-slate-400">कच्चे ड्राफ्ट से 1-क्लिक रिपोर्ट</span>
-                  </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-mono">
+                      {showAiTools ? '▲ छुपाएं' : '▼ खोलें'}
+                    </span>
+                  </button>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleGenerateHeadlines}
-                      disabled={isGeneratingAI}
-                      className="px-2.5 py-1 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 text-xs font-bold transition flex items-center gap-1 active:scale-95 disabled:opacity-50"
-                    >
-                      <Wand2 size={12} />
-                      <span>{isGeneratingAI ? 'जनरेट हो रहा...' : '✨ 3 कैची हेडलाइन्स'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleAutoSummarize}
-                      className="px-2.5 py-1 rounded-xl bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/40 text-xs font-bold transition flex items-center gap-1 active:scale-95"
-                    >
-                      <span>📝 1-क्लिक सारांश</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handlePolishArticle}
-                      className="px-2.5 py-1 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/40 text-xs font-bold transition flex items-center gap-1 active:scale-95"
-                    >
-                      <span>✍️ प्रेस फॉर्मेट में पॉलिश करें</span>
-                    </button>
-                  </div>
-
-                  {aiFeedback && (
-                    <div className="text-[11px] font-bold text-amber-400 animate-in fade-in">
-                      {aiFeedback}
-                    </div>
-                  )}
-
-                  {aiHeadlineSuggestions.length > 0 && (
-                    <div className="space-y-1.5 pt-1 border-t border-white/10 animate-in fade-in">
-                      <div className="text-[10px] text-slate-400 font-bold">हेडलाइन चुनने के लिए क्लिक करें:</div>
-                      {aiHeadlineSuggestions.map((s, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => {
-                            setTitle(s.headline);
-                            setAiHeadlineSuggestions([]);
-                            setAiFeedback('✓ हेडलाइन लागू कर दी गई!');
-                            setTimeout(() => setAiFeedback(null), 2500);
-                          }}
-                          className="p-2 rounded-xl bg-black/40 hover:bg-red-600/20 border border-slate-700 hover:border-red-500/50 text-xs font-bold text-slate-200 hover:text-white cursor-pointer transition flex items-center justify-between"
+                  {showAiTools && (
+                    <div className="p-3 border-t border-red-500/20 space-y-2.5 animate-in slide-in-from-top-2 duration-200">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleGenerateHeadlines}
+                          disabled={isGeneratingAI}
+                          className="px-2.5 py-1 rounded-xl bg-red-600 text-white text-xs font-bold transition flex items-center gap-1 active:scale-95 disabled:opacity-50 shadow-sm"
                         >
-                          <span>{s.headline}</span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-600/30 text-red-300 font-mono">
-                            चुनें ↵
-                          </span>
+                          <Wand2 size={12} />
+                          <span>{isGeneratingAI ? 'जनरेट हो रहा...' : '✨ 3 आकर्षक हेडलाइन्स'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleAutoSummarize}
+                          className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1 active:scale-95 border border-slate-700"
+                        >
+                          <span>📝 1-क्लिक सारांश</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handlePolishArticle}
+                          className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1 active:scale-95 border border-slate-700"
+                        >
+                          <span>✍️ प्रेस फॉर्मेट में पॉलिश करें</span>
+                        </button>
+                      </div>
+
+                      {aiFeedback && (
+                        <div className="text-[11px] font-bold text-amber-400 animate-in fade-in">
+                          {aiFeedback}
                         </div>
-                      ))}
+                      )}
+
+                      {aiHeadlineSuggestions.length > 0 && (
+                        <div className="space-y-1 pt-1 border-t border-white/10 animate-in fade-in">
+                          <div className="text-[10px] text-slate-400 font-bold">हेडलाइन चुनने के लिए क्लिक करें:</div>
+                          {aiHeadlineSuggestions.map((s, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => {
+                                setTitle(s.headline);
+                                setAiHeadlineSuggestions([]);
+                                setAiFeedback('✓ हेडलाइन लागू कर दी गई!');
+                                setTimeout(() => setAiFeedback(null), 2500);
+                              }}
+                              className="p-2 rounded-xl bg-black/40 hover:bg-red-600/20 border border-slate-700 hover:border-red-500/50 text-xs font-bold text-slate-200 hover:text-white cursor-pointer transition flex items-center justify-between"
+                            >
+                              <span>{s.headline}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-600/30 text-red-300 font-mono">
+                                चुनें ↵
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Headline with Voice Typing */}
+                {/* Headline Input with Inline Integrated Mic */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-400 font-semibold flex items-center gap-1 text-xs">
-                      समाचार शीर्षक (Headline) *
-                    </label>
+                  <label className="block text-slate-400 mb-1 font-semibold text-xs">
+                    समाचार शीर्षक (Headline) *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="मुख्य शीर्षक हिंदी में लिखें (जैसे: कवर्धा में नए रिंग रोड परियोजना को मंजूरी...)"
+                      required
+                      className={`w-full rounded-xl py-2.5 pl-3 pr-10 text-xs font-semibold outline-none transition ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
+                      }`}
+                    />
                     {isVoiceSupported && (
                       <button
                         type="button"
                         onClick={toggleVoiceHeadline}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition active:scale-95 ${
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center transition active:scale-90 ${
                           isListeningHeadline
                             ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40'
-                            : isDark ? 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700' : 'bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300'
+                            : 'text-slate-400 hover:text-red-400 hover:bg-slate-700/50'
                         }`}
-                        title="बोलकर शीर्षक लिखें (Hindi Voice Typing)"
+                        title={isListeningHeadline ? 'सुन रहा हूँ... बोलिए' : 'बोलकर शीर्षक लिखें (Voice Typing)'}
                       >
-                        <Mic size={12} className={isListeningHeadline ? 'animate-bounce' : ''} />
-                        <span>{isListeningHeadline ? 'सुन रहा हूँ... बोलिए' : '🎙️ बोलकर लिखें'}</span>
+                        <Mic size={14} className={isListeningHeadline ? 'animate-bounce' : ''} />
                       </button>
                     )}
                   </div>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="मुख्य शीर्षक हिंदी में लिखें (जैसे: कवर्धा में नए रिंग रोड परियोजना को मंजूरी...)"
-                    required
-                    className={`w-full rounded-xl p-2.5 text-xs font-semibold outline-none transition ${
-    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
-  }`}
-                  />
                 </div>
 
                 {/* Author Byline */}
@@ -1399,38 +1408,40 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                 {/* Full Article Content */}
                 <div>
-                                    <div className="flex items-center justify-between mb-1">
-                    <label className={`block font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className={`block font-semibold text-xs ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                       विस्तृत समाचार सामग्री (Full Article Text)
                     </label>
-                    <div className="flex items-center gap-2">
-                      {isVoiceSupported && (
-                        <button
-                          type="button"
-                          onClick={toggleVoiceContent}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition active:scale-95 ${
-                            isListeningContent
-                              ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40'
-                              : isDark ? 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700' : 'bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300'
-                          }`}
-                          title="बोलकर पूरी खबर लिखें (Hindi Speech-to-Text)"
-                        >
-                          <Mic size={12} className={isListeningContent ? 'animate-bounce' : ''} />
-                          <span>{isListeningContent ? 'रिकॉर्डिंग चालू है...' : '🎙️ बोलकर पूरी खबर लिखें'}</span>
-                        </button>
-                      )}
-                      <span className="text-[11px] text-slate-400">
-                        शब्द: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{content.trim() ? content.trim().split(/\s+/).length : 0}</strong> • अक्षर: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{content.length}</strong>
-                      </span>
-                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      शब्द: {content.trim() ? content.trim().split(/\s+/).length : 0} • अक्षर: {content.length}
+                    </span>
                   </div>
-                  <textarea
-                    rows={7}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="पूरी घटना, गवाहों के बयान, सरकारी आदेश, पृष्ठभूमि और तथ्य विस्तार से लिखें..."
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 text-xs placeholder:text-slate-500 leading-relaxed"
-                  ></textarea>
+                  <div className="relative">
+                    <textarea
+                      rows={6}
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="पूरी घटना, गवाहों के बयान, सरकारी आदेश, पृष्ठभूमि और तथ्य विस्तार से लिखें..."
+                      className={`w-full rounded-xl p-2.5 pb-8 text-xs leading-relaxed outline-none transition ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
+                      }`}
+                    />
+                    {isVoiceSupported && (
+                      <button
+                        type="button"
+                        onClick={toggleVoiceContent}
+                        className={`absolute right-2.5 bottom-2.5 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition active:scale-95 ${
+                          isListeningContent
+                            ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40'
+                            : isDark ? 'bg-slate-900/90 text-slate-300 hover:text-white border border-slate-700' : 'bg-white text-slate-700 hover:text-slate-900 border border-slate-200 shadow-sm'
+                        }`}
+                        title="बोलकर पूरी खबर लिखें (Voice Typing)"
+                      >
+                        <Mic size={11} className={isListeningContent ? 'animate-bounce' : ''} />
+                        <span>{isListeningContent ? 'सुन रहा हूँ...' : '🎙️ बोलकर लिखें'}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Photo Presets & Local File Upload */}
@@ -1489,46 +1500,52 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   />
                 </div>
 
-                {/* Flags: Breaking & Featured */}
-                <div className="flex flex-wrap items-center gap-4 pt-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isBreaking}
-                      onChange={(e) => setIsBreaking(e.target.checked)}
-                      className="w-4 h-4 rounded text-red-600 focus:ring-0 cursor-pointer"
-                    />
-                    <span className="text-white font-bold text-xs flex items-center gap-1">
-                      <Radio size={13} className="text-red-500" />
-                      <span>⚡ ब्रेकिंग न्यूज़ टिकर में दिखाएं</span>
-                    </span>
-                  </label>
+                {/* Compact Publishing Options Row (Toggle Chips) */}
+                <div className="pt-1">
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5">प्रकाशन विकल्प (टैप करके चुनें):</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsBreaking(prev => !prev)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 ${
+                        isBreaking
+                          ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                          : isDark ? 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:text-slate-900'
+                      }`}
+                    >
+                      <Radio size={13} className={isBreaking ? 'text-white' : 'text-slate-400'} />
+                      <span>⚡ ब्रेकिंग टिकर</span>
+                      {isBreaking && <span className="text-[10px] ml-0.5 font-bold">✓</span>}
+                    </button>
 
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isFeatured}
-                      onChange={(e) => setIsFeatured(e.target.checked)}
-                      className="w-4 h-4 rounded text-red-600 focus:ring-0 cursor-pointer"
-                    />
-                    <span className="text-white font-bold text-xs flex items-center gap-1">
-                      <Flame size={13} className="text-orange-500" />
-                      <span>🔥 होमपेज का मुख्य समाचार (Hero) बनाएं</span>
-                    </span>
-                  </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsFeatured(prev => !prev)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 ${
+                        isFeatured
+                          ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                          : isDark ? 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:text-slate-900'
+                      }`}
+                    >
+                      <Flame size={13} className={isFeatured ? 'text-white' : 'text-slate-400'} />
+                      <span>🔥 मुख्य खबर (Hero)</span>
+                      {isFeatured && <span className="text-[10px] ml-0.5 font-bold">✓</span>}
+                    </button>
 
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={sendPushAlert}
-                      onChange={(e) => setSendPushAlert(e.target.checked)}
-                      className="w-4 h-4 rounded text-red-600 focus:ring-0 cursor-pointer"
-                    />
-                    <span className="text-white font-bold text-xs flex items-center gap-1">
-                      <Bell size={13} className="text-amber-400" />
-                      <span>🔔 पाठकों को तुरंत पुश नोटिफिकेशन अलर्ट भेजें</span>
-                    </span>
-                  </label>
+                    <button
+                      type="button"
+                      onClick={() => setSendPushAlert(prev => !prev)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 ${
+                        sendPushAlert
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                          : isDark ? 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:text-slate-900'
+                      }`}
+                    >
+                      <Bell size={13} className={sendPushAlert ? 'text-white' : 'text-slate-400'} />
+                      <span>🔔 पुश अलर्ट सायरन</span>
+                      {sendPushAlert && <span className="text-[10px] ml-0.5 font-bold">✓</span>}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Submit Action with Edit Mode Handling */}
@@ -1746,33 +1763,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                     <div className="flex items-center gap-1.5 self-end sm:self-center">
                       <button
-                        onClick={() => setWhatsAppArticle(art)}
-                        className={`p-2 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
-                          isDark 
-                            ? 'bg-emerald-950/50 hover:bg-emerald-900 text-emerald-300 border border-emerald-800/60' 
-                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm'
-                        }`}
-                        title="1-क्लिक WhatsApp बुलेटिन जनरेट करें"
-                      >
-                        <MessageCircle size={13} />
-                        <span className="hidden sm:inline">WhatsApp</span>
-                      </button>
-
-                      <button
-                        onClick={() => setCardArticle(art)}
-                        className={`p-2 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
-                          isDark 
-                            ? 'bg-rose-950/50 hover:bg-rose-900 text-rose-300 border border-rose-800/60' 
-                            : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-sm'
-                        }`}
-                        title="सोशल मीडिया फोटो कार्ड जनरेट करें"
-                      >
-                        <ImageIcon size={13} />
-                        <span className="hidden sm:inline">फोटो कार्ड</span>
-                      </button>
-                      <button
                         onClick={() => handleStartEdit(art)}
-                        className={`p-2 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
+                        className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
                           isDark 
                             ? 'bg-blue-950/50 hover:bg-blue-900 text-blue-300 border border-blue-800/60' 
                             : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
@@ -1780,20 +1772,31 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         title="खबर संपादित करें (Edit Article)"
                       >
                         <Edit3 size={13} />
-                        <span className="hidden sm:inline">एडिट</span>
+                        <span>एडिट</span>
+                      </button>
+
+                      <button
+                        onClick={() => setWhatsAppArticle(art)}
+                        className="p-1.5 rounded-xl text-emerald-400 hover:bg-emerald-950/60 border border-emerald-800/40 hover:border-emerald-600 transition"
+                        title="1-क्लिक WhatsApp बुलेटिन"
+                      >
+                        <MessageCircle size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => setCardArticle(art)}
+                        className="p-1.5 rounded-xl text-rose-400 hover:bg-rose-950/60 border border-rose-800/40 hover:border-rose-600 transition"
+                        title="सोशल मीडिया फोटो कार्ड बनाएं"
+                      >
+                        <ImageIcon size={14} />
                       </button>
 
                       <button
                         onClick={() => handleDeleteArticleConfirmed(art._id, art.title)}
-                        className={`p-2 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
-                          isDark 
-                            ? 'bg-rose-950/50 hover:bg-rose-900 text-rose-300 border border-rose-800/60' 
-                            : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-sm'
-                        }`}
-                        title="खबर हटाएं (Delete Article)"
+                        className="p-1.5 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-950/40 border border-transparent hover:border-red-900/40 transition"
+                        title="खबर हटाएं (Delete)"
                       >
-                        <Trash2 size={13} />
-                        <span className="hidden sm:inline">हटाएं</span>
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>

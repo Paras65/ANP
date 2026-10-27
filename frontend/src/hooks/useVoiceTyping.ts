@@ -105,3 +105,4 @@ export function useVoiceTyping(options: VoiceTypingOptions = {}) {
     toggleListening
   };
 }
+
