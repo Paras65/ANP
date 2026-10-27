@@ -1,7 +1,10 @@
 /**
- * Ambition News Portal - AI News Assistant
- * Provides smart Hindi headline generation, summarization, and article polishing.
+ * Ambition News Portal - Dynamic Gemini AI Assistant
+ * Communicates with backend /api/ai/assistant.
+ * ZERO credentials stored in client bundle.
+ * No static fallback: if Gemini fails or is unconfigured, reports exact error so editor can speak or type manually.
  */
+import api from '../api/client';
 
 export interface AIHeadlineSuggestion {
   style: 'breaking' | 'investigative' | 'viral';
@@ -9,66 +12,73 @@ export interface AIHeadlineSuggestion {
 }
 
 export async function generateHeadlinesAI(
-  rawInput: string, 
+  topicOrDraft: string, 
   district: string = 'कवर्धा'
 ): Promise<AIHeadlineSuggestion[]> {
-  const cleanInput = rawInput.trim();
-  const dist = district || 'छत्तीसगढ़';
-
-  // Smart algorithmic journalistic templates tailored to Chhattisgarh & MP journalism
-  const cleanTopic = cleanInput
-    .replace(/^.*?:/g, '')
-    .replace(/(में|पर|का|के|की|को)\s*$/g, '')
-    .trim();
-
-  return [
-    {
-      style: 'breaking',
-      headline: `🔴 ${dist} बड़ी खबर: ${cleanTopic || 'प्रशासन का बड़ा फैसला, आदेश जारी'}`
-    },
-    {
-      style: 'investigative',
-      headline: `${cleanTopic || 'योजना पर नया विवाद'}, मौके पर पहुंची टीम; जानिए पूरा मामला`
-    },
-    {
-      style: 'viral',
-      headline: `${dist} में ${cleanTopic || 'बड़ा उलटफेर'}: जनता में भारी उत्साह, सीधे ग्राउंड से देखें रिपोर्ट`
-    }
-  ];
-}
-
-export function autoSummarizeAI(content: string, district: string = 'कवर्धा'): string {
-  if (!content || content.trim().length === 0) {
-    return `${district}: मुख्य घटनाक्रम को लेकर प्रशासन सतर्क, विस्तृत जांच जारी है।`;
+  const cleanTopic = topicOrDraft.trim();
+  if (!cleanTopic) {
+    throw new Error('कृपया पहले हेडलाइन या कुछ पंक्तियां लिखें');
   }
 
-  const sentences = content
-    .split(/[।.\n]/)
-    .map(s => s.trim())
-    .filter(s => s.length > 10);
+  const res = await api.post('/ai/assistant', {
+    action: 'generate-headlines',
+    topic: cleanTopic,
+    district
+  });
 
-  if (sentences.length === 0) {
-    return content.slice(0, 140) + '...';
+  if (res.data?.success && Array.isArray(res.data.data)) {
+    return res.data.data;
   }
 
-  const firstTwo = sentences.slice(0, 2).join('। ') + '।';
-  return firstTwo.length > 180 ? firstTwo.slice(0, 175) + '...' : firstTwo;
+  throw new Error(res.data?.message || 'Gemini से हेडलाइन प्राप्त नहीं हो सकी');
 }
 
-export function polishArticleAI(
+export async function autoSummarizeAI(
+  content: string, 
+  district: string = 'कवर्धा'
+): Promise<string> {
+  const cleanContent = content.trim();
+  if (!cleanContent) {
+    throw new Error('कृपया पहले विस्तृत समाचार सामग्री (Content) लिखें');
+  }
+
+  const res = await api.post('/ai/assistant', {
+    action: 'summarize',
+    content: cleanContent,
+    district
+  });
+
+  if (res.data?.success && typeof res.data.data === 'string') {
+    return res.data.data;
+  }
+
+  throw new Error(res.data?.message || 'Gemini से सारांश प्राप्त नहीं हो सका');
+}
+
+export async function polishArticleAI(
   rawContent: string, 
   headline: string, 
   district: string, 
   author: string
-): string {
-  const dist = district || 'कवर्धा';
-  const reporter = author || 'ब्यूरो चीफ';
-  const dateline = `【एम्बिशन न्यूज़ • ${dist} डेस्क / रिपोर्ट: ${reporter}】\n\n`;
+): Promise<string> {
+  const cleanContent = rawContent.trim();
+  const cleanTopic = headline.trim();
 
-  const cleanBody = rawContent
-    ? rawContent.trim()
-    : `${headline} को लेकर क्षेत्र में बड़ी हलचल देखी जा रही है। स्थानीय नागरिकों और अधिकारियों से मिली जानकारी के अनुसार स्थिति पर लगातार नजर रखी जा रही है।`;
+  if (!cleanContent && !cleanTopic) {
+    throw new Error('कृपया पॉलिश करने के लिए समाचार ड्राफ्ट लिखें');
+  }
 
-  return `${dateline}${cleanBody}\n\n(विशेष रिपोर्ट: Ambition News Network)`;
+  const res = await api.post('/ai/assistant', {
+    action: 'polish',
+    content: cleanContent,
+    topic: cleanTopic,
+    district,
+    author
+  });
+
+  if (res.data?.success && typeof res.data.data === 'string') {
+    return res.data.data;
+  }
+
+  throw new Error(res.data?.message || 'Gemini से पॉलिश रिपोर्ट प्राप्त नहीं हो सकी');
 }
-

@@ -12,6 +12,7 @@ import { Setting } from '../models/Setting.model.js';
 import { MandiRate } from '../models/MandiRate.model.js';
 import { requireAdminAuth } from '../middleware/auth.middleware.js';
 import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI } from '../services/youtubeSync.js';
+import { processGeminiNewsTask } from '../services/gemini.service.js';
 
 const router = Router();
 let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg';
@@ -942,6 +943,32 @@ router.post('/auth/change-pin', requireAdminAuth, async (req: Request, res: Resp
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 12. POST /api/ai/assistant - Secure Gemini AI News Assistant (Protected with requireAdminAuth)
+router.post('/ai/assistant', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { action, topic, content, district, author } = req.body;
+    if (!action) {
+      return res.status(400).json({ success: false, message: 'कार्य (action) आवश्यक है।' });
+    }
+
+    const result = await processGeminiNewsTask({
+      action,
+      topic,
+      content,
+      district,
+      author
+    });
+
+    res.json({ success: true, data: result });
+  } catch (err: any) {
+    console.error('[Gemini AI Error]:', err.message || err);
+    res.status(500).json({ 
+      success: false, 
+      message: err.message || 'Gemini AI सेवा से उत्तर प्राप्त करने में विफल।' 
+    });
   }
 });
 

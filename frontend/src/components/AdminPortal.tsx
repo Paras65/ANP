@@ -170,32 +170,52 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   });
 
-  // AI Assistant Handlers
+  // AI Assistant Handlers (Dynamic Google Gemini Backend)
   const handleGenerateHeadlines = async () => {
     setIsGeneratingAI(true);
+    setAiFeedback(null);
     try {
       const suggestions = await generateHeadlinesAI(title || excerpt || content, district);
       setAiHeadlineSuggestions(suggestions);
-      setAiFeedback('✅ 3 नए शीर्षक तैयार हैं! नीचे से मनपसंद शीर्षक चुनें:');
-    } catch {
-      setAiFeedback('हेडलाइन जनरेट करने में असमर्थ');
+      setAiFeedback('✨ Gemini AI: 3 नए शीर्षक तैयार हैं! नीचे से मनपसंद शीर्षक चुनें:');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
+      setAiFeedback(`⚠️ ${msg} — आप बोलकर (🎙️) लिख सकते हैं।`);
     } finally {
       setIsGeneratingAI(false);
     }
   };
 
-  const handleAutoSummarize = () => {
-    const sum = autoSummarizeAI(content, district);
-    setExcerpt(sum);
-    setAiFeedback('✅ समाचार सामग्री से संक्षिप्त सारांश तैयार हो गया!');
-    setTimeout(() => setAiFeedback(null), 3000);
+  const handleAutoSummarize = async () => {
+    setIsGeneratingAI(true);
+    setAiFeedback(null);
+    try {
+      const sum = await autoSummarizeAI(content, district);
+      setExcerpt(sum);
+      setAiFeedback('✨ Gemini AI: समाचार का संक्षिप्त सारांश तैयार हो गया!');
+      setTimeout(() => setAiFeedback(null), 4000);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
+      setAiFeedback(`⚠️ ${msg} — आप बोलकर (🎙️) लिख सकते हैं।`);
+    } finally {
+      setIsGeneratingAI(false);
+    }
   };
 
-  const handlePolishArticle = () => {
-    const polished = polishArticleAI(content, title, district, author);
-    setContent(polished);
-    setAiFeedback('✅ समाचार को प्रेस-स्टाइल और ब्यूरो विवरण के साथ फॉर्मेट किया गया!');
-    setTimeout(() => setAiFeedback(null), 3000);
+  const handlePolishArticle = async () => {
+    setIsGeneratingAI(true);
+    setAiFeedback(null);
+    try {
+      const polished = await polishArticleAI(content, title, district, author);
+      setContent(polished);
+      setAiFeedback('✨ Gemini AI: समाचार को पत्रकारिता शैली में पॉलिश कर दिया गया!');
+      setTimeout(() => setAiFeedback(null), 4000);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
+      setAiFeedback(`⚠️ ${msg} — आप बोलकर (🎙️) लिख सकते हैं।`);
+    } finally {
+      setIsGeneratingAI(false);
+    }
   };
 
   const [showMobileMoreDrawer, setShowMobileMoreDrawer] = useState(false);
