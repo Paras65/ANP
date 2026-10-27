@@ -38,8 +38,8 @@ export function getSafeGeminiErrorMessage(err: any): string {
   const raw = redactSecretKeys(err.message || String(err));
 
   // Known custom configuration message
-  if (raw.includes('GEMINI_API_KEY कॉन्फ़िगर नहीं है')) {
-    return 'सर्वर पर GEMINI_API_KEY सेट नहीं है। कृपया backend/.env में अपनी Google Gemini API Key जोड़ें।';
+  if (raw.includes('GEMINI_API_KEY कॉन्फ़िगर नहीं है') || raw.includes('GEMINI_API_KEY सेट नहीं है')) {
+    return 'सर्वर पर GEMINI_API_KEY सेट नहीं है। कृपया Render Dashboard में वैध Google Gemini API Key जोड़ें।';
   }
 
   // Authentication & Invalid Key errors
@@ -48,9 +48,11 @@ export function getSafeGeminiErrorMessage(err: any): string {
     raw.includes('UNAUTHENTICATED') || 
     raw.includes('401') || 
     raw.includes('403') ||
-    raw.includes('API key not valid')
+    raw.includes('PERMISSION_DENIED') ||
+    raw.includes('API key not valid') ||
+    raw.includes('invalid api key')
   ) {
-    return 'Google Gemini API Key अमान्य (Invalid) या अनधिकृत है। कृपया सही कुंजी जांचें।';
+    return 'Google Gemini API Key अमान्य (Invalid) या अनधिकृत है। कृपया Render पर सही GEMINI_API_KEY जांचें।';
   }
 
   // Quota & Rate Limit errors
@@ -58,9 +60,15 @@ export function getSafeGeminiErrorMessage(err: any): string {
     raw.includes('RESOURCE_EXHAUSTED') || 
     raw.includes('429') || 
     raw.includes('quota') || 
-    raw.includes('Rate limit')
+    raw.includes('Rate limit') ||
+    raw.includes('exceeded your current quota')
   ) {
-    return 'Gemini API का मुफ्त कोटा (Quota) या दर सीमा पूरी हो गई है। कृपया थोड़ी देर बाद पुनः प्रयास करें।';
+    return 'Gemini API का मुफ्त कोटा (Free Quota / Rate Limit) पूरा हो गया है। कृपया थोड़ी देर बाद पुनः प्रयास करें।';
+  }
+
+  // Model not found or not supported
+  if (raw.includes('models/') && (raw.includes('not found') || raw.includes('404'))) {
+    return 'Gemini AI मॉडल अनुरोधित संस्करण में उपलब्ध नहीं है। सिस्टम दूसरे मॉडल पर स्विच कर रहा है...';
   }
 
   // Content Safety Filters
@@ -70,10 +78,11 @@ export function getSafeGeminiErrorMessage(err: any): string {
 
   // Network & Timeout
   if (raw.includes('ETIMEDOUT') || raw.includes('ENOTFOUND') || raw.includes('fetch failed')) {
-    return 'Google AI सर्वर से संपर्क नहीं हो सका। कृपया इंटरनेट कनेक्शन जांचें।';
+    return 'Google AI सर्वर से संपर्क नहीं हो सका। कृपया पुनः प्रयास करें।';
   }
 
-  // Generic fallback (Always redacted)
-  return 'Gemini AI सेवा से उत्तर प्राप्त करने में विफल।';
+  // Clean fallback with sanitized hint
+  const snippet = raw.replace(/[^\w\s\u0900-\u097F.,:-]/g, '').slice(0, 100).trim();
+  return snippet ? `Gemini AI सेवा त्रुटि: ${snippet}` : 'Gemini AI सेवा से उत्तर प्राप्त करने में विफल।';
 }
 

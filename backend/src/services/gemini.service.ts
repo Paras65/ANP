@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { getSafeGeminiErrorMessage } from '../utils/sanitize.js';
+import { getSafeGeminiErrorMessage, redactSecretKeys } from '../utils/sanitize.js';
 
 export interface AIHeadlineResponse {
   style: 'breaking' | 'investigative' | 'viral';
@@ -14,16 +14,56 @@ export interface GeminiAssistantRequest {
   author?: string;
 }
 
+/**
+ * Resilient multi-model executor: tries modern universal models with fallback
+ */
+async function generateWithFallback(ai: GoogleGenAI, contents: string): Promise<string> {
+  const candidateModels = [
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-2.5-flash'
+  ];
+
+  let lastError: any = null;
+
+  for (const model of candidateModels) {
+    try {
+      const res = await ai.models.generateContent({
+        model,
+        contents
+      });
+      const text = res.text?.trim();
+      if (text) {
+        return text;
+      }
+    } catch (err: any) {
+      lastError = err;
+      const errMsg = err?.message || String(err);
+      // If error is invalid API key or unauthenticated, immediately throw to alert user
+      if (
+        errMsg.includes('API_KEY_INVALID') || 
+        errMsg.includes('API key not valid') || 
+        errMsg.includes('UNAUTHENTICATED') ||
+        errMsg.includes('401')
+      ) {
+        throw err;
+      }
+      console.warn(`[GEMINI_FALLBACK] Model ${model} failed, trying next candidate. Error: ${redactSecretKeys(errMsg).slice(0, 100)}`);
+    }
+  }
+
+  throw lastError || new Error('सभी उपलब्ध Gemini AI मॉडल से उत्तर प्राप्त करने में विफल।');
+}
+
 export async function processGeminiNewsTask(req: GeminiAssistantRequest): Promise<any> {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey || !apiKey.trim() || apiKey === 'your_gemini_api_key_here') {
-    throw new Error('सर्वर पर GEMINI_API_KEY कॉन्फ़िगर नहीं है। कृपया backend/.env में वैध Google Gemini API Key जोड़ें।');
+    throw new Error('सर्वर पर GEMINI_API_KEY कॉन्फ़िगर नहीं है। कृपया Render Dashboard में वैध Google Gemini API Key जोड़ें।');
   }
 
   try {
     const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
-    const model = 'gemini-2.5-flash';
 
     if (req.action === 'generate-headlines') {
       const topic = (req.topic || req.content || '').trim();
@@ -48,12 +88,7 @@ export async function processGeminiNewsTask(req: GeminiAssistantRequest): Promis
   {"style": "viral", "headline": "..."}
 ]`;
 
-      const res = await ai.models.generateContent({
-        model,
-        contents: prompt
-      });
-
-      const rawText = res.text?.trim() || '';
+      const rawText = await generateWithFallback(ai, prompt);
       const cleaned = rawText
         .replace(/^```json/i, '')
         .replace(/^```/, '')
@@ -89,12 +124,8 @@ ${content}
 
 निर्देश: केवल सारांश का हिंदी टेक्स्ट लौटाएं, कोई भूमिका या अतिरिक्त शब्द नहीं।`;
 
-      const res = await ai.models.generateContent({
-        model,
-        contents: prompt
-      });
-
-      return res.text?.trim() || '';
+      const resText = await generateWithFallback(ai, prompt);
+      return resText;
     }
 
     if (req.action === 'polish') {
@@ -124,17 +155,13 @@ ${rawContent || topic}
 4. अंत में जोड़ें: (विशेष रिपोर्ट: Ambition News Network)
 5. केवल तैयार विस्तृत समाचार सामग्री ही लौटाएं।`;
 
-      const res = await ai.models.generateContent({
-        model,
-        contents: prompt
-      });
-
-      return res.text?.trim() || '';
+      const resText = await generateWithFallback(ai, prompt);
+      return resText;
     }
 
     throw new Error(`अमान्य AI कार्य: ${req.action}`);
   } catch (err: any) {
-    // Intercept raw SDK error to guarantee zero key leakage in message or stack trace
+    console.error('💥 [GEMINI_ERROR]', redactSecretKeys(err?.message || String(err)));
     const safeMessage = getSafeGeminiErrorMessage(err);
     throw new Error(safeMessage);
   }
