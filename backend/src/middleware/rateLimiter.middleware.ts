@@ -1,4 +1,18 @@
 import { rateLimit } from 'express-rate-limit';
+import { logger } from '../utils/logger.js';
+
+function createRateLimitHandler(limiterName: string) {
+  return (req: any, res: any, _next: any, options: any) => {
+    const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+    const userAgent = String(req.headers['user-agent'] || 'unknown').slice(0, 120);
+
+    logger.warn(
+      `🛡️ [RATE_LIMIT_TRIPPED] [${limiterName}] IP=${clientIp} UA="${userAgent}" ${req.method} ${req.originalUrl} - Limit: ${options.limit || options.max} in ${options.windowMs / 1000}s`
+    );
+
+    res.status(options.statusCode).json(options.message);
+  };
+}
 
 // 1. Strict Brute-Force Rate Limiter for Authentication & PIN endpoints
 export const authLimiter = rateLimit({
@@ -6,6 +20,7 @@ export const authLimiter = rateLimit({
   max: 5, // Maximum 5 attempts per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
+  handler: createRateLimitHandler('AUTH_BRUTE_FORCE_PROTECT'),
   message: {
     success: false,
     message: 'बहुत अधिक गलत प्रयास दर्ज किए गए हैं। सुरक्षा कारणों से आपका IP 15 मिनट के लिए अस्थायी रूप से ब्लॉक किया गया है।',
@@ -22,6 +37,7 @@ export const aiLimiter = rateLimit({
   max: 15, // Maximum 15 AI requests per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
+  handler: createRateLimitHandler('AI_QUOTA_FLOOD_PROTECT'),
   message: {
     success: false,
     message: 'Gemini AI अनुरोध दर सीमा समाप्त। कृपया 1 मिनट बाद पुनः प्रयास करें।',
@@ -38,6 +54,7 @@ export const apiLimiter = rateLimit({
   max: 300, // 300 requests per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
+  handler: createRateLimitHandler('PUBLIC_API_TRAFFIC_PROTECT'),
   message: {
     success: false,
     message: 'अनुरोध दर सीमा समाप्त (Too many requests from this IP).',
@@ -54,6 +71,7 @@ export const contentCreationLimiter = rateLimit({
   max: 30, // Maximum 30 write mutations per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
+  handler: createRateLimitHandler('BURP_POSTMAN_WRITE_FLOOD_PROTECT'),
   message: {
     success: false,
     message: 'सामग्री निर्माण दर सीमा समाप्त (Rate limit exceeded)। Burp Suite / Postman जैसे टूल्स से ऑटोमेटेड फ्लडिंग प्रतिबंधित है।',
