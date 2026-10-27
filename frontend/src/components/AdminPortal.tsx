@@ -2630,24 +2630,24 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </span>
         </button>
 
-        {/* SLOT 2: MANDI */}
+        {/* SLOT 2: YOUTUBE & REELS (MEDIA) */}
         <button
           onClick={() => {
-            setActiveTab('mandi');
+            setActiveTab('media');
             setShowMobileMoreDrawer(false);
           }}
           className="flex-1 flex flex-col items-center justify-center py-1 transition relative group"
         >
           <div className="relative">
-            <Wheat size={18} className={activeTab === 'mandi' ? 'text-emerald-500' : 'text-slate-400'} />
-            <span className="absolute -top-1.5 -right-2 px-1 py-0.2 rounded-full bg-emerald-600 text-[8px] font-bold text-white font-mono shadow-sm">
-              {mandiRates.length}
+            <Tv size={18} className={activeTab === 'media' ? 'text-red-500' : 'text-slate-400'} />
+            <span className="absolute -top-1.5 -right-2 px-1 py-0.2 rounded-full bg-red-600 text-[8px] font-bold text-white font-mono shadow-sm">
+              {videos.length + reels.length}
             </span>
           </div>
           <span className={`text-[10px] font-bold mt-0.5 transition ${
-            activeTab === 'mandi' ? 'text-emerald-400 font-black' : 'text-slate-400'
+            activeTab === 'media' ? 'text-red-500 font-black' : 'text-slate-400'
           }`}>
-            मंडी
+            वीडियो
           </span>
         </button>
 
@@ -2698,12 +2698,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           className="flex-1 flex flex-col items-center justify-center py-1 transition relative group"
         >
           <MoreHorizontal size={18} className={
-            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'media'
+            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'mandi'
               ? 'text-amber-400 font-bold'
               : 'text-slate-400'
           } />
           <span className={`text-[10px] font-bold mt-0.5 transition ${
-            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'media'
+            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'mandi'
               ? 'text-amber-400 font-black'
               : 'text-slate-400'
           }`}>
@@ -2745,21 +2745,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               
               <button
                 onClick={() => {
-                  setActiveTab('media');
+                  setActiveTab('mandi');
                   setShowMobileMoreDrawer(false);
                 }}
                 className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
-                  activeTab === 'media'
-                    ? 'border-red-600 bg-red-500/10 text-red-400'
+                  activeTab === 'mandi'
+                    ? 'border-emerald-600 bg-emerald-500/10 text-emerald-400'
                     : isDark ? 'border-slate-800 bg-slate-800/60 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-800'
                 }`}
               >
-                <div className="w-8 h-8 rounded-xl bg-red-600/20 text-red-500 flex items-center justify-center shrink-0">
-                  <Tv size={16} />
+                <div className="w-8 h-8 rounded-xl bg-emerald-600/20 text-emerald-500 flex items-center justify-center shrink-0">
+                  <Wheat size={16} />
                 </div>
                 <div>
-                  <div className="font-bold text-[11px] leading-tight">यूट्यूब व रील्स</div>
-                  <div className="text-[9px] text-slate-400 mt-0.5">({videos.length + reels.length} वीडियो)</div>
+                  <div className="font-bold text-[11px] leading-tight">दैनिक मंडी भाव</div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">({mandiRates.length} फसलें)</div>
                 </div>
               </button>
 
