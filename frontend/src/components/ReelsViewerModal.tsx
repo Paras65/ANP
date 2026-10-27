@@ -21,7 +21,7 @@ interface ReelsViewerModalProps {
   initialPostId: string;
   posts: InstagramPost[];
   onClose: () => void;
-  onShareWhatsApp: (caption: string) => void;
+  onShareWhatsApp: (caption: string, postUrl?: string) => void;
 }
 
 interface Comment {
@@ -52,7 +52,14 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
-  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('anp_liked_reels');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>(() => {
     const map: Record<string, number> = {};
     posts.forEach(p => {
@@ -60,11 +67,25 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     });
     return map;
   });
-  const [savedPosts, setSavedPosts] = useState<Record<string, boolean>>({});
+  const [savedPosts, setSavedPosts] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('anp_bookmarked_reels');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
   const [isFollowing, setIsFollowing] = useState(false);
   const [showHeartBurst, setShowHeartBurst] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [commentsList, setCommentsList] = useState<Comment[]>(INITIAL_COMMENTS);
+  const [commentsList, setCommentsList] = useState<Comment[]>(() => {
+    try {
+      const saved = localStorage.getItem('anp_reel_comments');
+      return saved ? JSON.parse(saved) : INITIAL_COMMENTS;
+    } catch {
+      return INITIAL_COMMENTS;
+    }
+  });
   const [newComment, setNewComment] = useState('');
   const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
@@ -158,10 +179,14 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     setTouchStartY(null);
   };
 
-  // Like Toggle
+  // Like Toggle with LocalStorage persistence
   const toggleLike = () => {
     const willLike = !isCurrentLiked;
-    setLikedPosts(prev => ({ ...prev, [currentReel.id]: willLike }));
+    const updated = { ...likedPosts, [currentReel.id]: willLike };
+    setLikedPosts(updated);
+    try {
+      localStorage.setItem('anp_liked_reels', JSON.stringify(updated));
+    } catch {}
     setLikeCounts(prev => ({
       ...prev,
       [currentReel.id]: willLike ? (prev[currentReel.id] || 1200) + 1 : (prev[currentReel.id] || 1200) - 1
@@ -182,23 +207,32 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     }
   };
 
-  // Toggle Bookmark
+  // Toggle Bookmark with LocalStorage persistence
   const toggleSave = () => {
-    setSavedPosts(prev => ({ ...prev, [currentReel.id]: !prev[currentReel.id] }));
+    const willSave = !isCurrentSaved;
+    const updated = { ...savedPosts, [currentReel.id]: willSave };
+    setSavedPosts(updated);
+    try {
+      localStorage.setItem('anp_bookmarked_reels', JSON.stringify(updated));
+    } catch {}
   };
 
-  // Add Comment
+  // Add Comment with LocalStorage persistence
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
     const commentObj: Comment = {
       id: `comm-${Date.now()}`,
       user: 'आप (कवर्धा पाठक)',
-      text: newComment,
-      time: 'अभी',
+      text: newComment.trim(),
+      time: 'अभी-अभी',
       avatar: '👤'
     };
-    setCommentsList(prev => [commentObj, ...prev]);
+    const updatedList = [commentObj, ...commentsList];
+    setCommentsList(updatedList);
+    try {
+      localStorage.setItem('anp_reel_comments', JSON.stringify(updatedList));
+    } catch {}
     setNewComment('');
   };
 
@@ -221,43 +255,57 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           onClick={() => setIsPlaying(!isPlaying)}
           onDoubleClick={handleDoubleTap}
         >
-          {/* Video, Instagram Embed, or Image Background */}
-          {currentReel.embedUrl || (currentReel.postUrl && currentReel.postUrl.includes('instagram.com/reel/')) ? (
-            <div className="w-full h-full flex items-center justify-center bg-black">
-              <iframe
-                src={currentReel.embedUrl || `${currentReel.postUrl.replace(/\/$/, '')}/embed`}
-                title={currentReel.caption}
-                className="w-full h-full border-0"
-                allowFullScreen
-                scrolling="no"
-                allow="autoplay; encrypted-media"
-              ></iframe>
-            </div>
-          ) : currentReel.videoUrl ? (
-            <video
-              src={currentReel.videoUrl}
-              autoPlay
-              loop
-              muted={isMuted}
-              playsInline
-              className="w-full h-full object-cover pointer-events-none"
-            />
-          ) : currentReel.youtubeId ? (
-            <div className="w-full h-full relative pointer-events-none">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${currentReel.youtubeId}?autoplay=1&loop=1&playlist=${currentReel.youtubeId}&controls=0&modestbranding=1&rel=0&showinfo=0&mute=${isMuted ? '1' : '0'}`}
-                title={currentReel.caption}
-                className="w-[180%] h-[180%] -ml-[40%] -mt-[35%] object-cover"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              ></iframe>
-            </div>
-          ) : (
-            <img 
-              src={currentReel.imageUrl} 
-              alt={currentReel.caption}
-              className="w-full h-full object-cover animate-in fade-in duration-500" 
-            />
-          )}
+          {/* Video, YouTube Shorts, Instagram Embed, or Image Background */}
+          {(() => {
+            const ytId = currentReel.youtubeId || (currentReel.embedUrl?.includes('/embed/') ? currentReel.embedUrl.split('/embed/')[1]?.split('?')[0] : null);
+            if (ytId) {
+              return (
+                <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
+                  <iframe
+                    key={`${ytId}-${isMuted ? 'muted' : 'sound'}`}
+                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${isMuted ? '1' : '0'}&controls=0&loop=1&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3`}
+                    title={currentReel.caption}
+                    className="w-[170%] h-[120%] -ml-[35%] -mt-[10%] object-cover border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              );
+            }
+            if (currentReel.postUrl && currentReel.postUrl.includes('instagram.com/reel/')) {
+              return (
+                <div className="w-full h-full flex items-center justify-center bg-black">
+                  <iframe
+                    src={`${currentReel.postUrl.replace(/\/$/, '')}/embed`}
+                    title={currentReel.caption}
+                    className="w-full h-full border-0"
+                    allowFullScreen
+                    scrolling="no"
+                    allow="autoplay; encrypted-media"
+                  ></iframe>
+                </div>
+              );
+            }
+            if (currentReel.videoUrl) {
+              return (
+                <video
+                  src={currentReel.videoUrl}
+                  autoPlay
+                  loop
+                  muted={isMuted}
+                  playsInline
+                  className="w-full h-full object-cover pointer-events-none"
+                />
+              );
+            }
+            return (
+              <img 
+                src={currentReel.imageUrl} 
+                alt={currentReel.caption}
+                className="w-full h-full object-cover animate-in fade-in duration-500" 
+              />
+            );
+          })()}
 
           {/* Vignette Overlay Gradients */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90 pointer-events-none"></div>
@@ -382,9 +430,12 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
             </span>
           </button>
 
-          {/* Share on WhatsApp */}
+          {/* Share on WhatsApp with direct reel URL */}
           <button 
-            onClick={() => onShareWhatsApp(currentReel.caption)}
+            onClick={() => {
+              const reelLink = currentReel.postUrl || (currentReel.youtubeId ? `https://youtube.com/shorts/${currentReel.youtubeId}` : window.location.href);
+              onShareWhatsApp(currentReel.caption, reelLink);
+            }}
             className="flex flex-col items-center gap-1 group active:scale-75 transition-transform"
             title="Share Reel on WhatsApp"
           >

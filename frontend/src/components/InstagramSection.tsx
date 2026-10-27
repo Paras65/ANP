@@ -25,6 +25,19 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
   const [audioInput, setAudioInput] = useState('Ambition News Original');
   const [parsedReel, setParsedReel] = useState<{ type: 'instagram' | 'youtube_short'; embedUrl: string; previewThumb?: string; rawId?: string } | null>(null);
 
+  // Compact Shelf Controls
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedDistrict, setSelectedDistrict] = useState<'all' | string>('all');
+
+  // Collect distinct districts from posts
+  const districts = ['all', ...Array.from(new Set(posts.map(p => p.district).filter(Boolean)))];
+
+  const filteredPosts = selectedDistrict === 'all' 
+    ? posts 
+    : posts.filter(p => p.district === selectedDistrict);
+
+  const visiblePosts = isExpanded ? filteredPosts : filteredPosts.slice(0, 8);
+
   const handleUrlChange = (val: string) => {
     setReelUrlInput(val);
     const ig = parseInstagramUrl(val);
@@ -137,9 +150,30 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
 
       </div>
 
+      {/* District Filter Pills */}
+      {districts.length > 2 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2.5 mb-3 text-xs">
+          {districts.map(d => (
+            <button
+              key={d}
+              onClick={() => setSelectedDistrict(d)}
+              className={`px-3 py-1 rounded-full text-[11px] font-bold transition whitespace-nowrap active:scale-95 ${
+                selectedDistrict === d
+                  ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/30'
+                  : isDark 
+                    ? 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800' 
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+              }`}
+            >
+              {d === 'all' ? `सभी रील्स (${posts.length})` : `${d} (${posts.filter(p => p.district === d).length})`}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Visual Reels Grid: Clicking opens the interactive Reel Player */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        {posts.map((post) => (
+        {visiblePosts.map((post) => (
           <div 
             key={post.id}
             onClick={() => onSelectReel(post.id)}
@@ -201,6 +235,30 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Expand/Collapse Bar & Watch All Action */}
+      {filteredPosts.length > 8 && (
+        <div className="mt-4 pt-3 border-t border-red-950/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-gradient-to-r from-pink-950/60 to-purple-950/60 hover:from-pink-900/80 hover:to-purple-900/80 border border-pink-500/30 text-pink-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-md"
+          >
+            {isExpanded ? (
+              <span>▲ कम रील्स दिखाएं (कम करें)</span>
+            ) : (
+              <span>▼ और {filteredPosts.length - 8} रील्स देखें (कुल {filteredPosts.length} रील्स)</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => onSelectReel(visiblePosts[0]?.id || posts[0]?.id)}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-pink-600/25 transition active:scale-95"
+          >
+            <Play size={14} className="fill-white" />
+            <span>फुलस्क्रीन में लगातार चलाएं (Watch All)</span>
+          </button>
+        </div>
+      )}
 
       {/* Add New Reel Modal */}
       {showAddModal && (

@@ -1096,7 +1096,10 @@ export const App: React.FC = () => {
             initialPostId={activeReelId}
             posts={instagramPosts}
             onClose={() => setActiveReelId(null)}
-            onShareWhatsApp={(caption) => shareWhatsApp(`Reels: ${caption}`)}
+            onShareWhatsApp={(caption, postUrl) => {
+              const text = `🎬 *Ambition News Reel*:\n${caption}\n\n▶️ तुरंत यहाँ देखें:\n${postUrl || window.location.origin}`;
+              window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+            }}
           />
         )}
 
