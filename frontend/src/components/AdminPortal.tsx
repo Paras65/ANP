@@ -50,7 +50,7 @@ import api, { setAuthToken } from '../api/client';
 import { SOCIAL_LINKS } from '../data/mockData';
 import { WhatsAppBulletinModal } from './WhatsAppBulletinModal';
 import { NewsCardGeneratorModal } from './NewsCardGeneratorModal';
-import { generateHeadlinesAI, autoSummarizeAI, polishArticleAI, type AIHeadlineSuggestion } from '../utils/aiNewsAssistant';
+import { generateHeadlinesAI, autoSummarizeAI, polishArticleAI, redactClientSecret, type AIHeadlineSuggestion } from '../utils/aiNewsAssistant';
 import { sendBreakingPushNotification } from '../utils/pushNotification';
 import { useVoiceTyping } from '../hooks/useVoiceTyping';
 
@@ -179,7 +179,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       setAiHeadlineSuggestions(suggestions);
       setAiFeedback('✨ Gemini AI: 3 नए शीर्षक तैयार हैं! नीचे से मनपसंद शीर्षक चुनें:');
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
+      const msg = redactClientSecret(err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका');
       setAiFeedback(`⚠️ ${msg} — आप बोलकर (🎙️) लिख सकते हैं।`);
     } finally {
       setIsGeneratingAI(false);
@@ -195,7 +195,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       setAiFeedback('✨ Gemini AI: समाचार का संक्षिप्त सारांश तैयार हो गया!');
       setTimeout(() => setAiFeedback(null), 4000);
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
+      const msg = redactClientSecret(err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका');
       setAiFeedback(`⚠️ ${msg} — आप बोलकर (🎙️) लिख सकते हैं।`);
     } finally {
       setIsGeneratingAI(false);
@@ -211,7 +211,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       setAiFeedback('✨ Gemini AI: समाचार को पत्रकारिता शैली में पॉलिश कर दिया गया!');
       setTimeout(() => setAiFeedback(null), 4000);
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
+      const msg = redactClientSecret(err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका');
       setAiFeedback(`⚠️ ${msg} — आप बोलकर (🎙️) लिख सकते हैं।`);
     } finally {
       setIsGeneratingAI(false);

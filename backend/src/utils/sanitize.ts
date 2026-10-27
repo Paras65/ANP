@@ -1,0 +1,78 @@
+/**
+ * Secret & Credential Redaction Sanitizer
+ * Guarantees zero leakage of API keys, tokens, or credentials in logs, network responses, or client messages.
+ */
+
+export function redactSecretKeys(input: string | any): string {
+  if (!input) return '';
+  let text = typeof input === 'string' ? input : (input.message || JSON.stringify(input));
+
+  // 1. Redact Google API Keys (AIzaSy...)
+  text = text.replace(/AIza[0-9A-Za-z\-_]{30,}/g, '[REDACTED_API_KEY]');
+
+  // 2. Redact query param key=...
+  text = text.replace(/([?&]key=)[^&\s]+/gi, '$1[REDACTED_API_KEY]');
+
+  // 3. Redact any instance of the current GEMINI_API_KEY from env if present
+  const currentKey = process.env.GEMINI_API_KEY;
+  if (currentKey && currentKey.length > 5 && currentKey !== 'your_gemini_api_key_here') {
+    text = text.split(currentKey.trim()).join('[REDACTED_API_KEY]');
+  }
+
+  // 4. Redact MongoDB connection strings
+  text = text.replace(/mongodb(\+srv)?:\/\/[^:]+:[^@]+@/gi, 'mongodb$1://[REDACTED_USER_PASSWORD]@');
+
+  // 5. Redact Bearer tokens
+  text = text.replace(/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, 'Bearer [REDACTED_TOKEN]');
+
+  return text;
+}
+
+/**
+ * Maps raw third-party SDK errors to safe, user-friendly Hindi error messages
+ * without ever exposing internal URLs, stack traces, or credentials.
+ */
+export function getSafeGeminiErrorMessage(err: any): string {
+  if (!err) return 'Gemini AI सेवा से उत्तर प्राप्त नहीं हो सका।';
+
+  const raw = redactSecretKeys(err.message || String(err));
+
+  // Known custom configuration message
+  if (raw.includes('GEMINI_API_KEY कॉन्फ़िगर नहीं है')) {
+    return 'सर्वर पर GEMINI_API_KEY सेट नहीं है। कृपया backend/.env में अपनी Google Gemini API Key जोड़ें।';
+  }
+
+  // Authentication & Invalid Key errors
+  if (
+    raw.includes('API_KEY_INVALID') || 
+    raw.includes('UNAUTHENTICATED') || 
+    raw.includes('401') || 
+    raw.includes('403') ||
+    raw.includes('API key not valid')
+  ) {
+    return 'Google Gemini API Key अमान्य (Invalid) या अनधिकृत है। कृपया सही कुंजी जांचें।';
+  }
+
+  // Quota & Rate Limit errors
+  if (
+    raw.includes('RESOURCE_EXHAUSTED') || 
+    raw.includes('429') || 
+    raw.includes('quota') || 
+    raw.includes('Rate limit')
+  ) {
+    return 'Gemini API का मुफ्त कोटा (Quota) या दर सीमा पूरी हो गई है। कृपया थोड़ी देर बाद पुनः प्रयास करें।';
+  }
+
+  // Content Safety Filters
+  if (raw.includes('SAFETY') || raw.includes('BLOCKED') || raw.includes('harmCategory')) {
+    return 'सामग्री सुरक्षा दिशानिर्देशों (Safety Guidelines) के कारण जनरेट नहीं हो सकी।';
+  }
+
+  // Network & Timeout
+  if (raw.includes('ETIMEDOUT') || raw.includes('ENOTFOUND') || raw.includes('fetch failed')) {
+    return 'Google AI सर्वर से संपर्क नहीं हो सका। कृपया इंटरनेट कनेक्शन जांचें।';
+  }
+
+  // Generic fallback (Always redacted)
+  return 'Gemini AI सेवा से उत्तर प्राप्त करने में विफल।';
+}

@@ -13,6 +13,7 @@ import { MandiRate } from '../models/MandiRate.model.js';
 import { requireAdminAuth } from '../middleware/auth.middleware.js';
 import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI } from '../services/youtubeSync.js';
 import { processGeminiNewsTask } from '../services/gemini.service.js';
+import { getSafeGeminiErrorMessage, redactSecretKeys } from '../utils/sanitize.js';
 
 const router = Router();
 let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg';
@@ -964,10 +965,13 @@ router.post('/ai/assistant', requireAdminAuth, async (req: Request, res: Respons
 
     res.json({ success: true, data: result });
   } catch (err: any) {
-    console.error('[Gemini AI Error]:', err.message || err);
+    const safeError = getSafeGeminiErrorMessage(err);
+    // Guarantees zero credential leakage in server console/logs
+    console.warn('[Gemini AI Warning]:', redactSecretKeys(safeError));
+    // Guarantees zero credential leakage in Network Tab response payload
     res.status(500).json({ 
       success: false, 
-      message: err.message || 'Gemini AI सेवा से उत्तर प्राप्त करने में विफल।' 
+      message: safeError 
     });
   }
 });
