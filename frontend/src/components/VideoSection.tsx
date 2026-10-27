@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play, ExternalLink, X, Eye, Clock, Tv, Plus, Check, AlertCircle, RefreshCw } from 'lucide-react';
-import { YoutubeIcon } from './SocialIcons';
+import { YoutubeIcon, WhatsAppIcon } from './SocialIcons';
 import type { VideoBulletin } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
 import { parseYouTubeUrl } from '../utils/mediaUtils';
@@ -11,9 +11,25 @@ interface VideoSectionProps {
   onAddVideo?: (video: VideoBulletin) => void;
   onSync?: () => void;
   isSyncing?: boolean;
+  onShareWhatsApp?: (title: string, videoUrl?: string) => void;
 }
 
-export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, onAddVideo, onSync, isSyncing = false }) => {
+const CATEGORIES = [
+  { id: 'all', label: 'सभी वीडियो' },
+  { id: 'ground', label: 'ग्राउंड रिपोर्टिंग', keywords: ['ग्राउंड', 'सड़क', 'पुलिया', 'बारिश', 'नेवारीगुडा', 'चंदनपुर', 'सकरी'] },
+  { id: 'kawardha', label: 'कवर्धा विशेष', keywords: ['कवर्धा', 'कबीरधाम', 'भोरमदेव'] },
+  { id: 'governance', label: 'शासन व राजनीति', keywords: ['सरकार', 'भीम आर्मी', 'पटवारी', 'कलेक्टर', 'भाजपा', 'अकबर', 'विजय शर्मा', 'साव', 'कोटवार'] },
+  { id: 'social', label: 'समाज व जनहित', keywords: ['नेत्र', 'अस्पताल', 'आयुष्मान', 'मूर्तिकार', 'दुकान', 'ऑफर', 'शोरूम', 'Ola', 'दुर्गा', 'नैला'] }
+];
+
+export const VideoSection: React.FC<VideoSectionProps> = ({ 
+  bulletins, 
+  isDark, 
+  onAddVideo, 
+  onSync, 
+  isSyncing = false,
+  onShareWhatsApp
+}) => {
   const [activeVideo, setActiveVideo] = useState<VideoBulletin | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [inputUrl, setInputUrl] = useState('');
@@ -21,6 +37,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
   const [videoCategory, setVideoCategory] = useState('कवर्धा स्पेशल');
   const [videoDuration, setVideoDuration] = useState('10:00');
   const [parsedInfo, setParsedInfo] = useState<ReturnType<typeof parseYouTubeUrl>>(null);
+
+  // Filters & Expansion
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   const handleUrlChange = (val: string) => {
     setInputUrl(val);
@@ -38,7 +58,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
       youtubeId: parsedInfo.id,
       thumbnail: parsedInfo.thumbnailUrl,
       duration: videoDuration || '10:00',
-      views: '1',
+      views: 'ताज़ा',
       timeAgo: 'अभी-अभी',
       category: videoCategory,
       youtubeUrl: parsedInfo.watchUrl
@@ -53,28 +73,56 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
     setParsedInfo(null);
   };
 
+  // Filter bulletins based on selected category
+  const filteredBulletins = bulletins.filter(b => {
+    if (selectedCategory === 'all') return true;
+    const cat = CATEGORIES.find(c => c.id === selectedCategory);
+    if (!cat || !cat.keywords) return true;
+    const title = (b.title + ' ' + (b.category || '')).toLowerCase();
+    return cat.keywords.some(k => title.includes(k.toLowerCase()));
+  });
+
+  const displayList = filteredBulletins.length > 0 ? filteredBulletins : bulletins;
+  const featuredVideo = displayList[0] || null;
+  const remainingBulletins = displayList.slice(1);
+  const visibleRemaining = isExpanded ? remainingBulletins : remainingBulletins.slice(0, 8);
+
+  const handleShare = (video: VideoBulletin, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const url = video.youtubeUrl || `https://www.youtube.com/watch?v=${video.youtubeId}`;
+    if (onShareWhatsApp) {
+      onShareWhatsApp(video.title, url);
+    } else {
+      const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${video.title}\n\n▶️ तुरंत यहाँ देखें:\n${url}`;
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    }
+  };
+
   return (
     <section className={`rounded-3xl border p-4 sm:p-5 transition-colors ${
       isDark ? 'bg-[#090d18]/95 border-red-950/40 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
     }`}>
       
-      {/* Header */}
+      {/* 1. SECTION HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-red-950/30">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center text-white shadow-md shadow-red-600/30">
-            <Tv size={19} />
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-red-600 via-rose-600 to-red-700 flex items-center justify-center text-white shadow-lg shadow-red-600/30">
+            <Tv size={20} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black text-white tracking-wide">
-                AMBITION TV • लाइव यूट्यूब वीडियो बुलेटिन
+              <h2 className="text-base sm:text-lg font-black text-white tracking-wide flex items-center gap-2">
+                <span>AMBITION TV</span>
+                <span className="text-xs text-red-500 font-bold">•</span>
+                <span className="text-sm sm:text-base font-bold text-slate-200">वीडियो बुलेटिन</span>
               </h2>
-              <span className="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
-                🔴 LIVE
+              <span className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                LIVE
               </span>
             </div>
-            <p className="text-xs text-slate-400">
-              यूट्यूब चैनल ({SOCIAL_LINKS.youtubeHandle}) से सीधे प्रसारित ग्राउंड रिपोर्ट्स व खास इंटरव्यू
+            <p className="text-xs text-slate-400 mt-0.5">
+              यूट्यूब चैनल ({SOCIAL_LINKS.youtubeHandle}) से सीधे ग्राउंड रिपोर्ट्स, जनआंदोलन व खास इंटरव्यू
             </p>
           </div>
         </div>
@@ -96,7 +144,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
           {onAddVideo && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition active:scale-95 shadow"
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition active:scale-95 shadow cursor-pointer"
               title="नया यूट्यूब वीडियो लिंक जोड़ें"
             >
               <Plus size={14} className="text-red-400" />
@@ -109,23 +157,146 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
             href={SOCIAL_LINKS.youtube} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-red-600/30 transition active:scale-95 shrink-0"
+            className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-red-600/30 transition active:scale-95 shrink-0"
           >
             <YoutubeIcon size={16} />
-            <span>सब्सक्राइब करें ({SOCIAL_LINKS.youtubeSubs})</span>
+            <span>सब्सक्राइब ({SOCIAL_LINKS.youtubeSubs})</span>
             <ExternalLink size={12} />
           </a>
         </div>
       </div>
 
-      {/* Video Grid */}
+      {/* 2. CATEGORY FILTER PILLS */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 mb-4 text-xs">
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => {
+              setSelectedCategory(cat.id);
+              setIsExpanded(false);
+            }}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition whitespace-nowrap active:scale-95 cursor-pointer ${
+              selectedCategory === cat.id
+                ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30'
+                : isDark 
+                  ? 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800' 
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 3. HERO SPOTLIGHT BROADCAST (Lead Featured Video) */}
+      {featuredVideo && (
+        <div className={`mb-6 rounded-2xl sm:rounded-3xl border overflow-hidden transition-all shadow-xl ${
+          isDark ? 'bg-gradient-to-br from-slate-900/90 via-slate-950 to-red-950/20 border-red-950/60' : 'bg-gradient-to-br from-red-50/50 via-white to-slate-50 border-red-200'
+        }`}>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+            
+            {/* 16:9 Cinema Thumbnail with 1-click play */}
+            <div 
+              onClick={() => setActiveVideo(featuredVideo)}
+              className="lg:col-span-7 relative aspect-video w-full bg-slate-950 cursor-pointer overflow-hidden group select-none"
+            >
+              <img 
+                src={featuredVideo.thumbnail} 
+                alt={featuredVideo.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent group-hover:from-black/90 transition-colors flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-red-500 transition-all border-2 border-white/30 backdrop-blur-sm">
+                  <Play size={28} className="fill-white ml-1" />
+                </div>
+              </div>
+
+              {/* Badges */}
+              <div className="absolute top-3 left-3 flex items-center gap-2">
+                <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-lg animate-pulse">
+                  <span className="w-2 h-2 rounded-full bg-white"></span>
+                  मुख्य वीडियो बुलेटिन
+                </span>
+              </div>
+              <div className="absolute bottom-3 right-3 bg-black/85 font-mono text-white text-xs px-2 py-0.5 rounded font-bold backdrop-blur border border-white/10">
+                {featuredVideo.duration}
+              </div>
+            </div>
+
+            {/* Featured Metadata & Action Controls */}
+            <div className="lg:col-span-5 p-4 sm:p-6 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-red-500 bg-red-950/40 border border-red-800/60 px-2.5 py-0.5 rounded-full">
+                    {featuredVideo.category || 'कवर्धा विशेष'}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {featuredVideo.timeAgo}
+                  </span>
+                </div>
+
+                <h3 
+                  onClick={() => setActiveVideo(featuredVideo)}
+                  className={`text-base sm:text-xl font-black leading-snug line-clamp-3 cursor-pointer transition-colors ${
+                    isDark ? 'text-white hover:text-red-400' : 'text-slate-900 hover:text-red-600'
+                  }`}
+                >
+                  {featuredVideo.title}
+                </h3>
+
+                <div className="flex items-center gap-3 text-xs text-slate-400">
+                  <span className="flex items-center gap-1 text-slate-300 font-semibold">
+                    <Eye size={13} className="text-red-500" /> {featuredVideo.views}
+                  </span>
+                  <span>•</span>
+                  <span>Ambition News स्पेशल ग्राउंड रिपोर्ट</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-4 mt-3 border-t border-red-950/30">
+                <button
+                  onClick={() => setActiveVideo(featuredVideo)}
+                  className="flex-1 sm:flex-initial bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+                >
+                  <Play size={15} className="fill-white" />
+                  <span>तुरंत चलाएं (Play)</span>
+                </button>
+
+                <button
+                  onClick={(e) => handleShare(featuredVideo, e)}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+                  title="WhatsApp पर शेयर करें"
+                >
+                  <WhatsAppIcon size={15} />
+                  <span>शेयर</span>
+                </button>
+
+                <a
+                  href={featuredVideo.youtubeUrl || `https://www.youtube.com/watch?v=${featuredVideo.youtubeId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs p-2.5 rounded-xl transition cursor-pointer"
+                  title="YouTube पर देखें"
+                >
+                  <ExternalLink size={15} />
+                </a>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 4. SUBSEQUENT VIDEOS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {bulletins.map((video) => (
+        {visibleRemaining.map((video) => (
           <div 
             key={video.id}
             onClick={() => setActiveVideo(video)}
-            className={`group rounded-xl border overflow-hidden cursor-pointer flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
-              isDark ? 'bg-slate-950 border-slate-800 hover:border-red-600/60' : 'bg-slate-50 border-slate-200 hover:border-red-500 hover:shadow-md'
+            className={`group rounded-2xl border overflow-hidden cursor-pointer flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-md ${
+              isDark ? 'bg-slate-950 border-slate-800/80 hover:border-red-600/60' : 'bg-slate-50 border-slate-200 hover:border-red-500 hover:shadow-lg'
             }`}
           >
             {/* Thumbnail */}
@@ -135,7 +306,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
                 alt={video.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
               />
-              <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/35 group-hover:bg-black/15 transition-colors flex items-center justify-center">
                 <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                   <Play size={18} className="fill-current ml-0.5" />
                 </div>
@@ -143,10 +314,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
 
               {/* Badges */}
               <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[10px] text-white">
-                <span className="bg-black/70 backdrop-blur px-1.5 py-0.5 rounded font-medium">
-                  {video.category}
+                <span className="bg-black/75 backdrop-blur px-2 py-0.5 rounded font-medium">
+                  {video.category || 'कवर्धा विशेष'}
                 </span>
-                <span className="bg-black/80 font-mono px-1.5 py-0.5 rounded font-bold">
+                <span className="bg-black/85 font-mono px-1.5 py-0.5 rounded font-bold">
                   {video.duration}
                 </span>
               </div>
@@ -161,86 +332,159 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
               </h3>
 
               <div className="mt-2.5 pt-2 border-t border-slate-800/40 flex items-center justify-between text-[11px] text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Eye size={11} /> {video.views} व्यूज
+                <span className="flex items-center gap-1 font-medium">
+                  <Eye size={11} className="text-red-500" /> {video.views}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Clock size={11} /> {video.timeAgo}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => handleShare(video, e)}
+                    className="p-1 hover:text-emerald-400 transition"
+                    title="WhatsApp शेयर"
+                  >
+                    <WhatsAppIcon size={13} className="text-emerald-500" />
+                  </button>
+                  <span className="flex items-center gap-1">
+                    <Clock size={11} /> {video.timeAgo}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Video Modal Player */}
+      {/* 5. EXPAND / COLLAPSE CONTROLS */}
+      {remainingBulletins.length > 8 && (
+        <div className="mt-5 pt-4 border-t border-red-950/30 flex items-center justify-center">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-gradient-to-r from-red-950/60 to-slate-900/80 hover:from-red-900/80 hover:to-slate-800 border border-red-600/40 text-red-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-lg cursor-pointer"
+          >
+            {isExpanded ? (
+              <span>▲ कम वीडियो बुलेटिन दिखाएं (कम करें)</span>
+            ) : (
+              <span>▼ और {remainingBulletins.length - 8} वीडियो बुलेटिन देखें (कुल {displayList.length} वीडियो)</span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* 6. INTERACTIVE VIDEO PLAYER MODAL WITH 'UP NEXT' PLAYLIST */}
       {activeVideo && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-[#0b0f19] border border-red-500/30 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh]">
             
             {/* Modal Header */}
-            <div className="p-3 sm:p-4 bg-slate-950 flex items-center justify-between border-b border-slate-800">
+            <div className="p-3 sm:p-4 bg-[#070a12] flex items-center justify-between border-b border-white/10 shrink-0">
               <div className="flex items-center gap-2 text-red-500 font-bold text-sm">
                 <YoutubeIcon size={18} />
-                <span className="text-white">Ambition News Video Player</span>
+                <span className="text-white font-black tracking-wide">AMBITION TV • लाइव प्लेयर</span>
               </div>
               <button 
                 onClick={() => setActiveVideo(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+                className="text-slate-400 hover:text-white p-1 rounded-xl hover:bg-slate-800 transition cursor-pointer"
+                title="बंद करें"
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Video Player Embed / Container */}
-            <div className="relative aspect-video w-full bg-black">
-              <iframe 
-                src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0`}
-                title={activeVideo.title}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-
-            {/* Video Details & Actions */}
-            <div className="p-4 sm:p-5 space-y-3 bg-slate-900 text-white">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-red-600 text-[11px] font-bold px-2 py-0.5 rounded">
-                  {activeVideo.category}
-                </span>
-                <span className="text-xs text-slate-400">
-                  {activeVideo.views} व्यूज • {activeVideo.timeAgo}
-                </span>
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto no-scrollbar flex-1">
+              
+              {/* 16:9 Video Embed Player */}
+              <div className="relative aspect-video w-full bg-black">
+                <iframe 
+                  key={activeVideo.youtubeId}
+                  src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                  title={activeVideo.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
               </div>
 
-              <h3 className="text-base sm:text-lg font-bold leading-snug">
-                {activeVideo.title}
-              </h3>
+              {/* Video Details & Actions */}
+              <div className="p-4 sm:p-6 space-y-4 text-white">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-red-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                      {activeVideo.category || 'कवर्धा विशेष'}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {activeVideo.views} • {activeVideo.timeAgo}
+                    </span>
+                  </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <span>प्रसारण:</span>
-                  <span className="font-bold text-white">Ambition News (कवर्धा डेस्क)</span>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleShare(activeVideo)}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95 cursor-pointer"
+                    >
+                      <WhatsAppIcon size={15} />
+                      <span>WhatsApp शेयर</span>
+                    </button>
+
+                    <a 
+                      href={activeVideo.youtubeUrl || `https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95"
+                    >
+                      <YoutubeIcon size={15} />
+                      <span>YouTube पर देखें</span>
+                    </a>
+                  </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <a 
-                    href={activeVideo.youtubeUrl || SOCIAL_LINKS.youtube}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow"
-                  >
-                    <YoutubeIcon size={14} />
-                    <span>YouTube पर देखें</span>
-                  </a>
-                  <button 
-                    onClick={() => setActiveVideo(null)}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg font-medium"
-                  >
-                    बंद करें
-                  </button>
+                <h3 className="text-base sm:text-xl font-bold leading-snug">
+                  {activeVideo.title}
+                </h3>
+
+                {/* UP NEXT PLAYLIST RECOMMENDATIONS */}
+                <div className="pt-4 border-t border-white/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                      अगला वीडियो (Up Next Playlist)
+                    </h4>
+                    <span className="text-[11px] text-slate-400">क्लिक करके तुरंत चलाएं</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {bulletins
+                      .filter(b => b.youtubeId !== activeVideo.youtubeId)
+                      .slice(0, 4)
+                      .map(nextVid => (
+                        <div
+                          key={nextVid.id}
+                          onClick={() => setActiveVideo(nextVid)}
+                          className="group rounded-xl border border-white/10 overflow-hidden bg-slate-900/80 hover:border-red-500/60 cursor-pointer transition flex flex-col justify-between"
+                        >
+                          <div className="relative aspect-video w-full bg-slate-950 overflow-hidden">
+                            <img 
+                              src={nextVid.thumbnail} 
+                              alt={nextVid.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                            />
+                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 flex items-center justify-center transition">
+                              <Play size={14} className="fill-white text-white group-hover:scale-110 transition" />
+                            </div>
+                            <span className="absolute bottom-1 right-1 bg-black/80 font-mono text-[9px] text-white px-1 rounded">
+                              {nextVid.duration}
+                            </span>
+                          </div>
+                          <div className="p-2">
+                            <h5 className="text-[11px] font-bold text-slate-200 line-clamp-2 leading-tight group-hover:text-red-400 transition">
+                              {nextVid.title}
+                            </h5>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
+
               </div>
 
             </div>
@@ -249,7 +493,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
         </div>
       )}
 
-      {/* Add New YouTube Video Modal */}
+      {/* 7. ADD NEW YOUTUBE VIDEO MODAL (Admin & Manual) */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0b0f19] border border-red-500/30 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
@@ -257,53 +501,44 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
             <div className="p-4 bg-[#070a12] flex items-center justify-between border-b border-white/10">
               <div className="flex items-center gap-2 text-red-500 font-bold text-sm">
                 <YoutubeIcon size={18} />
-                <span className="text-white">नया यूट्यूब वीडियो बुलेटिन जोड़ें</span>
+                <span className="text-white font-bold">नया यूट्यूब वीडियो बुलेटिन जोड़ें</span>
               </div>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
               >
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleSaveVideo} className="p-5 space-y-4">
-              {/* URL Input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
-                  <span>यूट्यूब वीडियो लिंक (YouTube URL)</span>
-                  <span className="text-[10px] text-red-400 font-normal">watch?v=, youtu.be, या Shorts</span>
+                  <span>यूट्यूब वीडियो लिंक (YouTube Video URL)</span>
+                  <span className="text-[10px] text-red-400 font-normal">youtube.com/watch?v=... या youtu.be/...</span>
                 </label>
                 <input 
                   type="text"
                   value={inputUrl}
                   onChange={(e) => handleUrlChange(e.target.value)}
-                  placeholder="उदा. https://www.youtube.com/watch?v=..."
+                  placeholder="उदा. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                   className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition"
                   required
                 />
               </div>
 
-              {/* Live Preview if parsed */}
               {parsedInfo && (
                 <div className="p-3 rounded-2xl bg-black/40 border border-emerald-500/40 flex items-center gap-3">
-                  <div className="w-24 aspect-video rounded-lg overflow-hidden relative shrink-0 bg-slate-900 border border-white/10">
-                    <img 
-                      src={parsedInfo.thumbnailUrl} 
-                      alt="Thumbnail Preview" 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <Play size={12} className="text-white fill-current" />
-                    </div>
+                  <div className="w-20 aspect-video rounded-lg overflow-hidden relative shrink-0 bg-slate-900 border border-white/10">
+                    <img src={parsedInfo.thumbnailUrl} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
                       <Check size={12} />
-                      <span>मान्य यूट्यूब वीडियो मिला!</span>
+                      <span>मान्य यूट्यूब वीडियो आईडी: {parsedInfo.id}</span>
                     </div>
-                    <span className="text-[10px] text-slate-400 block truncate">
-                      ID: {parsedInfo.id} {parsedInfo.isShort ? '(Shorts)' : ''}
+                    <span className="text-[10px] text-slate-400 block truncate mt-0.5">
+                      थंबनेल व HD प्लेयर तैयार है
                     </span>
                   </div>
                 </div>
@@ -312,38 +547,35 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
               {inputUrl && !parsedInfo && (
                 <div className="p-2.5 rounded-xl bg-red-950/30 border border-red-500/30 flex items-center gap-2 text-[11px] text-red-400">
                   <AlertCircle size={14} className="shrink-0" />
-                  <span>कृपया वैध यूट्यूब लिंक दर्ज करें।</span>
+                  <span>कृपया मान्य यूट्यूब वीडियो लिंक दर्ज करें।</span>
                 </div>
               )}
 
-              {/* Title */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300">वीडियो शीर्षक (Title)</label>
                 <input 
                   type="text"
                   value={videoTitle}
                   onChange={(e) => setVideoTitle(e.target.value)}
-                  placeholder="उदा. कवर्धा में नई सड़क परियोजना का भूमिपूजन..."
+                  placeholder="उदा. कवर्धा में किसानों की बड़ी रैली, प्रशासन से मांग..."
                   className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition"
                   required
                 />
               </div>
 
-              {/* Category & Duration */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-300">श्रेणी (Category)</label>
                   <select
                     value={videoCategory}
                     onChange={(e) => setVideoCategory(e.target.value)}
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none"
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
                   >
-                    <option value="कवर्धा स्पेशल">कवर्धा स्पेशल</option>
-                    <option value="राज्य बुलेटिन">राज्य बुलेटिन</option>
+                    <option value="कवर्धा विशेष">कवर्धा विशेष</option>
+                    <option value="ग्राउंड रिपोर्ट">ग्राउंड रिपोर्ट</option>
                     <option value="राजनीति">राजनीति</option>
-                    <option value="अपराध">अपराध</option>
-                    <option value="कृषि व मंडी">कृषि व मंडी</option>
-                    <option value="संस्कृति व धरोहर">संस्कृति व धरोहर</option>
+                    <option value="क्राइम">क्राइम</option>
+                    <option value="विकास कार्य">विकास कार्य</option>
                   </select>
                 </div>
 
@@ -353,25 +585,24 @@ export const VideoSection: React.FC<VideoSectionProps> = ({ bulletins, isDark, o
                     type="text"
                     value={videoDuration}
                     onChange={(e) => setVideoDuration(e.target.value)}
-                    placeholder="उदा. 12:45"
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none"
+                    placeholder="10:00"
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
                   />
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition"
+                  className="px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
                 >
                   रद्द करें
                 </button>
                 <button
                   type="submit"
                   disabled={!parsedInfo || !videoTitle.trim()}
-                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:opacity-50 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-red-600/30 transition active:scale-95 flex items-center gap-1.5"
+                  className="bg-gradient-to-r from-red-600 to-rose-600 hover:opacity-90 disabled:opacity-50 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-red-600/30 transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
                 >
                   <Check size={14} />
                   <span>वीडियो प्रकाशित करें</span>

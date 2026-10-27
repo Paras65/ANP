@@ -329,6 +329,19 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
               publishedAt: v.publishedAt ? new Date(v.publishedAt) : new Date()
             });
             newVideosAdded++;
+          } else {
+            // Live update views count and stats from YouTube
+            await Video.updateOne(
+              { youtubeId: v.youtubeId },
+              {
+                $set: {
+                  views: v.views,
+                  duration: v.duration,
+                  thumbnail: v.thumbnail,
+                  title: v.title
+                }
+              }
+            );
           }
         }
 
@@ -337,6 +350,19 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
           if (!existing) {
             await Reel.create(s);
             newReelsAdded++;
+          } else {
+            // Live update likes and view stats from YouTube
+            await Reel.updateOne(
+              { youtubeId: s.youtubeId },
+              {
+                $set: {
+                  likes: s.likes,
+                  commentsCount: s.commentsCount,
+                  caption: s.caption,
+                  imageUrl: s.imageUrl
+                }
+              }
+            );
           }
         }
       } catch (apiErr: any) {

@@ -613,6 +613,10 @@ export const App: React.FC = () => {
                 onAddVideo={handleAddVideo}
                 onSync={() => handleSyncYouTube()}
                 isSyncing={isSyncingYouTube}
+                onShareWhatsApp={(title, url) => {
+                  const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
+                  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                }}
               />
             </div>
           )}
@@ -1032,6 +1036,10 @@ export const App: React.FC = () => {
                 onAddVideo={handleAddVideo}
                 onSync={() => handleSyncYouTube()}
                 isSyncing={isSyncingYouTube}
+                onShareWhatsApp={(title, url) => {
+                  const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
+                  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                }}
               />
 
               {/* DEDICATED INSTAGRAM KAWARDHA SECTION */}
