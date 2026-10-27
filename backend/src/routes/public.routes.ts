@@ -759,7 +759,52 @@ router.delete('/mandi/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 10. POST /api/auth/verify-admin - Secure PIN Verification for Editorial Desk
+// 10a. GET /api/auth/pin-status - Check if an admin PIN is configured
+router.get('/auth/pin-status', async (_req: Request, res: Response) => {
+  try {
+    const setting = await Setting.findOne({ key: 'admin_pin' });
+    const isConfigured = Boolean((setting?.value && String(setting.value).trim()) || (process.env.ADMIN_PIN && process.env.ADMIN_PIN.trim()));
+    res.json({ success: true, isConfigured });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10b. POST /api/auth/setup-pin - Initial First-Time Setup of Admin PIN
+router.post('/auth/setup-pin', async (req: Request, res: Response) => {
+  try {
+    const { newPin } = req.body;
+    if (!newPin || String(newPin).trim().length < 4) {
+      return res.status(400).json({ success: false, message: 'नया एडमिन पिन कम से कम 4 अंकों का होना चाहिए' });
+    }
+
+    const existingSetting = await Setting.findOne({ key: 'admin_pin' });
+    const isConfigured = Boolean((existingSetting?.value && String(existingSetting.value).trim()) || (process.env.ADMIN_PIN && process.env.ADMIN_PIN.trim()));
+
+    if (isConfigured) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'एडमिन पिन पहले से कॉन्फ़िगर है। इसे बदलने के लिए पिन बदलें (Change PIN) का उपयोग करें।' 
+      });
+    }
+
+    await Setting.findOneAndUpdate(
+      { key: 'admin_pin' },
+      { value: String(newPin).trim(), updatedAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'एडमिन पिन सफलतापूर्वक सेट किया गया!',
+      token: `anp_auth_${Date.now()}`
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10c. POST /api/auth/verify-admin - Secure PIN Verification for Editorial Desk
 router.post('/auth/verify-admin', async (req: Request, res: Response) => {
   try {
     const { pin } = req.body;
@@ -768,7 +813,15 @@ router.post('/auth/verify-admin', async (req: Request, res: Response) => {
     }
 
     const setting = await Setting.findOne({ key: 'admin_pin' });
-    const expectedPin = setting?.value || process.env.ADMIN_PIN || '7788';
+    const expectedPin = setting?.value || process.env.ADMIN_PIN;
+
+    if (!expectedPin) {
+      return res.status(400).json({ 
+        success: false, 
+        needsSetup: true,
+        message: 'एडमिन सुरक्षा पिन अभी सेट नहीं किया गया है। कृपया पहले पिन सेटअप करें।' 
+      });
+    }
 
     if (String(pin).trim() === String(expectedPin).trim()) {
       return res.json({ 
@@ -784,7 +837,7 @@ router.post('/auth/verify-admin', async (req: Request, res: Response) => {
   }
 });
 
-// 10b. POST /api/auth/change-pin - Change Admin PIN
+// 10d. POST /api/auth/change-pin - Change Admin PIN
 router.post('/auth/change-pin', async (req: Request, res: Response) => {
   try {
     const { currentPin, newPin } = req.body;
@@ -796,7 +849,15 @@ router.post('/auth/change-pin', async (req: Request, res: Response) => {
     }
 
     const setting = await Setting.findOne({ key: 'admin_pin' });
-    const expectedPin = setting?.value || process.env.ADMIN_PIN || '7788';
+    const expectedPin = setting?.value || process.env.ADMIN_PIN;
+
+    if (!expectedPin) {
+      return res.status(400).json({ 
+        success: false, 
+        needsSetup: true,
+        message: 'एडमिन सुरक्षा पिन पहले से सेट नहीं है।' 
+      });
+    }
 
     if (String(currentPin).trim() !== String(expectedPin).trim()) {
       return res.status(401).json({ success: false, message: 'वर्तमान पिन गलत है' });
