@@ -1,0 +1,28 @@
+# Robots.txt for Ambition News Portal
+# Website: https://ambition-news-portal.vercel.app/
+# Coverage: Kawardha, Chhattisgarh (33 Districts) & Madhya Pradesh (55 Districts)
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /*?portal=admin
+Disallow: /api/
+
+# Explicit search crawler guidelines for Google, Bing, Yahoo
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Googlebot-News
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+# XML Sitemap Location
+Sitemap: https://ambition-news-portal.vercel.app/sitemap.xml

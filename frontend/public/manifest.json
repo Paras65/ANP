@@ -1,15 +1,19 @@
 {
   "name": "एम्बिशन न्यूज़ — कवर्धा, CG & MP",
   "short_name": "एम्बिशन न्यूज़",
-  "description": "छत्तीसगढ़ और मध्यप्रदेश की स्थानीय एवं निष्पक्ष खबरें (ambitionnews.in)",
-  "start_url": "/",
-  "id": "/",
+  "description": "छत्तीसगढ़ और मध्यप्रदेश की स्थानीय, निष्पक्ष एवं सटीक डिजिटल खबरें — कवर्धा (कबीरधाम) व 88 जिले (ambitionnews.in)",
+  "start_url": "/?source=pwa",
+  "id": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
+  "orientation": "portrait-primary",
   "background_color": "#020617",
   "theme_color": "#dc2626",
   "lang": "hi",
   "dir": "ltr",
-  "categories": ["news", "magazines"],
+  "categories": ["news", "magazines", "local"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/logo-192.png",
@@ -34,6 +38,29 @@
       "sizes": "900x900",
       "type": "image/png",
       "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "कवर्धा स्पेशल",
+      "short_name": "कवर्धा",
+      "description": "कवर्धा (कबीरधाम) की ताज़ा स्थानीय खबरें",
+      "url": "/?district=कबीरधाम (कवर्धा)",
+      "icons": [{ "src": "/logo-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "लाइव वीडियो TV",
+      "short_name": "वीडियो TV",
+      "description": "Ambition TV विशेष वीडियो बुलेटिन",
+      "url": "/?tab=videos",
+      "icons": [{ "src": "/logo-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "मंडी भाव",
+      "short_name": "मंडी",
+      "description": "कवर्धा व क्षेत्रीय दैनिक मंडी भाव",
+      "url": "/?tab=mandi",
+      "icons": [{ "src": "/logo-192.png", "sizes": "192x192" }]
     }
   ]
 }

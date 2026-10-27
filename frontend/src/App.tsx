@@ -488,6 +488,85 @@ export const App: React.FC = () => {
     };
   }, [currentView]);
 
+  // Dynamic SEO & Structured Data updater for Google Search & Social Media Cards
+  useEffect(() => {
+    const defaultTitle = "एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश का अग्रणी डिजिटल न्यूज़ नेटवर्क | Ambition News";
+    const defaultDesc = "एम्बिशन न्यूज़ (Ambition News Kawardha) — कबीरधाम (कवर्धा), छत्तीसगढ़ के 33 और मध्यप्रदेश के 55 जिलों की ताज़ा ब्रेकिंग खबरें, भोरमदेव समाचार, मंडी भाव, राजनीति, अपराध और वीडियो बुलेटिन।";
+    const defaultImage = "https://ambition-news-portal.vercel.app/logo-512.png";
+
+    if (activeArticle) {
+      document.title = `${activeArticle.title} | एम्बिशन न्यूज़ कवर्धा`;
+      
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute('content', activeArticle.excerpt || activeArticle.title);
+
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', activeArticle.title);
+
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute('content', activeArticle.excerpt || activeArticle.title);
+
+      const ogImage = document.querySelector('meta[property="og:image"]');
+      if (ogImage) ogImage.setAttribute('content', activeArticle.coverImage || defaultImage);
+
+      const ogUrl = document.querySelector('meta[property="og:url"]');
+      if (ogUrl) ogUrl.setAttribute('content', `https://ambition-news-portal.vercel.app/?article=${activeArticle._id}`);
+
+      // Inject dynamic NewsArticle schema for Google News & Rich Snippets
+      let script = document.getElementById('dynamic-article-schema') as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'dynamic-article-schema';
+        script.type = 'application/ld+json';
+        document.head.appendChild(script);
+      }
+      script.text = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'NewsArticle',
+        'headline': activeArticle.title,
+        'description': activeArticle.excerpt || activeArticle.title,
+        'image': [activeArticle.coverImage || defaultImage],
+        'datePublished': activeArticle.publishedAt || new Date().toISOString(),
+        'dateModified': activeArticle.publishedAt || new Date().toISOString(),
+        'author': [{
+          '@type': 'Person',
+          'name': activeArticle.author || 'एम्बिशन न्यूज़ रिपोर्टर'
+        }],
+        'publisher': {
+          '@type': 'NewsMediaOrganization',
+          'name': 'Ambition News Portal',
+          'logo': {
+            '@type': 'ImageObject',
+            'url': defaultImage
+          }
+        },
+        'mainEntityOfPage': {
+          '@type': 'WebPage',
+          '@id': `https://ambition-news-portal.vercel.app/?article=${activeArticle._id}`
+        }
+      });
+    } else {
+      document.title = defaultTitle;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute('content', defaultDesc);
+
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', defaultTitle);
+
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute('content', defaultDesc);
+
+      const ogImage = document.querySelector('meta[property="og:image"]');
+      if (ogImage) ogImage.setAttribute('content', defaultImage);
+
+      const ogUrl = document.querySelector('meta[property="og:url"]');
+      if (ogUrl) ogUrl.setAttribute('content', 'https://ambition-news-portal.vercel.app/');
+
+      const existingScript = document.getElementById('dynamic-article-schema');
+      if (existingScript) existingScript.remove();
+    }
+  }, [activeArticle]);
+
   const handleOpenAdmin = () => {
     setCurrentView('admin');
     window.history.pushState({ view: 'admin' }, '', '/admin');

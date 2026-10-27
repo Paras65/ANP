@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- 1. Home Page (Ambition News Portal) -->
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>always</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://ambition-news-portal.vercel.app/logo-512.png</image:loc>
+      <image:title>एम्बिशन न्यूज़ — कवर्धा (कबीरधाम)</image:title>
+    </image:image>
+  </url>
+
+  <!-- 2. State Feeds -->
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?state=chhattisgarh</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?state=madhya-pradesh</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- 3. Headquarters & Key District Feeds -->
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?district=कबीरधाम%20(कवर्धा)</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.98</priority>
+  </url>
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?district=रायपुर</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?district=बिलासपुर</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?district=भोपाल</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?district=इंदौर</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- 4. Major News Categories -->
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?category=कवर्धा%20स्पेशल</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?category=राजनीति</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?category=अपराध%20व%20कानून</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?category=ग्रामीण%20व%20किसान</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- 5. Live Mandi Rates & Video TV -->
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?tab=mandi</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://ambition-news-portal.vercel.app/?tab=videos</loc>
+    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+</urlset>
