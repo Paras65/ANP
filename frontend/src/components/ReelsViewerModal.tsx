@@ -51,6 +51,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   });
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>(() => {
@@ -124,6 +125,12 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     if (e) e.stopPropagation();
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
+
+    // Direct property change for HTML5 video (prevents video reload/restart)
+    if (videoRef.current) {
+      videoRef.current.muted = nextMuted;
+    }
+
     if (nextMuted) {
       sendYouTubeCommand('mute');
     } else {
@@ -137,6 +144,13 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   const togglePlay = () => {
     const nextPlaying = !isPlaying;
     setIsPlaying(nextPlaying);
+    if (videoRef.current) {
+      if (nextPlaying) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+      }
+    }
     if (nextPlaying) {
       sendYouTubeCommand('playVideo');
     } else {
@@ -352,10 +366,17 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                   <iframe
                     ref={iframeRef}
                     key={ytId}
-                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${isMuted ? '1' : '0'}&controls=0&loop=${isAutoScroll ? '0' : '1'}&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=1&controls=0&loop=${isAutoScroll ? '0' : '1'}&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
                     title={currentReel.caption}
                     onLoad={() => {
+                      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), '*');
                       sendYouTubeCommand('addEventListener', ['onStateChange']);
+                      if (!isMuted) {
+                        setTimeout(() => {
+                          sendYouTubeCommand('unMute');
+                          sendYouTubeCommand('setVolume', [100]);
+                        }, 150);
+                      }
                     }}
                     className="w-[170%] h-[120%] -ml-[35%] -mt-[10%] object-cover border-0 pointer-events-none relative z-10"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -381,6 +402,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
             if (currentReel.videoUrl) {
               return (
                 <video
+                  ref={videoRef}
                   src={currentReel.videoUrl}
                   autoPlay
                   loop={!isAutoScroll}
