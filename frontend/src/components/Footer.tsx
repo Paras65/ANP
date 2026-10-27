@@ -125,10 +125,6 @@ export const Footer: React.FC<FooterProps> = ({ isDark, onOpenAdminPortal, whats
             </h4>
             <ul className="space-y-1.5 text-[11px] text-slate-400">
               <li>• <b className="text-slate-200">कवर्धा (मुख्यालय):</b> राजमहल रोड, कबीरधाम</li>
-              <li>• <b className="text-slate-200">रायपुर ब्यूरो:</b> प्रेस कॉम्प्लेक्स, जेल रोड</li>
-              <li>• <b className="text-slate-200">बिलासपुर ब्यूरो:</b> लिंक रोड, हाईकोर्ट मार्ग</li>
-              <li>• <b className="text-slate-200">भोपाल ब्यूरो:</b> एमपी नगर, ज़ोन 1</li>
-              <li>• <b className="text-slate-200">इंदौर ब्यूरो:</b> प्रेस क्लब, एबी रोड</li>
             </ul>
           </div>
 
