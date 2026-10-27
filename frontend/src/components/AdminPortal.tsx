@@ -35,7 +35,8 @@ import {
   Search,
   LogOut,
   ShieldCheck,
-  Upload
+  Upload,
+  MoreHorizontal
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate } from '../types';
 import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos } from '../utils/mediaUtils';
@@ -128,6 +129,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Mobile UX States
   const [tab1MobileView, setTab1MobileView] = useState<'form' | 'preview'>('form');
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [showMobileMoreDrawer, setShowMobileMoreDrawer] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -929,8 +931,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
 
 
-      {/* 2b. QUICK ACTIONS BAR FOR BUSY EDITORS */}
-      <div className="max-w-7xl mx-auto px-4 pt-3 pb-1 w-full">
+      {/* 2b. QUICK ACTIONS BAR FOR BUSY EDITORS (DESKTOP) */}
+      <div className="max-w-7xl mx-auto px-4 pt-3 pb-1 w-full hidden md:block">
         <div className={`p-2.5 rounded-2xl border flex items-center justify-between gap-2 overflow-x-auto no-scrollbar ${
           isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'
         }`}>
@@ -976,8 +978,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       </div>
 
-      {/* 3. ADMIN TABS NAVIGATION */}
-      <div className="max-w-7xl mx-auto px-4 pt-4 w-full">
+      {/* 3. ADMIN TABS NAVIGATION (DESKTOP) */}
+      <div className="max-w-7xl mx-auto px-4 pt-4 w-full hidden md:block">
         <div className={`flex border-b text-xs font-bold overflow-x-auto no-scrollbar gap-2 ${
           isDark ? 'border-slate-800' : 'border-slate-200'
         }`}>
@@ -1056,7 +1058,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       </div>
 
       {/* 4. TAB CONTENTS */}
-      <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full pb-28 md:pb-6">
         
         {/* SUCCESS NOTIFICATION */}
         {publishedSuccess && (
@@ -2589,7 +2591,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         {showBackToTop && (
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="fixed bottom-6 right-5 z-40 bg-red-600 hover:bg-red-500 text-white p-3 rounded-full shadow-2xl transition active:scale-90 flex items-center justify-center border border-white/20 animate-in fade-in"
+            className="fixed bottom-24 right-4 md:bottom-6 md:right-5 z-30 bg-red-600 hover:bg-red-500 text-white p-3 rounded-full shadow-2xl transition active:scale-90 flex items-center justify-center border border-white/20 animate-in fade-in"
             title="पेज के ऊपर जाएं"
           >
             <ArrowLeft size={16} className="rotate-90" />
@@ -2597,6 +2599,243 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         )}
 
       </main>
+
+      {/* 5. MOBILE FLOATING ISLAND DOCK (md:hidden) */}
+      <nav 
+        aria-label="Mobile Admin Navigation"
+        className={`fixed bottom-3 inset-x-3 max-w-md mx-auto h-16 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-center justify-between px-2 z-40 md:hidden transition-all ${
+          isDark
+            ? 'bg-slate-900/95 border-slate-700/80 shadow-black/80 text-slate-200'
+            : 'bg-white/95 border-slate-200 shadow-slate-400/50 text-slate-800'
+        }`}
+      >
+        {/* SLOT 1: ARTICLES */}
+        <button
+          onClick={() => {
+            setActiveTab('articles');
+            setShowMobileMoreDrawer(false);
+          }}
+          className="flex-1 flex flex-col items-center justify-center py-1 transition relative group"
+        >
+          <div className="relative">
+            <FileText size={18} className={activeTab === 'articles' ? 'text-red-500' : 'text-slate-400'} />
+            <span className="absolute -top-1.5 -right-2 px-1 py-0.2 rounded-full bg-red-600 text-[8px] font-bold text-white font-mono shadow-sm">
+              {articles.length}
+            </span>
+          </div>
+          <span className={`text-[10px] font-bold mt-0.5 transition ${
+            activeTab === 'articles' ? 'text-red-500 font-black' : 'text-slate-400'
+          }`}>
+            खबरें
+          </span>
+        </button>
+
+        {/* SLOT 2: MANDI */}
+        <button
+          onClick={() => {
+            setActiveTab('mandi');
+            setShowMobileMoreDrawer(false);
+          }}
+          className="flex-1 flex flex-col items-center justify-center py-1 transition relative group"
+        >
+          <div className="relative">
+            <Wheat size={18} className={activeTab === 'mandi' ? 'text-emerald-500' : 'text-slate-400'} />
+            <span className="absolute -top-1.5 -right-2 px-1 py-0.2 rounded-full bg-emerald-600 text-[8px] font-bold text-white font-mono shadow-sm">
+              {mandiRates.length}
+            </span>
+          </div>
+          <span className={`text-[10px] font-bold mt-0.5 transition ${
+            activeTab === 'mandi' ? 'text-emerald-400 font-black' : 'text-slate-400'
+          }`}>
+            मंडी
+          </span>
+        </button>
+
+        {/* SLOT 3: RAISED CENTER ACTION BUTTON (+ नई खबर FAB) */}
+        <div className="flex-1 flex justify-center -mt-6">
+          <button
+            onClick={() => {
+              setActiveTab('create');
+              setShowMobileMoreDrawer(false);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`w-13 h-13 rounded-full bg-gradient-to-tr from-red-600 via-red-500 to-rose-600 p-0.5 shadow-xl shadow-red-600/40 hover:scale-105 active:scale-95 transition-transform duration-200 flex items-center justify-center ${
+              activeTab === 'create' ? 'ring-2 ring-red-400 ring-offset-2 ring-offset-slate-900' : ''
+            }`}
+            title="नई खबर लिखें"
+          >
+            <div className={`w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center text-white ${
+              isDark ? 'border-slate-900 bg-red-600' : 'border-white bg-red-600'
+            }`}>
+              <Plus size={18} className="font-black leading-none" />
+              <span className="text-[8px] font-black tracking-tight leading-none">नई खबर</span>
+            </div>
+          </button>
+        </div>
+
+        {/* SLOT 4: TICKER */}
+        <button
+          onClick={() => {
+            setActiveTab('breaking');
+            setShowMobileMoreDrawer(false);
+          }}
+          className="flex-1 flex flex-col items-center justify-center py-1 transition relative group"
+        >
+          <div className="relative">
+            <Radio size={18} className={activeTab === 'breaking' ? 'text-red-500' : 'text-slate-400'} />
+            <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+          </div>
+          <span className={`text-[10px] font-bold mt-0.5 transition ${
+            activeTab === 'breaking' ? 'text-red-500 font-black' : 'text-slate-400'
+          }`}>
+            टिकर
+          </span>
+        </button>
+
+        {/* SLOT 5: MORE OPTIONS */}
+        <button
+          onClick={() => setShowMobileMoreDrawer(prev => !prev)}
+          className="flex-1 flex flex-col items-center justify-center py-1 transition relative group"
+        >
+          <MoreHorizontal size={18} className={
+            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'media'
+              ? 'text-amber-400 font-bold'
+              : 'text-slate-400'
+          } />
+          <span className={`text-[10px] font-bold mt-0.5 transition ${
+            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'media'
+              ? 'text-amber-400 font-black'
+              : 'text-slate-400'
+          }`}>
+            अधिक
+          </span>
+        </button>
+      </nav>
+
+      {/* 6. SLIDE-UP BOTTOM SHEET FOR "⋯ अधिक" */}
+      {showMobileMoreDrawer && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+          {/* Backdrop Overlay */}
+          <div 
+            onClick={() => setShowMobileMoreDrawer(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in transition-opacity"
+          />
+
+          {/* Drawer Panel */}
+          <div className={`relative z-10 w-full rounded-t-3xl border-t p-4 shadow-2xl animate-in slide-in-from-bottom duration-300 ${
+            isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            {/* Drag Handle */}
+            <div className="w-10 h-1.5 bg-slate-500/40 rounded-full mx-auto mb-3" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+              <div className="text-xs font-black tracking-wide flex items-center gap-2">
+                <span>📂</span> अन्य प्रशासनिक डेस्क व विकल्प
+              </div>
+              <button 
+                onClick={() => setShowMobileMoreDrawer(false)}
+                className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg bg-slate-800/40 font-bold"
+              >
+                ✕ बंद करें
+              </button>
+            </div>
+
+            {/* 2x2 Grid of Secondary Desks */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              
+              <button
+                onClick={() => {
+                  setActiveTab('media');
+                  setShowMobileMoreDrawer(false);
+                }}
+                className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
+                  activeTab === 'media'
+                    ? 'border-red-600 bg-red-500/10 text-red-400'
+                    : isDark ? 'border-slate-800 bg-slate-800/60 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-800'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-xl bg-red-600/20 text-red-500 flex items-center justify-center shrink-0">
+                  <Tv size={16} />
+                </div>
+                <div>
+                  <div className="font-bold text-[11px] leading-tight">यूट्यूब व रील्स</div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">({videos.length + reels.length} वीडियो)</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('reporters');
+                  setShowMobileMoreDrawer(false);
+                }}
+                className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
+                  activeTab === 'reporters'
+                    ? 'border-blue-600 bg-blue-500/10 text-blue-400'
+                    : isDark ? 'border-slate-800 bg-slate-800/60 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-800'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-xl bg-blue-600/20 text-blue-500 flex items-center justify-center shrink-0">
+                  <Users size={16} />
+                </div>
+                <div>
+                  <div className="font-bold text-[11px] leading-tight">ब्यूरो नेटवर्क</div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">88 जिले (CG-MP)</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMobileMoreDrawer(false);
+                  setShowChangePinModal(true);
+                }}
+                className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
+                  isDark ? 'border-slate-800 bg-slate-800/60 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-800'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-xl bg-amber-600/20 text-amber-500 flex items-center justify-center shrink-0">
+                  <Key size={16} />
+                </div>
+                <div>
+                  <div className="font-bold text-[11px] leading-tight">एडमिन पिन बदलें</div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">HMAC-SHA256</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMobileMoreDrawer(false);
+                  onBackToPublic();
+                }}
+                className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
+                  isDark ? 'border-slate-800 bg-slate-800/60 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-800'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-xl bg-emerald-600/20 text-emerald-500 flex items-center justify-center shrink-0">
+                  <ArrowLeft size={16} />
+                </div>
+                <div>
+                  <div className="font-bold text-[11px] leading-tight">पाठक पोर्टल</div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">लाइव साइट देखें</div>
+                </div>
+              </button>
+
+            </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={() => {
+                setShowMobileMoreDrawer(false);
+                handleLogout();
+              }}
+              className="w-full mt-3 py-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 text-rose-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow"
+            >
+              <LogOut size={14} />
+              <span>सुरक्षित लॉगआउट करें (सत्र समाप्त)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
 
 
       {/* CHANGE PIN MODAL */}
