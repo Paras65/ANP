@@ -297,8 +297,8 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
       });
     }
 
-    const apiKeyDoc = await Setting.findOne({ key: 'youtube_api_key' });
-    const apiKey = (process.env.YOUTUBE_API_KEY || apiKeyDoc?.value || '').trim();
+    // Strictly read from server environment variable (never hardcoded, never from DB or client)
+    const apiKey = (process.env.YOUTUBE_API_KEY || '').trim();
 
     let newVideosAdded = 0;
     let newReelsAdded = 0;
@@ -446,50 +446,36 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
   }
 });
 
-// 5c. GET & POST /api/youtube/config - Read or update active channel ID and YouTube API Key in MongoDB Atlas
+// 5c. GET & POST /api/youtube/config - Read channel ID from Atlas; check server ENV for API key status
 router.get('/youtube/config', async (req: Request, res: Response) => {
   try {
     const doc = await Setting.findOne({ key: 'youtube_channel_id' });
-    const keyDoc = await Setting.findOne({ key: 'youtube_api_key' });
     const channelId = doc?.value || activeYouTubeChannelId || process.env.YOUTUBE_CHANNEL_ID || '';
-    const hasApiKey = Boolean(process.env.YOUTUBE_API_KEY || keyDoc?.value);
-    res.json({ success: true, channelId, hasApiKey });
+    const isConfiguredOnServer = Boolean(process.env.YOUTUBE_API_KEY);
+    res.json({ success: true, channelId, isConfiguredOnServer });
   } catch {
-    res.json({ success: true, channelId: activeYouTubeChannelId, hasApiKey: false });
+    res.json({ success: true, channelId: activeYouTubeChannelId, isConfiguredOnServer: Boolean(process.env.YOUTUBE_API_KEY) });
   }
 });
 
 router.post('/youtube/config', async (req: Request, res: Response) => {
   try {
-    const { channelId, apiKey } = req.body;
-    if (channelId) {
-      const clean = String(channelId).trim();
-      activeYouTubeChannelId = clean;
-      await Setting.findOneAndUpdate(
-        { key: 'youtube_channel_id' },
-        { key: 'youtube_channel_id', value: clean },
-        { upsert: true, new: true }
-      );
+    const { channelId } = req.body;
+    if (!channelId) {
+      return res.status(400).json({ success: false, message: 'चैनल आईडी प्रदान करें' });
     }
-    if (apiKey !== undefined) {
-      const cleanKey = String(apiKey).trim();
-      if (cleanKey) {
-        await Setting.findOneAndUpdate(
-          { key: 'youtube_api_key' },
-          { key: 'youtube_api_key', value: cleanKey },
-          { upsert: true, new: true }
-        );
-      } else {
-        await Setting.deleteOne({ key: 'youtube_api_key' });
-      }
-    }
-    const keyDoc = await Setting.findOne({ key: 'youtube_api_key' });
-    const hasApiKey = Boolean(process.env.YOUTUBE_API_KEY || keyDoc?.value);
+    const clean = String(channelId).trim();
+    activeYouTubeChannelId = clean;
+    await Setting.findOneAndUpdate(
+      { key: 'youtube_channel_id' },
+      { key: 'youtube_channel_id', value: clean },
+      { upsert: true, new: true }
+    );
     res.json({
       success: true,
-      message: 'कॉन्फ़िगरेशन MongoDB Atlas में सफलतापूर्वक सुरक्षित हो गया!',
-      channelId: activeYouTubeChannelId,
-      hasApiKey
+      message: 'यूट्यूब चैनल आईडी MongoDB Atlas में सफलतापूर्वक सुरक्षित हो गई!',
+      channelId: clean,
+      isConfiguredOnServer: Boolean(process.env.YOUTUBE_API_KEY)
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });

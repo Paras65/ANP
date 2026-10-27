@@ -134,16 +134,16 @@ export const App: React.FC = () => {
     return 0;
   };
 
-  // Save Channel ID and optional API key to MongoDB Atlas & LocalStorage
-  const handleSaveChannelId = async (id: string, apiKey?: string) => {
+  // Save Channel ID to MongoDB Atlas & LocalStorage (API key is strictly in server ENV)
+  const handleSaveChannelId = async (id: string) => {
     setYoutubeChannelId(id);
     localStorage.setItem('anp_yt_channel_id', id);
     try {
-      const res = await api.post('/youtube/config', { channelId: id, apiKey });
-      if (res.data?.hasApiKey !== undefined) {
-        setHasYouTubeApiKey(res.data.hasApiKey);
+      const res = await api.post('/youtube/config', { channelId: id });
+      if (res.data?.isConfiguredOnServer !== undefined) {
+        setHasYouTubeApiKey(res.data.isConfiguredOnServer);
       }
-      showToast('✅ यूट्यूब सेटिंग्स MongoDB Atlas में सुरक्षित हो गईं!');
+      showToast('✅ यूट्यूब चैनल आईडी MongoDB Atlas में सुरक्षित हो गई!');
     } catch (err) {
       console.warn('Config save error:', err);
     }
@@ -156,8 +156,8 @@ export const App: React.FC = () => {
         setYoutubeChannelId(res.data.channelId);
         localStorage.setItem('anp_yt_channel_id', res.data.channelId);
       }
-      if (res.data?.hasApiKey !== undefined) {
-        setHasYouTubeApiKey(res.data.hasApiKey);
+      if (res.data?.isConfiguredOnServer !== undefined) {
+        setHasYouTubeApiKey(res.data.isConfiguredOnServer);
       }
     }).catch(() => {});
   }, []);

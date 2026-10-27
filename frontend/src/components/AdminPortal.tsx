@@ -42,7 +42,7 @@ interface AdminPortalProps {
   onDeleteReel?: (id: string) => void;
   youtubeChannelId?: string;
   hasYouTubeApiKey?: boolean;
-  onSaveChannelId?: (channelId: string, apiKey?: string) => void | Promise<void>;
+  onSaveChannelId?: (channelId: string) => void | Promise<void>;
   onSyncChannel?: (channelId: string) => Promise<number>;
 }
 
@@ -78,8 +78,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [channelIdInput, setChannelIdInput] = useState<string>(() => {
     return youtubeChannelId || localStorage.getItem('anp_yt_channel_id') || 'UC8mIipC7suPuBJ_n8kUzkCg';
   });
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean>(Boolean(hasYouTubeApiKey));
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
@@ -907,55 +905,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     </div>
                   </div>
 
-                  {/* YouTube Data API v3 Key (Official Google API) */}
+                  {/* YouTube Data API v3 Status (Server Environment Variable - 100% Secure) */}
                   <div className="pt-2 border-t border-white/10">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-                        <span>YouTube Data API v3 Key (आधिकारिक Google API)</span>
-                        {hasApiKey ? (
-                          <span className="text-[10px] bg-emerald-950 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-800 flex items-center gap-1">
-                            <Check size={10} className="text-emerald-400" /> एक्टिव
-                          </span>
-                        ) : (
-                          <span className="text-[10px] bg-slate-800 text-slate-400 font-medium px-2 py-0.5 rounded-full border border-slate-700">
-                            वैकल्पिक (Fallback मोड एक्टिव)
-                          </span>
-                        )}
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type={showApiKey ? "text" : "password"}
-                        value={apiKeyInput}
-                        onChange={(e) => setApiKeyInput(e.target.value)}
-                        placeholder={hasApiKey ? "•••••••••••••••••••• (API Key सुरक्षित है)" : "AIzaSy... (Google Cloud Console से प्राप्त API Key)"}
-                        className="flex-1 bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3.5 py-2 text-xs text-white font-mono outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-2.5 py-2 rounded-xl transition"
-                        title="Key देखें / छिपाएं"
-                      >
-                        {showApiKey ? "छिपाएं" : "देखें"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (apiKeyInput.trim() && onSaveChannelId) {
-                            setSyncFeedback('⏳ API Key MongoDB Atlas में सुरक्षित की जा रही है...');
-                            const clean = extractYouTubeChannelId(channelIdInput) || channelIdInput.trim();
-                            await onSaveChannelId(clean, apiKeyInput.trim());
-                            setHasApiKey(true);
-                            setApiKeyInput('');
-                            setSyncFeedback('✅ YouTube Data API v3 Key सुरक्षित हो गई! अब Google Official API से सिंक होगा।');
-                            setTimeout(() => setSyncFeedback(null), 4000);
-                          }
-                        }}
-                        className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition cursor-pointer"
-                      >
-                        Key सेव करें
-                      </button>
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-black/40 border border-white/10">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">Google YouTube Data API v3</span>
+                          {hasApiKey ? (
+                            <span className="text-[10px] bg-emerald-950 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-800 flex items-center gap-1">
+                              <Check size={10} className="text-emerald-400" /> सर्वर पर सक्रिय (Server ENV Secured)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] bg-amber-950 text-amber-300 font-medium px-2 py-0.5 rounded-full border border-amber-800 flex items-center gap-1">
+                              Fallback RSS मोड
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400">
+                          {hasApiKey 
+                            ? '🔒 आपकी API Key सर्वर एनवायरनमेंट में सुरक्षित है। यह ब्राउज़र या नेटवर्क टैब में कभी दिखाई नहीं देती।'
+                            : 'ℹ️ Render Environment में YOUTUBE_API_KEY सेट करें। ब्राउज़र में कोई भी API Key स्टोर या ट्रांसमिट नहीं की जाती।'}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
