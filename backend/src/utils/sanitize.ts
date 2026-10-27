@@ -37,6 +37,17 @@ export function getSafeGeminiErrorMessage(err: any): string {
 
   const raw = redactSecretKeys(err.message || String(err));
 
+  // Already formatted Hindi message — return directly to prevent double-wrapping
+  if (
+    raw.startsWith('Gemini AI सेवा त्रुटि:') || 
+    raw.startsWith('सर्वर पर GEMINI_') || 
+    raw.startsWith('Google Gemini') || 
+    raw.startsWith('अनुरोधित Gemini AI') ||
+    raw.startsWith('सभी उपलब्ध Gemini AI')
+  ) {
+    return raw;
+  }
+
   // Known custom configuration message
   if (raw.includes('GEMINI_API_KEY कॉन्फ़िगर नहीं है') || raw.includes('GEMINI_API_KEY सेट नहीं है')) {
     return 'सर्वर पर GEMINI_API_KEY सेट नहीं है। कृपया Render Dashboard में वैध Google Gemini API Key जोड़ें।';
@@ -53,6 +64,16 @@ export function getSafeGeminiErrorMessage(err: any): string {
     raw.includes('invalid api key')
   ) {
     return 'Google Gemini API Key अमान्य (Invalid) या अनधिकृत है। कृपया Render पर सही GEMINI_API_KEY जांचें।';
+  }
+
+  // High demand or temporary 503 server spike
+  if (
+    raw.includes('503') || 
+    raw.includes('high demand') || 
+    raw.includes('UNAVAILABLE') || 
+    raw.includes('Service Unavailable')
+  ) {
+    return 'Google Gemini AI सर्वर पर अस्थायी लोड (High Demand) है। कृपया 5 सेकंड बाद पुनः प्रयास करें।';
   }
 
   // Quota & Rate Limit errors
