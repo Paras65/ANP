@@ -92,6 +92,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [isAutoScroll, setIsAutoScroll] = useState<boolean>(true);
 
   // Send control commands directly into YouTube IFrame without reload/restart
   const sendYouTubeCommand = (func: string, args: any[] = []) => {
@@ -197,6 +198,30 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     window.addEventListener('wheel', handleWheel, { passive: true });
     return () => window.removeEventListener('wheel', handleWheel);
   }, [currentIndex]);
+
+  // Continuous Auto-advance when video ends
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      try {
+        let data = e.data;
+        if (typeof data === 'string') data = JSON.parse(data);
+        if (!data) return;
+
+        const isEnded =
+          (data.event === 'onStateChange' && data.info === 0) ||
+          (data.event === 'infoDelivery' && data.info?.playerState === 0) ||
+          (data.info && data.info.playerState === 0);
+
+        if (isEnded && isAutoScroll) {
+          handleNext();
+        }
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [currentIndex, isAutoScroll, posts.length]);
 
   // Touch Swipe detection (Ultra-responsive on mobile screens)
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -307,8 +332,11 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                   <iframe
                     ref={iframeRef}
                     key={ytId}
-                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${isMuted ? '1' : '0'}&controls=0&loop=1&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${isMuted ? '1' : '0'}&controls=0&loop=${isAutoScroll ? '0' : '1'}&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
                     title={currentReel.caption}
+                    onLoad={() => {
+                      sendYouTubeCommand('addEventListener', ['onStateChange']);
+                    }}
                     className="w-[170%] h-[120%] -ml-[35%] -mt-[10%] object-cover border-0 pointer-events-none"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -335,7 +363,10 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                 <video
                   src={currentReel.videoUrl}
                   autoPlay
-                  loop
+                  loop={!isAutoScroll}
+                  onEnded={() => {
+                    if (isAutoScroll) handleNext();
+                  }}
                   muted={isMuted}
                   playsInline
                   className="w-full h-full object-cover pointer-events-none"
@@ -419,6 +450,19 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Auto-scroll continuous toggle */}
+            <button
+              onClick={() => setIsAutoScroll(!isAutoScroll)}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold border flex items-center gap-1 backdrop-blur transition active:scale-90 cursor-pointer ${
+                isAutoScroll
+                  ? 'bg-pink-950/70 border-pink-500/50 text-pink-300'
+                  : 'bg-black/40 border-white/20 text-white/60'
+              }`}
+              title={isAutoScroll ? 'ऑटो-नेक्स्ट चालू: रील खत्म होने पर अपने आप अगली रील चलेगी' : 'ऑटो-नेक्स्ट बंद: यही रील रिपीट होगी'}
+            >
+              <span>{isAutoScroll ? '🔄 ऑटो ON' : '🔄 ऑटो OFF'}</span>
+            </button>
+
             {/* Audio Mute/Unmute */}
             <button 
               onClick={toggleMute}
