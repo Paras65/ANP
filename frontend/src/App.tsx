@@ -462,12 +462,12 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col font-devanagari ${
+    <div className={`min-h-screen flex flex-col font-devanagari w-full max-w-full overflow-x-hidden ${
       isDark ? 'bg-[#060911] text-slate-100' : 'bg-slate-50 text-slate-900'
     } ${isMobileDeviceView ? 'bg-[#04060c] py-6 px-2 flex items-center justify-center' : ''}`}>
 
       {/* Main Wrapper: If Mobile Device Preview Frame is enabled, wrap in iPhone 16 style shell */}
-      <div className={`w-full flex flex-col flex-1 ${
+      <div className={`w-full max-w-full flex flex-col flex-1 min-w-0 ${
         isMobileDeviceView 
           ? 'max-w-[430px] rounded-[48px] border-[10px] border-slate-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden relative bg-slate-950 h-[92vh] overflow-y-auto no-scrollbar ring-1 ring-slate-700/50' 
           : ''
@@ -525,10 +525,10 @@ export const App: React.FC = () => {
         />
 
         {/* 3. NATIVE STORIES TRAY (INSTAGRAM / INSHORTS STYLE WEB STORIES) */}
-        <div className={`px-3 sm:px-4 pt-3 pb-1 border-b transition-colors ${
+        <div className={`w-full max-w-full overflow-hidden px-3 sm:px-4 pt-3 pb-1 border-b transition-colors ${
           isDark ? 'bg-slate-950/60 border-slate-800/60' : 'bg-white border-slate-200'
         }`}>
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto w-full">
             <div className="flex items-center justify-between px-1 mb-1">
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
                 <Sparkles size={11} className="text-amber-400" />
@@ -541,7 +541,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* 4. MAIN CONTENT CONTAINER (PADDED BOTTOM FOR NATIVE BOTTOM NAV) */}
-        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full space-y-6 pb-28">
+        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full max-w-full min-w-0 space-y-6 pb-28">
 
           {/* TAB: SAVED ARTICLES VIEW */}
           {activeTab === 'saved' && (
@@ -713,7 +713,7 @@ export const App: React.FC = () => {
                   )}
 
                   {/* Quick District Pills */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs max-w-full">
                     <button 
                       onClick={() => setCurrentDistrict('सभी')}
                       className={`px-2.5 py-1 rounded-xl text-xs font-bold transition whitespace-nowrap ${

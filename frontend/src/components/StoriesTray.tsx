@@ -86,7 +86,7 @@ interface StoriesTrayProps {
 
 export const StoriesTray: React.FC<StoriesTrayProps> = ({ onSelectStory, isDark }) => {
   return (
-    <div className="w-full overflow-x-auto no-scrollbar py-2 px-1">
+    <div className="w-full max-w-full overflow-x-auto no-scrollbar py-2 px-1">
       <div className="flex items-center gap-3.5 sm:gap-4 w-max">
         {DEMO_STORIES.map((story) => (
           <button

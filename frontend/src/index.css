@@ -5,9 +5,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html {
-  /* Prevent horizontal layout shifts / jerks when modals open/close and scrollbars toggle */
-  scrollbar-gutter: stable;
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -18,8 +20,17 @@ body {
   min-height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Prevent rubber-band stretch jerks on mobile browsers */
-  overscroll-behavior-y: none;
+  /* Prevent horizontal & vertical rubber-band stretch jerks */
+  overscroll-behavior: none;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Modal overlay & backdrop scroll lock helper */

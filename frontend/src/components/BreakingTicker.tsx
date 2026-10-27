@@ -16,7 +16,7 @@ export const BreakingTicker: React.FC<BreakingTickerProps> = ({
   if (!breakingArticles || breakingArticles.length === 0) return null;
 
   return (
-    <div className="bg-red-600 text-white text-xs font-medium flex items-center overflow-hidden border-t border-b border-red-700 shadow-sm relative z-20">
+    <div className="bg-red-600 text-white text-xs font-medium flex items-center overflow-hidden border-t border-b border-red-700 shadow-sm relative z-20 w-full max-w-full">
       
       {/* Static Label Badge */}
       <div className="bg-red-800 px-3 py-1.5 font-bold flex items-center gap-1.5 shrink-0 shadow-md">
@@ -24,9 +24,9 @@ export const BreakingTicker: React.FC<BreakingTickerProps> = ({
         <span className="tracking-wide">ब्रेकिंग न्यूज़</span>
       </div>
 
-      {/* Marquee Container */}
+      {/* Marquee Container (min-w-0 is mandatory to prevent ticker-seamless from overflowing flex container) */}
       <div 
-        className="overflow-hidden flex-1 py-1 relative cursor-pointer"
+        className="overflow-hidden flex-1 min-w-0 py-1 relative cursor-pointer"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >

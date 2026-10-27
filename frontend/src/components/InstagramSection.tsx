@@ -152,7 +152,7 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
 
       {/* District Filter Pills */}
       {districts.length > 2 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2.5 mb-3 text-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2.5 mb-3 text-xs w-full max-w-full">
           {districts.map(d => (
             <button
               key={d}

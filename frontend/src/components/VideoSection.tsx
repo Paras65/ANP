@@ -294,7 +294,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
       </div>
 
       {/* 2. CATEGORY FILTER PILLS */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 mb-4 text-xs">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 mb-4 text-xs w-full max-w-full">
         {CATEGORIES.map(cat => (
           <button
             key={cat.id}

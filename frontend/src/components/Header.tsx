@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   toggleDeviceView
 }) => {
   return (
-    <header className={`sticky top-0 z-40 border-b backdrop-blur-md will-change-transform transition-colors ${
+    <header className={`w-full max-w-full sticky top-0 z-40 border-b backdrop-blur-md will-change-transform transition-colors ${
       isDark ? 'bg-[#080c14]/98 border-red-950/40 text-slate-100 shadow-xl shadow-black/50' : 'bg-white/98 border-red-100 text-slate-900 shadow-md'
     }`}>
       
@@ -246,7 +246,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 3. CATEGORIES HORIZONTAL MOMENTUM STRIP */}
-      <div className={`overflow-x-auto no-scrollbar border-t transition-colors ${
+      <div className={`w-full max-w-full overflow-x-auto no-scrollbar border-t transition-colors ${
         isDark ? 'bg-[#05070e] border-red-950/30' : 'bg-slate-50 border-slate-200'
       }`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1.5 flex items-center gap-1.5 text-xs whitespace-nowrap">
