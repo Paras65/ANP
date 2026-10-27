@@ -462,12 +462,12 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col font-devanagari w-full max-w-full overflow-x-hidden ${
+    <div className={`min-h-screen flex flex-col font-devanagari ${
       isDark ? 'bg-[#060911] text-slate-100' : 'bg-slate-50 text-slate-900'
     } ${isMobileDeviceView ? 'bg-[#04060c] py-6 px-2 flex items-center justify-center' : ''}`}>
 
       {/* Main Wrapper: If Mobile Device Preview Frame is enabled, wrap in iPhone 16 style shell */}
-      <div className={`w-full max-w-full flex flex-col flex-1 min-w-0 ${
+      <div className={`w-full flex flex-col flex-1 ${
         isMobileDeviceView 
           ? 'max-w-[430px] rounded-[48px] border-[10px] border-slate-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden relative bg-slate-950 h-[92vh] overflow-y-auto no-scrollbar ring-1 ring-slate-700/50' 
           : ''
@@ -541,7 +541,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* 4. MAIN CONTENT CONTAINER (PADDED BOTTOM FOR NATIVE BOTTOM NAV) */}
-        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full max-w-full min-w-0 space-y-6 pb-28">
+        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full space-y-6 pb-28">
 
           {/* TAB: SAVED ARTICLES VIEW */}
           {activeTab === 'saved' && (
