@@ -13,6 +13,7 @@ interface SecurityIncidentInput {
   statusCode?: number;
   message: string;
   details?: string;
+  blocked?: boolean;
 }
 
 // In-memory sliding window deduplication to prevent DB exhaustion attacks on SecurityLog itself!
@@ -45,6 +46,7 @@ export function recordSecurityIncident(input: SecurityIncidentInput): void {
       const message = redactSecretKeys(input.message || 'Security alert').slice(0, 500);
       const details = input.details ? redactSecretKeys(input.details).slice(0, 200) : undefined;
       const severity: SecuritySeverity = input.severity || 'MEDIUM';
+      const blocked = input.blocked !== undefined ? input.blocked : statusCode < 500;
 
       const dedupKey = `${ip}:${input.eventType}:${path}`;
       const now = Date.now();
@@ -56,7 +58,11 @@ export function recordSecurityIncident(input: SecurityIncidentInput): void {
         existing.timestamp = now;
         await SecurityLog.findByIdAndUpdate(existing.logId, {
           $inc: { repeatCount: 1 },
-          $set: { message }
+          $set: { 
+            message, 
+            statusCode,
+            ...(details ? { details } : {}) 
+          }
         }).catch(() => {});
         return;
       }
@@ -73,7 +79,7 @@ export function recordSecurityIncident(input: SecurityIncidentInput): void {
         message,
         details,
         repeatCount: 1,
-        blocked: true,
+        blocked,
         createdAt: new Date()
       });
 

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { recordSecurityIncident } from '../services/securityAudit.service.js';
 
 export interface AdminAuthRequest extends Request {
   adminUser?: {
@@ -22,9 +23,23 @@ export interface SuperAdminAuthRequest extends Request {
  * Validates HS256 signed tokens for admin or super_admin
  */
 export async function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
+  const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+  const userAgent = String(req.headers['user-agent'] || 'unknown').slice(0, 120);
+
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      recordSecurityIncident({
+        eventType: 'UNAUTHORIZED_ACCESS',
+        severity: 'MEDIUM',
+        ip: clientIp,
+        userAgent,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: 401,
+        message: 'एडमिन एंडपॉइंट पर बिना टोकन के अनधिकृत अनुरोध',
+        blocked: true
+      });
       return res.status(401).json({
         success: false,
         error: 'Unauthorized: एडमिन प्रमाणीकरण टोकन (JWT) आवश्यक है'
@@ -33,6 +48,17 @@ export async function requireAdminAuth(req: Request, res: Response, next: NextFu
 
     const token = authHeader.split(' ')[1];
     if (!token) {
+      recordSecurityIncident({
+        eventType: 'UNAUTHORIZED_ACCESS',
+        severity: 'MEDIUM',
+        ip: clientIp,
+        userAgent,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: 401,
+        message: 'अमान्य टोकन प्रारूप (Empty Bearer token)',
+        blocked: true
+      });
       return res.status(401).json({
         success: false,
         error: 'Unauthorized: अमान्य टोकन प्रारूप'
@@ -49,6 +75,17 @@ export async function requireAdminAuth(req: Request, res: Response, next: NextFu
 
     // Both 'admin' and 'super_admin' can access regular admin routes
     if (decoded.role !== 'admin' && decoded.role !== 'super_admin') {
+      recordSecurityIncident({
+        eventType: 'FORBIDDEN_ROLE_ACCESS',
+        severity: 'HIGH',
+        ip: clientIp,
+        userAgent,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: 403,
+        message: `अपर्याप्त अधिकार: '${decoded.role}' एडमिन रूट एक्सेस करने का प्रयास कर रहा है`,
+        blocked: true
+      });
       return res.status(403).json({
         success: false,
         error: 'Forbidden: इस कार्य हेतु एडमिन अधिकार आवश्यक हैं'
@@ -63,12 +100,35 @@ export async function requireAdminAuth(req: Request, res: Response, next: NextFu
     next();
   } catch (err: any) {
     if (err.name === 'TokenExpiredError') {
+      recordSecurityIncident({
+        eventType: 'TOKEN_EXPIRED_OR_INVALID',
+        severity: 'LOW',
+        ip: clientIp,
+        userAgent,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: 401,
+        message: 'एडमिन सत्र समाप्त हो गया (TokenExpiredError)',
+        blocked: true
+      });
       return res.status(401).json({
         success: false,
         expired: true,
         error: 'Session Expired: आपका एडमिन सत्र समाप्त हो गया है, कृपया पुनः लॉगिन करें'
       });
     }
+
+    recordSecurityIncident({
+      eventType: 'UNAUTHORIZED_ACCESS',
+      severity: 'HIGH',
+      ip: clientIp,
+      userAgent,
+      method: req.method,
+      path: req.originalUrl,
+      statusCode: 401,
+      message: 'अमान्य या छेड़छाड़ किया गया एडमिन JWT टोकन',
+      blocked: true
+    });
     return res.status(401).json({
       success: false,
       error: 'Unauthorized: अमान्य या छेड़छाड़ किया गया टोकन'
@@ -81,9 +141,23 @@ export async function requireAdminAuth(req: Request, res: Response, next: NextFu
  * Disallows regular editorial admins from accessing security governance and telemetry.
  */
 export async function requireSuperAdminAuth(req: Request, res: Response, next: NextFunction) {
+  const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+  const userAgent = String(req.headers['user-agent'] || 'unknown').slice(0, 120);
+
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      recordSecurityIncident({
+        eventType: 'SUPER_ADMIN_UNAUTHORIZED',
+        severity: 'HIGH',
+        ip: clientIp,
+        userAgent,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: 401,
+        message: 'सुपर एडमिन एंडपॉइंट पर बिना मास्टर टोकन के अनधिकृत अनुरोध',
+        blocked: true
+      });
       return res.status(401).json({
         success: false,
         error: 'Unauthorized: सुपर एडमिन प्रमाणीकरण टोकन (JWT) आवश्यक है'
@@ -92,6 +166,17 @@ export async function requireSuperAdminAuth(req: Request, res: Response, next: N
 
     const token = authHeader.split(' ')[1];
     if (!token) {
+      recordSecurityIncident({
+        eventType: 'SUPER_ADMIN_UNAUTHORIZED',
+        severity: 'HIGH',
+        ip: clientIp,
+        userAgent,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: 401,
+        message: 'अमान्य सुपर एडमिन टोकन प्रारूप (Empty Bearer)',
+        blocked: true
+      });
       return res.status(401).json({
         success: false,
         error: 'Unauthorized: अमान्य टोकन प्रारूप'
@@ -107,6 +192,17 @@ export async function requireSuperAdminAuth(req: Request, res: Response, next: N
     };
 
     if (decoded.role !== 'super_admin') {
+      recordSecurityIncident({
+        eventType: 'SUPER_ADMIN_PRIVILEGE_VIOLATION',
+        severity: 'CRITICAL',
+        ip: clientIp,
+        userAgent,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: 403,
+        message: `गैर-रूट उपयोगकर्ता '${decoded.role}' द्वारा सुपर एडमिन रूट पर अनाधिकृत प्रयास`,
+        blocked: true
+      });
       return res.status(403).json({
         success: false,
         error: 'Forbidden: इस कार्य हेतु सुपर एडमिन (Root) विशेषाधिकार आवश्यक हैं'
@@ -121,12 +217,35 @@ export async function requireSuperAdminAuth(req: Request, res: Response, next: N
     next();
   } catch (err: any) {
     if (err.name === 'TokenExpiredError') {
+      recordSecurityIncident({
+        eventType: 'TOKEN_EXPIRED_OR_INVALID',
+        severity: 'LOW',
+        ip: clientIp,
+        userAgent,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: 401,
+        message: 'सुपर एडमिन सत्र समाप्त हो गया (Session Expired)',
+        blocked: true
+      });
       return res.status(401).json({
         success: false,
         expired: true,
         error: 'Session Expired: सुपर एडमिन सत्र समाप्त हो गया है'
       });
     }
+
+    recordSecurityIncident({
+      eventType: 'SUPER_ADMIN_UNAUTHORIZED',
+      severity: 'CRITICAL',
+      ip: clientIp,
+      userAgent,
+      method: req.method,
+      path: req.originalUrl,
+      statusCode: 401,
+      message: 'अमान्य या छेड़छाड़ किया गया सुपर एडमिन मास्टर टोकन',
+      blocked: true
+    });
     return res.status(401).json({
       success: false,
       error: 'Unauthorized: अमान्य सुपर एडमिन टोकन'

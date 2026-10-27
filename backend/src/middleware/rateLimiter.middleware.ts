@@ -11,17 +11,30 @@ function createRateLimitHandler(limiterName: string) {
       `🛡️ [RATE_LIMIT_TRIPPED] [${limiterName}] IP=${clientIp} UA="${userAgent}" ${req.method} ${req.originalUrl} - Limit: ${options.limit || options.max} in ${options.windowMs / 1000}s`
     );
 
+    const eventType = limiterName === 'AI_QUOTA_FLOOD_PROTECT'
+      ? 'AI_RATE_LIMIT_EXCEEDED'
+      : limiterName.includes('AUTH')
+      ? 'AUTH_RATE_LIMIT_EXCEEDED'
+      : 'RATE_LIMIT_TRIPPED';
+
+    const severity = limiterName.includes('AUTH') 
+      ? 'CRITICAL' 
+      : limiterName === 'AI_QUOTA_FLOOD_PROTECT' 
+      ? 'HIGH' 
+      : 'MEDIUM';
+
     // Persist to MongoDB Atlas for Super Admin dashboard
     recordSecurityIncident({
-      eventType: 'RATE_LIMIT_TRIPPED',
-      severity: limiterName.includes('AUTH') ? 'CRITICAL' : 'MEDIUM',
+      eventType,
+      severity,
       ip: clientIp,
       userAgent,
       method: req.method,
       path: req.originalUrl,
       statusCode: options.statusCode || 429,
       message: options.message?.message || 'Rate limit exceeded',
-      details: limiterName
+      details: limiterName,
+      blocked: true
     });
 
     res.status(options.statusCode).json(options.message);

@@ -147,20 +147,37 @@ export const SecurityMonitorView: React.FC<SecurityMonitorViewProps> = ({ isDark
 
   const getThreatLabel = (eventType: string) => {
     switch (eventType) {
+      case 'AI_SERVICE_ERROR':
+        return { label: '🤖 Gemini AI सेवा त्रुटि (API Fail)', color: 'bg-rose-500/20 text-rose-400 border-rose-500/30' };
+      case 'AI_RATE_LIMIT_EXCEEDED':
+        return { label: '⏳ Gemini AI दर सीमा (429 Quota)', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
+      case 'UNAUTHORIZED_ACCESS':
+        return { label: '🚫 अनधिकृत प्रवेश (401 Unauthorized)', color: 'bg-red-500/20 text-red-400 border-red-500/30' };
+      case 'TOKEN_EXPIRED_OR_INVALID':
+        return { label: '🔑 टोकन समाप्त / अमान्य (401)', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' };
+      case 'FORBIDDEN_ROLE_ACCESS':
+        return { label: '🚫 वर्जित भूमिका पहुंच (403 Forbidden)', color: 'bg-amber-600/20 text-amber-400 border-amber-600/30' };
+      case 'SUPER_ADMIN_UNAUTHORIZED':
+      case 'SUPER_ADMIN_PRIVILEGE_VIOLATION':
+        return { label: '🚨 सुपर एडमिन रूट उल्लंघन', color: 'bg-red-600/30 text-red-300 border-red-500/40' };
+      case 'SUPER_ADMIN_PIN_FAILED':
+        return { label: '🔐 गलत सुपर एडमिन मास्टर पिन', color: 'bg-rose-600/30 text-rose-300 border-rose-500/40' };
       case 'BASE64_PAYLOAD_FORBIDDEN':
-        return { label: 'Base64 इमेज बम (Storage Bloat)', color: 'bg-red-500/20 text-red-400 border-red-500/30' };
+        return { label: '🛑 Base64 इमेज बम (Storage Bloat)', color: 'bg-red-500/20 text-red-400 border-red-500/30' };
       case 'PAYLOAD_TOO_LARGE':
-        return { label: 'पेलोड > 500KB (Buffer Attack)', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' };
+        return { label: '📦 पेलोड > 500KB (Buffer Attack)', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' };
       case 'RATE_LIMIT_TRIPPED':
       case 'CONTENT_WRITE_LIMIT_EXCEEDED':
-        return { label: 'रेट लिमिट उल्लंघन (Intruder/Runner)', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
+        return { label: '⚠️ रेट लिमिट उल्लंघन (Intruder/Runner)', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
       case 'NOSQL_INJECTION_DEFLECTED':
-        return { label: 'NoSQL इंजेक्शन (Operator Strip)', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
+        return { label: '🛡️ NoSQL इंजेक्शन (Operator Strip)', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
       case 'AUTH_PIN_FAILED':
       case 'AUTH_RATE_LIMIT_EXCEEDED':
-        return { label: 'गलत पिन ब्रूट-फोर्स', color: 'bg-rose-500/20 text-rose-400 border-rose-500/30' };
+        return { label: '🔒 गलत एडमिन पासवर्ड / पिन', color: 'bg-rose-500/20 text-rose-400 border-rose-500/30' };
+      case 'INTERNAL_SERVER_ERROR':
+        return { label: '💥 सर्वर आंतरिक त्रुटि (500 Error)', color: 'bg-red-600/20 text-red-400 border-red-600/30' };
       case 'SECURITY_AUDIT_PROBE':
-        return { label: 'एडमिन टेस्ट प्रोब', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' };
+        return { label: '🧪 एडमिन टेस्ट प्रोब', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' };
       default:
         return { label: eventType, color: 'bg-slate-500/20 text-slate-300 border-slate-500/30' };
     }
@@ -348,7 +365,7 @@ export const SecurityMonitorView: React.FC<SecurityMonitorViewProps> = ({ isDark
             <div>
               <div className="text-[10px] text-slate-400">Gemini AI असिस्टेंट</div>
               <div className="font-bold text-indigo-400">
-                {stats.systemStatus.geminiConfigured ? '🟢 सक्रिय (2.5 Flash)' : '🔴 कुँजी अनुपलब्ध'}
+                {stats.systemStatus.geminiConfigured ? '🟢 सक्रिय (Gemini 2.0 / 1.5 Flash)' : '🔴 कुँजी अनुपलब्ध'}
               </div>
             </div>
           </div>
@@ -517,9 +534,11 @@ export const SecurityMonitorView: React.FC<SecurityMonitorViewProps> = ({ isDark
                             ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
                             : log.statusCode === 413 
                             ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
+                            : log.statusCode >= 500
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                             : 'bg-red-500/20 text-red-300 border border-red-500/30'
                         }`}>
-                          {log.statusCode} BLOCKED
+                          {log.statusCode} {log.statusCode >= 500 ? 'FAIL' : 'BLOCKED'}
                         </span>
                       </td>
 

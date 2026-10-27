@@ -58,9 +58,15 @@ export function errorHandler(
     message = 'अनुरोध में अमान्य JSON प्रारूप (Malformed JSON payload)';
   }
   // 8. Gemini / AI Errors
-  else if (err?.message?.includes('Gemini') || err?.message?.includes('API_KEY')) {
-    statusCode = 500;
-    errorCode = 'AI_SERVICE_ERROR';
+  else if (
+    req.originalUrl?.includes('/ai/') ||
+    err?.message?.includes('Gemini') || 
+    err?.message?.includes('API_KEY') ||
+    err?.message?.includes('GoogleGenAI') ||
+    err?.message?.includes('generateContent')
+  ) {
+    statusCode = err?.status === 429 || err?.message?.includes('429') ? 429 : 500;
+    errorCode = statusCode === 429 ? 'AI_RATE_LIMIT_EXCEEDED' : 'AI_SERVICE_ERROR';
     message = getSafeGeminiErrorMessage(err);
   }
   // 9. General Operational Message if available
@@ -80,41 +86,55 @@ export function errorHandler(
     logger.warn(
       `🛡️ [BLOCKED_${statusCode}] [${errorCode}] IP=${clientIp} UA="${userAgent}" ${req.method} ${req.originalUrl} - ${sanitizedMessage}`
     );
-
-    // Save security incidents to MongoDB Atlas for Super Admin monitoring
-    const securityEventCodes = [
-      'BASE64_PAYLOAD_FORBIDDEN',
-      'PAYLOAD_TOO_LARGE',
-      'PAYLOAD_TOO_COMPLEX',
-      'STRING_LENGTH_EXCEEDED',
-      'INVALID_URL_SCHEME',
-      'AUTH_RATE_LIMIT_EXCEEDED',
-      'AI_RATE_LIMIT_EXCEEDED',
-      'CONTENT_WRITE_LIMIT_EXCEEDED',
-      'TOKEN_EXPIRED_OR_INVALID',
-      'INVALID_JSON'
-    ];
-
-    if (securityEventCodes.includes(errorCode)) {
-      const severity = ['BASE64_PAYLOAD_FORBIDDEN', 'PAYLOAD_TOO_COMPLEX', 'AUTH_RATE_LIMIT_EXCEEDED'].includes(errorCode)
-        ? 'CRITICAL'
-        : 'HIGH';
-
-      recordSecurityIncident({
-        eventType: errorCode,
-        severity,
-        ip: clientIp,
-        userAgent,
-        method: req.method,
-        path: req.originalUrl,
-        statusCode,
-        message: sanitizedMessage
-      });
-    }
   } else {
     logger.error(
       `💥 [ERROR_${statusCode}] [${errorCode}] IP=${clientIp} UA="${userAgent}" ${req.method} ${req.originalUrl} - ${sanitizedMessage}`
     );
+  }
+
+  // Save security incidents and system failures to MongoDB Atlas for Super Admin monitoring
+  const trackableCodes = [
+    'BASE64_PAYLOAD_FORBIDDEN',
+    'PAYLOAD_TOO_LARGE',
+    'PAYLOAD_TOO_COMPLEX',
+    'STRING_LENGTH_EXCEEDED',
+    'INVALID_URL_SCHEME',
+    'AUTH_RATE_LIMIT_EXCEEDED',
+    'AI_RATE_LIMIT_EXCEEDED',
+    'CONTENT_WRITE_LIMIT_EXCEEDED',
+    'TOKEN_EXPIRED_OR_INVALID',
+    'UNAUTHORIZED_ACCESS',
+    'INVALID_JSON',
+    'AI_SERVICE_ERROR',
+    'INTERNAL_SERVER_ERROR'
+  ];
+
+  if (trackableCodes.includes(errorCode) || statusCode >= 500) {
+    let severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'HIGH';
+    if (['BASE64_PAYLOAD_FORBIDDEN', 'PAYLOAD_TOO_COMPLEX', 'AUTH_RATE_LIMIT_EXCEEDED'].includes(errorCode)) {
+      severity = 'CRITICAL';
+    } else if (errorCode === 'AI_SERVICE_ERROR') {
+      severity = 'HIGH';
+    } else if (statusCode >= 500) {
+      severity = 'CRITICAL';
+    } else if (['TOKEN_EXPIRED_OR_INVALID', 'UNAUTHORIZED_ACCESS'].includes(errorCode)) {
+      severity = 'MEDIUM';
+    }
+
+    const actionDetail = req.body?.action ? `कार्य: ${req.body.action}` : undefined;
+
+    recordSecurityIncident({
+      eventType: errorCode,
+      severity,
+      ip: clientIp,
+      userAgent,
+      method: req.method,
+      path: req.originalUrl,
+      statusCode,
+      message: sanitizedMessage,
+      details: actionDetail,
+      blocked: statusCode < 500
+    });
   }
 
   const responsePayload: Record<string, any> = {
