@@ -1,4 +1,6 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { State } from '../models/State.model.js';
 import { District } from '../models/District.model.js';
 import { Category } from '../models/Category.model.js';
@@ -759,7 +761,28 @@ router.delete('/mandi/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 10a. GET /api/auth/pin-status - Check if an admin PIN is configured
+// --- ADMIN SECURITY & CRYPTOGRAPHIC AUTHENTICATION ---
+const PIN_SALT = process.env.JWT_SECRET || 'anp_editorial_desk_pin_hmac_salt_2026';
+
+function hashPin(rawPin: string): string {
+  return crypto.createHmac('sha256', PIN_SALT).update(String(rawPin).trim()).digest('hex');
+}
+
+function verifyPinMatch(inputPin: string, storedTarget: string): boolean {
+  const hashedInput = hashPin(inputPin);
+  return hashedInput === storedTarget || String(inputPin).trim() === String(storedTarget).trim();
+}
+
+function generateAdminJwt(): string {
+  const secret = process.env.JWT_SECRET || 'anp_editorial_desk_pin_hmac_salt_2026';
+  return jwt.sign(
+    { role: 'admin', desk: 'editorial' },
+    secret,
+    { expiresIn: '7d' }
+  );
+}
+
+// 10a. GET /api/auth/pin-status - Check if an admin PIN is configured (NEVER returns the PIN or hash)
 router.get('/auth/pin-status', async (_req: Request, res: Response) => {
   try {
     const setting = await Setting.findOne({ key: 'admin_pin' });
@@ -770,7 +793,7 @@ router.get('/auth/pin-status', async (_req: Request, res: Response) => {
   }
 });
 
-// 10b. POST /api/auth/setup-pin - Initial First-Time Setup of Admin PIN
+// 10b. POST /api/auth/setup-pin - Initial First-Time Setup of Admin PIN (Stored as One-Way HMAC-SHA256 Hash)
 router.post('/auth/setup-pin', async (req: Request, res: Response) => {
   try {
     const { newPin } = req.body;
@@ -788,23 +811,25 @@ router.post('/auth/setup-pin', async (req: Request, res: Response) => {
       });
     }
 
+    // Store strictly as a salted cryptographic hash
+    const hashed = hashPin(newPin);
     await Setting.findOneAndUpdate(
       { key: 'admin_pin' },
-      { value: String(newPin).trim(), updatedAt: new Date() },
+      { value: hashed, updatedAt: new Date() },
       { upsert: true, new: true }
     );
 
     res.json({ 
       success: true, 
-      message: 'एडमिन पिन सफलतापूर्वक सेट किया गया!',
-      token: `anp_auth_${Date.now()}`
+      message: 'एडमिन पिन सुरक्षित रूप से सेट किया गया!',
+      token: generateAdminJwt()
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 10c. POST /api/auth/verify-admin - Secure PIN Verification for Editorial Desk
+// 10c. POST /api/auth/verify-admin - Cryptographic Hash Verification & Signed JWT Issuance
 router.post('/auth/verify-admin', async (req: Request, res: Response) => {
   try {
     const { pin } = req.body;
@@ -823,11 +848,19 @@ router.post('/auth/verify-admin', async (req: Request, res: Response) => {
       });
     }
 
-    if (String(pin).trim() === String(expectedPin).trim()) {
+    if (verifyPinMatch(pin, String(expectedPin))) {
+      // If previous entry was plain text, seamlessly upgrade to hash
+      if (String(expectedPin) !== hashPin(pin)) {
+        await Setting.findOneAndUpdate(
+          { key: 'admin_pin' },
+          { value: hashPin(pin), updatedAt: new Date() }
+        );
+      }
+
       return res.json({ 
         success: true, 
         message: 'प्रमाणीकरण सफल',
-        token: `anp_auth_${Date.now()}`
+        token: generateAdminJwt()
       });
     } else {
       return res.status(401).json({ success: false, message: 'गलत एडमिन पिन दर्ज किया गया' });
@@ -837,7 +870,7 @@ router.post('/auth/verify-admin', async (req: Request, res: Response) => {
   }
 });
 
-// 10d. POST /api/auth/change-pin - Change Admin PIN
+// 10d. POST /api/auth/change-pin - Securely Update PIN Hash
 router.post('/auth/change-pin', async (req: Request, res: Response) => {
   try {
     const { currentPin, newPin } = req.body;
@@ -859,17 +892,23 @@ router.post('/auth/change-pin', async (req: Request, res: Response) => {
       });
     }
 
-    if (String(currentPin).trim() !== String(expectedPin).trim()) {
+    if (!verifyPinMatch(currentPin, String(expectedPin))) {
       return res.status(401).json({ success: false, message: 'वर्तमान पिन गलत है' });
     }
 
+    // Save as cryptographic hash
+    const hashedNew = hashPin(newPin);
     await Setting.findOneAndUpdate(
       { key: 'admin_pin' },
-      { value: String(newPin).trim(), updatedAt: new Date() },
+      { value: hashedNew, updatedAt: new Date() },
       { upsert: true, new: true }
     );
 
-    res.json({ success: true, message: 'एडमिन पिन सफलतापूर्वक बदल दिया गया' });
+    res.json({ 
+      success: true, 
+      message: 'एडमिन पिन सफलतापूर्वक बदल दिया गया',
+      token: generateAdminJwt()
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

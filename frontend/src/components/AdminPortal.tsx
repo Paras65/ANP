@@ -160,8 +160,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       if (res.data?.success) {
         if (rememberMe) {
           localStorage.setItem('anp_admin_auth', 'true');
+          if (res.data?.token) localStorage.setItem('anp_admin_token', res.data.token);
         } else {
           sessionStorage.setItem('anp_admin_auth', 'true');
+          if (res.data?.token) sessionStorage.setItem('anp_admin_token', res.data.token);
         }
         setIsPinConfigured(true);
         setIsAuthenticated(true);
@@ -189,8 +191,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       if (res.data?.success) {
         if (rememberMe) {
           localStorage.setItem('anp_admin_auth', 'true');
+          if (res.data?.token) localStorage.setItem('anp_admin_token', res.data.token);
         } else {
           sessionStorage.setItem('anp_admin_auth', 'true');
+          if (res.data?.token) sessionStorage.setItem('anp_admin_token', res.data.token);
         }
         setIsAuthenticated(true);
         return;
@@ -210,6 +214,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const handleLogout = () => {
     localStorage.removeItem('anp_admin_auth');
     sessionStorage.removeItem('anp_admin_auth');
+    localStorage.removeItem('anp_admin_token');
+    sessionStorage.removeItem('anp_admin_token');
     setIsAuthenticated(false);
     setEnteredPin('');
   };
@@ -233,6 +239,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         newPin: newPinInput.trim()
       });
       if (res.data?.success) {
+        if (res.data?.token) {
+          if (localStorage.getItem('anp_admin_auth') === 'true') {
+            localStorage.setItem('anp_admin_token', res.data.token);
+          } else {
+            sessionStorage.setItem('anp_admin_token', res.data.token);
+          }
+        }
         setChangePinMsg({ text: '✅ एडमिन पिन सफलतापूर्वक बदल दिया गया!', isError: false });
         setTimeout(() => {
           setShowChangePinModal(false);

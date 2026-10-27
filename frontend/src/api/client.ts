@@ -8,5 +8,14 @@ const api = axios.create({
   },
 });
 
+// Automatically attach authenticated JWT token if present
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('anp_admin_token') || sessionStorage.getItem('anp_admin_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export default api;
 
