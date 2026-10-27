@@ -34,7 +34,7 @@ export function getSuperAdminToken(): string | null {
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://anp-n2e6.onrender.com/api',
-  timeout: 15000,
+  timeout: 35000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -42,6 +42,10 @@ const api = axios.create({
 
 // Automatically attach authenticated JWT token (memory first, fallback to storage)
 api.interceptors.request.use((config) => {
+  if (config.url?.includes('/ai/')) {
+    config.timeout = 60000; // 60s for AI generation & Render container spin-up
+  }
+
   if (config.url?.startsWith('/super-admin')) {
     const sToken = inMemorySuperAdminToken || sessionStorage.getItem('anp_super_admin_token') || localStorage.getItem('anp_super_admin_token');
     if (sToken) {

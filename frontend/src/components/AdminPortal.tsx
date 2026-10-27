@@ -135,7 +135,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);
 
-  // Voice Typing Hooks (Web Speech API)
+  // Voice Typing Hooks (Web Speech API with live feedback & continuous laptop dictation)
+  const [headlineInterim, setHeadlineInterim] = useState('');
   const {
     isListening: isListeningHeadline,
     isSupported: isVoiceSupported,
@@ -144,9 +145,33 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     lang: 'hi-IN',
     onResult: (text) => {
       setTitle((prev) => (prev ? prev + ' ' + text : text));
+    },
+    onInterim: (text) => {
+      setHeadlineInterim(text);
+    },
+    onError: (err) => {
+      setAiFeedback(`⚠️ शीर्षक वॉइस टाइपिंग: ${err}`);
     }
   });
 
+  const [excerptInterim, setExcerptInterim] = useState('');
+  const {
+    isListening: isListeningExcerpt,
+    toggleListening: toggleVoiceExcerpt
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setExcerpt((prev) => (prev ? prev + ' ' + text : text));
+    },
+    onInterim: (text) => {
+      setExcerptInterim(text);
+    },
+    onError: (err) => {
+      setAiFeedback(`⚠️ सारांश वॉइस टाइपिंग: ${err}`);
+    }
+  });
+
+  const [contentInterim, setContentInterim] = useState('');
   const {
     isListening: isListeningContent,
     toggleListening: toggleVoiceContent
@@ -154,6 +179,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     lang: 'hi-IN',
     onResult: (text) => {
       setContent((prev) => (prev ? prev + ' ' + text : text));
+    },
+    onInterim: (text) => {
+      setContentInterim(text);
+    },
+    onError: (err) => {
+      setAiFeedback(`⚠️ खबर सामग्री वॉइस टाइपिंग: ${err}`);
     }
   });
 
@@ -1104,15 +1135,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         onClick={toggleVoiceHeadline}
                         className={`absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center transition active:scale-90 ${
                           isListeningHeadline
-                            ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40'
+                            ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40 ring-2 ring-red-400'
                             : 'text-slate-400 hover:text-red-400 hover:bg-slate-700/50'
                         }`}
-                        title={isListeningHeadline ? 'सुन रहा हूँ... बोलिए' : 'बोलकर शीर्षक लिखें (Voice Typing)'}
+                        title={isListeningHeadline ? 'सुन रहा हूँ... बोलना समाप्त होने पर क्लिक करें' : 'बोलकर शीर्षक लिखें (Voice Typing)'}
                       >
-                        <Mic size={14} className={isListeningHeadline ? 'animate-bounce' : ''} />
+                        <Mic size={14} className={isListeningHeadline ? 'animate-bounce text-white' : ''} />
                       </button>
                     )}
                   </div>
+                  {isListeningHeadline && (
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      <span className="font-bold">🎙️ शीर्षक बोलिए:</span>
+                      <span className="text-slate-200 italic truncate max-w-sm">{headlineInterim || 'बोलना शुरू करें...'}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Author Byline */}
@@ -1134,19 +1172,48 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                 {/* Excerpt */}
                 <div>
-                  <label className="block text-slate-400 mb-1 font-semibold">
-                    संक्षिप्त सारांश (Excerpt) *
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={excerpt}
-                    onChange={(e) => setExcerpt(e.target.value)}
-                    placeholder="2-3 पंक्तियों में खबर का मुख्य बिंदु..."
-                    required
-                    className={`w-full rounded-xl p-2.5 text-xs outline-none transition leading-relaxed ${
-    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
-  }`}
-                  ></textarea>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className={`block font-semibold text-xs ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+                      संक्षिप्त सारांश (Excerpt) *
+                    </label>
+                    <span className="text-[10px] text-slate-400">
+                      अक्षर: {excerpt.length}
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <textarea
+                      rows={2}
+                      value={excerpt}
+                      onChange={(e) => setExcerpt(e.target.value)}
+                      placeholder="2-3 पंक्तियों में खबर का मुख्य बिंदु..."
+                      required
+                      className={`w-full rounded-xl p-2.5 pr-32 text-xs outline-none transition leading-relaxed ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
+                      }`}
+                    ></textarea>
+                    {isVoiceSupported && (
+                      <button
+                        type="button"
+                        onClick={toggleVoiceExcerpt}
+                        className={`absolute right-2 bottom-2 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition active:scale-95 shadow-sm ${
+                          isListeningExcerpt
+                            ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40 ring-2 ring-red-400 ring-offset-1 ring-offset-slate-900'
+                            : isDark ? 'bg-slate-900/90 text-slate-300 hover:text-white border border-slate-700' : 'bg-white text-slate-700 hover:text-slate-900 border border-slate-200'
+                        }`}
+                        title="बोलकर संक्षिप्त सारांश लिखें (Voice Typing)"
+                      >
+                        <Mic size={12} className={isListeningExcerpt ? 'animate-bounce text-white' : 'text-red-400'} />
+                        <span>{isListeningExcerpt ? 'बोलना बंद करें ⏹️' : '🎙️ बोलकर सारांश'}</span>
+                      </button>
+                    )}
+                  </div>
+                  {isListeningExcerpt && (
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      <span className="font-bold">🎙️ सारांश बोलिए:</span>
+                      <span className="text-slate-200 italic truncate max-w-sm">{excerptInterim || 'बोलना शुरू करें...'}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Full Article Content */}
@@ -1165,7 +1232,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
                       placeholder="पूरी घटना, गवाहों के बयान, सरकारी आदेश, पृष्ठभूमि और तथ्य विस्तार से लिखें..."
-                      className={`w-full rounded-xl p-2.5 pb-8 text-xs leading-relaxed outline-none transition ${
+                      className={`w-full rounded-xl p-2.5 pb-9 text-xs leading-relaxed outline-none transition ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
                       }`}
                     />
@@ -1173,18 +1240,25 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       <button
                         type="button"
                         onClick={toggleVoiceContent}
-                        className={`absolute right-2.5 bottom-2.5 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition active:scale-95 ${
+                        className={`absolute right-2.5 bottom-2.5 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-md ${
                           isListeningContent
-                            ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40'
+                            ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40 ring-2 ring-red-400 ring-offset-1 ring-offset-slate-900'
                             : isDark ? 'bg-slate-900/90 text-slate-300 hover:text-white border border-slate-700' : 'bg-white text-slate-700 hover:text-slate-900 border border-slate-200 shadow-sm'
                         }`}
                         title="बोलकर पूरी खबर लिखें (Voice Typing)"
                       >
-                        <Mic size={11} className={isListeningContent ? 'animate-bounce' : ''} />
-                        <span>{isListeningContent ? 'सुन रहा हूँ...' : '🎙️ बोलकर लिखें'}</span>
+                        <Mic size={12} className={isListeningContent ? 'animate-bounce text-white' : 'text-red-400'} />
+                        <span>{isListeningContent ? 'बोलना बंद करें ⏹️' : '🎙️ बोलकर लिखें'}</span>
                       </button>
                     )}
                   </div>
+                  {isListeningContent && (
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1.5 rounded-lg">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      <span className="font-bold">🎙️ माइक्रोफ़ोन सक्रिय:</span>
+                      <span className="text-slate-200 italic truncate max-w-md">{contentInterim || 'बोलिए, समाचार टाइप हो रहा है...'}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Photo Presets & Local File Upload */}

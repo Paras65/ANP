@@ -20,6 +20,14 @@ export function redactClientSecret(input: any): string {
     .replace(/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, 'Bearer [REDACTED_TOKEN]');
 }
 
+function formatAiError(err: any): string {
+  if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout')) {
+    return 'सर्वर कनेक्शन टाइमआउट: Render सर्वर शुरू (Wake-up) हो रहा है। कृपया 5 सेकंड बाद पुनः क्लिक करें।';
+  }
+  const rawMsg = err?.response?.data?.message || err?.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
+  return redactClientSecret(rawMsg);
+}
+
 export async function generateHeadlinesAI(
   topicOrDraft: string, 
   district: string = 'कवर्धा'
@@ -34,7 +42,7 @@ export async function generateHeadlinesAI(
       action: 'generate-headlines',
       topic: cleanTopic,
       district
-    });
+    }, { timeout: 60000 });
 
     if (res.data?.success && Array.isArray(res.data.data)) {
       return res.data.data;
@@ -42,8 +50,7 @@ export async function generateHeadlinesAI(
 
     throw new Error(res.data?.message || 'Gemini से हेडलाइन प्राप्त नहीं हो सकी');
   } catch (err: any) {
-    const rawMsg = err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
-    throw new Error(redactClientSecret(rawMsg));
+    throw new Error(formatAiError(err));
   }
 }
 
@@ -61,7 +68,7 @@ export async function autoSummarizeAI(
       action: 'summarize',
       content: cleanContent,
       district
-    });
+    }, { timeout: 60000 });
 
     if (res.data?.success && typeof res.data.data === 'string') {
       return res.data.data;
@@ -69,8 +76,7 @@ export async function autoSummarizeAI(
 
     throw new Error(res.data?.message || 'Gemini से सारांश प्राप्त नहीं हो सका');
   } catch (err: any) {
-    const rawMsg = err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
-    throw new Error(redactClientSecret(rawMsg));
+    throw new Error(formatAiError(err));
   }
 }
 
@@ -94,7 +100,7 @@ export async function polishArticleAI(
       topic: cleanTopic,
       district,
       author
-    });
+    }, { timeout: 60000 });
 
     if (res.data?.success && typeof res.data.data === 'string') {
       return res.data.data;
@@ -102,7 +108,6 @@ export async function polishArticleAI(
 
     throw new Error(res.data?.message || 'Gemini से पॉलिश रिपोर्ट प्राप्त नहीं हो सकी');
   } catch (err: any) {
-    const rawMsg = err.response?.data?.message || err.message || 'Gemini AI सेवा से संपर्क नहीं हो सका';
-    throw new Error(redactClientSecret(rawMsg));
+    throw new Error(formatAiError(err));
   }
 }
