@@ -7,7 +7,7 @@ import { User } from '../models/User.model.js';
 import { Video } from '../models/Video.model.js';
 import { Reel } from '../models/Reel.model.js';
 import { Setting } from '../models/Setting.model.js';
-import { fetchChannelVideos } from '../services/youtubeSync.js';
+import { fetchChannelVideos, fetchChannelShorts } from '../services/youtubeSync.js';
 
 const router = Router();
 let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg';
@@ -340,6 +340,20 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
           newReelsAdded++;
         }
       }
+    }
+
+    // Auto-sync channel Shorts directly from YouTube Shorts feed
+    try {
+      const channelShorts = await fetchChannelShorts(channelId || 'ambition_news');
+      for (const s of channelShorts) {
+        const existing = await Reel.findOne({ youtubeId: s.youtubeId });
+        if (!existing) {
+          await Reel.create(s);
+          newReelsAdded++;
+        }
+      }
+    } catch (shortErr) {
+      console.warn('[Shorts Sync Error]:', shortErr);
     }
 
     activeYouTubeChannelId = channelId;
