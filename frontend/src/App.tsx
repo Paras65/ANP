@@ -398,6 +398,96 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // Content Copy Prevention & Right-Click Disabling (Immunity for Admin Portal and Form Controls)
+  useEffect(() => {
+    if (currentView === 'admin') {
+      document.body.classList.add('admin-mode');
+      return () => {
+        document.body.classList.remove('admin-mode');
+      };
+    }
+    document.body.classList.remove('admin-mode');
+
+    let lastToastTime = 0;
+    const notifyCopyProtected = (msg: string) => {
+      const now = Date.now();
+      if (now - lastToastTime > 1800) {
+        lastToastTime = now;
+        showToast(msg);
+      }
+    };
+
+    const isEditable = (target: EventTarget | null): boolean => {
+      if (!target || !(target instanceof HTMLElement)) return false;
+      return (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        Boolean(target.closest('input, textarea, [contenteditable="true"], .allow-select, .admin-portal'))
+      );
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      if (isEditable(e.target)) return;
+      e.preventDefault();
+      notifyCopyProtected('🔒 सामग्री कॉपीराइट सुरक्षित है — कृपया आधिकारिक शेयर बटन का उपयोग करें');
+    };
+
+    const handleCopy = (e: ClipboardEvent) => {
+      if (isEditable(e.target)) return;
+      e.preventDefault();
+      notifyCopyProtected('🔒 सामग्री कॉपीराइट सुरक्षित है — कॉपी करने की अनुमति नहीं है');
+    };
+
+    const handleCut = (e: ClipboardEvent) => {
+      if (isEditable(e.target)) return;
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditable(e.target)) return;
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      
+      // Block Ctrl+C, Ctrl+A, Ctrl+U, Ctrl+S, Ctrl+P
+      if (isCtrlOrCmd && ['c', 'C', 'a', 'A', 'u', 'U', 's', 'S', 'p', 'P'].includes(e.key)) {
+        e.preventDefault();
+        notifyCopyProtected('🔒 सामग्री कॉपीराइट सुरक्षित है — कॉपी करने की अनुमति नहीं है');
+        return;
+      }
+
+      // Block F12 and Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (Inspect shortcuts)
+      if (e.key === 'F12' || (isCtrlOrCmd && e.shiftKey && ['i', 'I', 'j', 'J', 'c', 'C'].includes(e.key))) {
+        e.preventDefault();
+      }
+    };
+
+    const handleDragStart = (e: DragEvent) => {
+      if (isEditable(e.target)) return;
+      e.preventDefault();
+    };
+
+    const handleSelectStart = (e: Event) => {
+      if (isEditable(e.target)) return;
+      e.preventDefault();
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('cut', handleCut);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('selectstart', handleSelectStart);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('cut', handleCut);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('dragstart', handleDragStart);
+      document.removeEventListener('selectstart', handleSelectStart);
+    };
+  }, [currentView]);
+
   const handleOpenAdmin = () => {
     setCurrentView('admin');
     window.history.pushState({ view: 'admin' }, '', '/admin');
