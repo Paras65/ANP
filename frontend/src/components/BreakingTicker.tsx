@@ -24,9 +24,10 @@ export const BreakingTicker: React.FC<BreakingTickerProps> = ({
         <span className="tracking-wide">ब्रेकिंग न्यूज़</span>
       </div>
 
-      {/* Marquee Container (min-w-0 is mandatory to prevent ticker-seamless from overflowing flex container) */}
+      {/* Marquee Container (min-w-0 and contain: paint prevent ticker-seamless from overflowing flex container) */}
       <div 
         className="overflow-hidden flex-1 min-w-0 py-1 relative cursor-pointer"
+        style={{ contain: 'paint' }}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >

@@ -6,7 +6,7 @@ import { WhatsAppIcon } from './SocialIcons';
 interface ArticleModalProps {
   article: Article;
   onClose: () => void;
-  onShareWhatsApp: (title: string) => void;
+  onShareWhatsApp: (title: string, articleId?: string) => void;
   isDark: boolean;
   isBookmarked?: boolean;
   onToggleBookmark?: (article: Article) => void;
@@ -246,7 +246,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           {/* Share on WhatsApp */}
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => onShareWhatsApp(article.title)}
+              onClick={() => onShareWhatsApp(article.title, article._id)}
               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95"
             >
               <WhatsAppIcon size={14} />

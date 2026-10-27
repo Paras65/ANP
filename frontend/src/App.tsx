@@ -23,6 +23,7 @@ import { Footer } from './components/Footer';
 import { StoriesTray } from './components/StoriesTray';
 import { StoryViewerModal } from './components/StoryViewerModal';
 import { ReelsViewerModal } from './components/ReelsViewerModal';
+import { DistrictPickerModal } from './components/DistrictPickerModal';
 import { BottomNav } from './components/BottomNav';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import type { TabType } from './components/BottomNav';
@@ -66,6 +67,7 @@ export const App: React.FC = () => {
   const [savedArticles, setSavedArticles] = useState<Article[]>([INITIAL_ARTICLES[0]]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [showDistrictModal, setShowDistrictModal] = useState(false);
 
   // Auto-Sync YouTube Channel ID (Ambition News)
   const [youtubeChannelId, setYoutubeChannelId] = useState<string>(() => {
@@ -395,9 +397,137 @@ export const App: React.FC = () => {
     window.history.pushState({ view: 'public' }, '', '/');
   };
 
-  // WhatsApp Share Helper for single article
-  const shareWhatsApp = (title: string) => {
-    const text = `*${title}*\n\nपूरी खबर Ambition News पोर्टल पर पढ़ें 👇\n${window.location.origin}\n\n_Ambition News — कवर्धा (कबीरधाम) • CG & MP_`;
+  // Switch state and reset district to 'सभी'
+  const handleStateChange = (state: 'chhattisgarh' | 'madhya-pradesh') => {
+    setSelectedState(state);
+    setCurrentDistrict('सभी');
+  };
+
+  // Safe navigation & modal opener helpers with browser / Android back gesture integration
+  const openArticleModal = (art: Article) => {
+    setActiveArticle(art);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('article', art._id);
+      window.history.pushState({ modal: 'article', id: art._id }, '', url.toString());
+    } catch {}
+  };
+
+  const closeArticleModal = () => {
+    setActiveArticle(null);
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('article')) {
+        url.searchParams.delete('article');
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {}
+  };
+
+  const openStoryModal = (s: StoryItem) => {
+    setActiveStory(s);
+    try {
+      window.history.pushState({ modal: 'story', id: s.id }, '');
+    } catch {}
+  };
+
+  const closeStoryModal = () => {
+    setActiveStory(null);
+  };
+
+  const openReelModal = (id: string) => {
+    setActiveReelId(id);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('reel', id);
+      window.history.pushState({ modal: 'reel', id }, '', url.toString());
+    } catch {}
+  };
+
+  const closeReelModal = () => {
+    setActiveReelId(null);
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('reel')) {
+        url.searchParams.delete('reel');
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {}
+  };
+
+  const openDistrictModal = () => {
+    setShowDistrictModal(true);
+    try {
+      window.history.pushState({ modal: 'district' }, '');
+    } catch {}
+  };
+
+  const closeDistrictModal = () => {
+    setShowDistrictModal(false);
+  };
+
+  // Mobile Hardware / Browser Back-Button Intercept: Dismiss topmost active modal instead of leaving site
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showDistrictModal) {
+        setShowDistrictModal(false);
+        return;
+      }
+      if (activeArticle) {
+        setActiveArticle(null);
+        return;
+      }
+      if (activeReelId) {
+        setActiveReelId(null);
+        return;
+      }
+      if (activeStory) {
+        setActiveStory(null);
+        return;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showDistrictModal, activeArticle, activeReelId, activeStory]);
+
+  // Initial Deep-linking & horizontal scroll lock reset
+  useEffect(() => {
+    window.scrollTo({ left: 0, top: 0 });
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const artId = params.get('article');
+      if (artId) {
+        const found = articles.find(a => a._id === artId);
+        if (found) {
+          setActiveArticle(found);
+        }
+      }
+      const reelId = params.get('reel');
+      if (reelId) {
+        setActiveReelId(reelId);
+      }
+      const tabParam = params.get('tab');
+      if (tabParam && ['home', 'videos', 'insta', 'mandi', 'saved'].includes(tabParam)) {
+        setActiveTab(tabParam as TabType);
+      }
+      const stateParam = params.get('state');
+      if (stateParam === 'chhattisgarh' || stateParam === 'madhya-pradesh') {
+        setSelectedState(stateParam);
+      }
+      const distParam = params.get('district');
+      if (distParam) {
+        setCurrentDistrict(distParam);
+      }
+    } catch {}
+  }, [articles]);
+
+  // WhatsApp Share Helper for single article with direct deep-link URL
+  const shareWhatsApp = (title: string, articleId?: string) => {
+    const url = articleId 
+      ? `${window.location.origin}/?article=${encodeURIComponent(articleId)}`
+      : window.location.origin;
+    const text = `*📰 ${title}*\n\nपूरी खबर Ambition News पर तुरंत यहाँ पढ़ें 👇\n${url}\n\n_कवर्धा की सच्ची व निष्पक्ष आवाज़ — Ambition News_`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     showToast('📲 व्हाट्सएप शेयर लिंक खोला गया');
   };
@@ -414,9 +544,9 @@ export const App: React.FC = () => {
     setActiveStory(null);
     const found = articles.find(a => a.title.includes(storyTitle.slice(0, 15)) || storyTitle.includes(a.title.slice(0, 15)));
     if (found) {
-      setActiveArticle(found);
+      openArticleModal(found);
     } else {
-      setActiveArticle(articles[0]);
+      openArticleModal(articles[0]);
     }
   };
 
@@ -462,12 +592,12 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col font-devanagari ${
+    <div className={`min-h-screen flex flex-col font-devanagari w-full max-w-full overflow-x-hidden ${
       isDark ? 'bg-[#060911] text-slate-100' : 'bg-slate-50 text-slate-900'
     } ${isMobileDeviceView ? 'bg-[#04060c] py-6 px-2 flex items-center justify-center' : ''}`}>
 
       {/* Main Wrapper: If Mobile Device Preview Frame is enabled, wrap in iPhone 16 style shell */}
-      <div className={`w-full flex flex-col flex-1 ${
+      <div className={`w-full max-w-full flex flex-col flex-1 min-w-0 ${
         isMobileDeviceView 
           ? 'max-w-[430px] rounded-[48px] border-[10px] border-slate-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden relative bg-slate-950 h-[92vh] overflow-y-auto no-scrollbar ring-1 ring-slate-700/50' 
           : ''
@@ -508,7 +638,7 @@ export const App: React.FC = () => {
           isDark={isDark}
           toggleTheme={toggleTheme}
           selectedState={selectedState}
-          setSelectedState={setSelectedState}
+          setSelectedState={handleStateChange}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
           onOpenAdminPortal={handleOpenAdmin}
@@ -516,12 +646,16 @@ export const App: React.FC = () => {
           backendSynced={backendSynced}
           isMobileDeviceView={isMobileDeviceView}
           toggleDeviceView={() => setIsMobileDeviceView(!isMobileDeviceView)}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onToggleSearch={() => setIsSearching(prev => !prev)}
+          onOpenDistrictPicker={openDistrictModal}
         />
 
         {/* 2. BREAKING NEWS TICKER */}
         <BreakingTicker 
           breakingArticles={breakingList.length > 0 ? breakingList : INITIAL_ARTICLES.slice(0, 3)}
-          onSelectArticle={(art) => setActiveArticle(art)}
+          onSelectArticle={(art) => openArticleModal(art)}
         />
 
         {/* 3. NATIVE STORIES TRAY (INSTAGRAM / INSHORTS STYLE WEB STORIES) */}
@@ -536,12 +670,12 @@ export const App: React.FC = () => {
               </span>
               <span className="text-[10px] text-red-500 font-bold">24h लाइव</span>
             </div>
-            <StoriesTray onSelectStory={(s) => setActiveStory(s)} isDark={isDark} />
+            <StoriesTray onSelectStory={(s) => openStoryModal(s)} isDark={isDark} />
           </div>
         </div>
 
         {/* 4. MAIN CONTENT CONTAINER (PADDED BOTTOM FOR NATIVE BOTTOM NAV) */}
-        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full space-y-6 pb-28">
+        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full max-w-full min-w-0 space-y-6 pb-28">
 
           {/* TAB: SAVED ARTICLES VIEW */}
           {activeTab === 'saved' && (
@@ -571,7 +705,7 @@ export const App: React.FC = () => {
                   {savedArticles.map((art) => (
                     <div 
                       key={art._id}
-                      onClick={() => setActiveArticle(art)}
+                      onClick={() => openArticleModal(art)}
                       className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer ${
                         isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
                       }`}
@@ -667,13 +801,18 @@ export const App: React.FC = () => {
                   
                   {/* Left: District & Quick Search */}
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-red-600/10 text-red-500 flex items-center justify-center shrink-0">
+                    <div 
+                      onClick={openDistrictModal}
+                      className="flex items-center gap-2 cursor-pointer group"
+                      title="सभी 88 जिलों की सूची खोलें"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-red-600/10 text-red-500 flex items-center justify-center shrink-0 group-hover:bg-red-600 group-hover:text-white transition">
                         <MapPin size={16} />
                       </div>
                       <div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                          जिला अनुसार ({selectedState === 'chhattisgarh' ? 'छ.ग.' : 'म.प्र.'})
+                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                          <span>जिला अनुसार ({selectedState === 'chhattisgarh' ? 'छ.ग.' : 'म.प्र.'})</span>
+                          <span className="text-red-400 underline text-[9px]">बदलें</span>
                         </div>
                         <div className="text-xs sm:text-sm font-black text-white flex items-center gap-1">
                           <span>{currentDistrict === 'सभी' ? 'सभी 88 जिले' : currentDistrict}</span>
@@ -715,6 +854,14 @@ export const App: React.FC = () => {
                   {/* Quick District Pills */}
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs max-w-full">
                     <button 
+                      onClick={openDistrictModal}
+                      className="px-2.5 py-1 rounded-xl text-[11px] font-black transition whitespace-nowrap flex items-center gap-1 bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30 active:scale-95 border border-red-400/40 shrink-0"
+                      title="छत्तीसगढ़ व मध्यप्रदेश के सभी 88 जिले देखें"
+                    >
+                      <MapPin size={11} className="shrink-0" />
+                      <span>सभी 88 जिले...</span>
+                    </button>
+                    <button 
                       onClick={() => setCurrentDistrict('सभी')}
                       className={`px-2.5 py-1 rounded-xl text-xs font-bold transition whitespace-nowrap ${
                         currentDistrict === 'सभी' 
@@ -749,7 +896,7 @@ export const App: React.FC = () => {
               <MandiWidget rates={MANDI_RATES} isDark={isDark} />
 
               {/* FEED HEADER */}
-              <div className="flex items-center justify-between pt-1">
+              <div id="news-feed-section" className="flex items-center justify-between pt-1 scroll-mt-28">
                 <div className="flex items-center gap-2">
                   <span className="text-red-500 text-lg">⚡</span>
                   <h2 className="text-sm sm:text-base font-black text-white tracking-wide">
@@ -778,7 +925,7 @@ export const App: React.FC = () => {
                   {/* HERO ARTICLE (EDGE-TO-EDGE ON MOBILE) */}
                   {heroArticle && (
                     <div 
-                      onClick={() => setActiveArticle(heroArticle)}
+                      onClick={() => openArticleModal(heroArticle)}
                       className={`rounded-3xl border overflow-hidden cursor-pointer group shadow-xl transition-colors duration-150 active:scale-[0.99] ${
                         isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/70' : 'bg-white border-slate-200'
                       }`}
@@ -830,7 +977,7 @@ export const App: React.FC = () => {
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  shareWhatsApp(heroArticle.title);
+                                  shareWhatsApp(heroArticle.title, heroArticle._id);
                                 }}
                                 className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 text-[11px]"
                               >
@@ -854,7 +1001,7 @@ export const App: React.FC = () => {
                     {gridArticles.map((art) => (
                       <div 
                         key={art._id}
-                        onClick={() => setActiveArticle(art)}
+                        onClick={() => openArticleModal(art)}
                         className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer group transition-colors duration-150 active:scale-[0.99] ${
                           isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/60' : 'bg-white border-slate-200 shadow-sm'
                         }`}
@@ -897,7 +1044,7 @@ export const App: React.FC = () => {
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                shareWhatsApp(art.title);
+                                shareWhatsApp(art.title, art._id);
                               }}
                               className="text-emerald-400 font-bold flex items-center gap-0.5 text-[11px]"
                             >
@@ -1045,7 +1192,7 @@ export const App: React.FC = () => {
               {/* DEDICATED INSTAGRAM KAWARDHA SECTION */}
               <InstagramSection 
                 posts={instagramPosts} 
-                onSelectReel={(id) => setActiveReelId(id)}
+                onSelectReel={(id) => openReelModal(id)}
                 isDark={isDark} 
                 onAddReel={handleAddReel}
               />
@@ -1065,7 +1212,7 @@ export const App: React.FC = () => {
           activeTab={activeTab}
           setActiveTab={(tab) => {
             if (tab === 'insta') {
-              setActiveReelId(instagramPosts[0]?.id || null);
+              openReelModal(instagramPosts[0]?.id || '1');
             } else {
               setActiveTab(tab);
             }
@@ -1081,7 +1228,7 @@ export const App: React.FC = () => {
         {activeArticle && (
           <ArticleModal 
             article={activeArticle}
-            onClose={() => setActiveArticle(null)}
+            onClose={closeArticleModal}
             onShareWhatsApp={shareWhatsApp}
             isDark={isDark}
             isBookmarked={savedArticles.some(a => a._id === activeArticle._id)}
@@ -1093,7 +1240,7 @@ export const App: React.FC = () => {
         {activeStory && (
           <StoryViewerModal 
             initialStory={activeStory}
-            onClose={() => setActiveStory(null)}
+            onClose={closeStoryModal}
             onReadFullArticle={handleOpenFromStory}
             onShareWhatsApp={shareWhatsApp}
           />
@@ -1104,11 +1251,30 @@ export const App: React.FC = () => {
           <ReelsViewerModal 
             initialPostId={activeReelId}
             posts={instagramPosts}
-            onClose={() => setActiveReelId(null)}
+            onClose={closeReelModal}
             onShareWhatsApp={(caption, postUrl) => {
-              const text = `🎬 *Ambition News Reel*:\n${caption}\n\n▶️ तुरंत यहाँ देखें:\n${postUrl || window.location.origin}`;
+              const reelDeepLink = activeReelId ? `${window.location.origin}/?reel=${encodeURIComponent(activeReelId)}` : (postUrl || window.location.origin);
+              const text = `🎬 *Ambition News Reel*:\n${caption}\n\n▶️ तुरंत यहाँ देखें:\n${reelDeepLink}`;
               window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
             }}
+          />
+        )}
+
+        {/* 10. ALL 88 DISTRICTS SEARCHABLE SELECTOR MODAL */}
+        {showDistrictModal && (
+          <DistrictPickerModal 
+            isOpen={showDistrictModal}
+            onClose={closeDistrictModal}
+            currentDistrict={currentDistrict}
+            selectedState={selectedState}
+            onSelectDistrict={(dist, state) => {
+              if (state && state !== selectedState) {
+                setSelectedState(state);
+              }
+              setCurrentDistrict(dist);
+              closeDistrictModal();
+            }}
+            isDark={isDark}
           />
         )}
 

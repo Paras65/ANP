@@ -1,7 +1,8 @@
 import React from 'react';
-import { ShieldCheck, Sun, Moon, MapPin, Smartphone, Monitor } from 'lucide-react';
+import { ShieldCheck, Sun, Moon, MapPin, Smartphone, Monitor, Search } from 'lucide-react';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon } from './SocialIcons';
 import { SOCIAL_LINKS } from '../data/mockData';
+import type { TabType } from './BottomNav';
 
 interface HeaderProps {
   isDark: boolean;
@@ -15,6 +16,10 @@ interface HeaderProps {
   backendSynced: boolean;
   isMobileDeviceView?: boolean;
   toggleDeviceView?: () => void;
+  activeTab?: TabType;
+  setActiveTab?: (tab: TabType) => void;
+  onToggleSearch?: () => void;
+  onOpenDistrictPicker?: () => void;
 }
 
 const CATEGORIES = [
@@ -40,8 +45,28 @@ export const Header: React.FC<HeaderProps> = ({
   onShareAppWhatsApp,
   backendSynced,
   isMobileDeviceView,
-  toggleDeviceView
+  toggleDeviceView,
+  activeTab,
+  setActiveTab,
+  onToggleSearch,
+  onOpenDistrictPicker
 }) => {
+  const handleLogoClick = () => {
+    if (setActiveTab) setActiveTab('home');
+    setSelectedCategory('सभी खबरें');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCategoryClick = (cat: string) => {
+    setSelectedCategory(cat);
+    if (setActiveTab && activeTab !== 'home') {
+      setActiveTab('home');
+    }
+    const feedEl = document.getElementById('news-feed-section');
+    if (feedEl) {
+      feedEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
   return (
     <header className={`w-full max-w-full sticky top-0 z-40 border-b backdrop-blur-md will-change-transform transition-colors ${
       isDark ? 'bg-[#080c14]/98 border-red-950/40 text-slate-100 shadow-xl shadow-black/50' : 'bg-white/98 border-red-100 text-slate-900 shadow-md'
@@ -57,8 +82,12 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           
           {/* Bureau Location & Date */}
-          <div className="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-[11px] shrink-0">
-            <span className="flex items-center gap-1 font-bold text-red-500 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-[11px] min-w-0 shrink">
+            <span 
+              onClick={onOpenDistrictPicker}
+              className={`flex items-center gap-1 font-bold text-red-500 shrink-0 ${onOpenDistrictPicker ? 'cursor-pointer hover:underline' : ''}`}
+              title="सभी 88 जिले चुनें"
+            >
               <MapPin size={11} className="shrink-0" />
               <span className="sm:hidden">कवर्धा</span>
               <span className="hidden sm:inline">मुख्यालय: कवर्धा (कबीरधाम)</span>
@@ -141,9 +170,9 @@ export const Header: React.FC<HeaderProps> = ({
         
         {/* Brand Logo & Headquarters Tag */}
         <div 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 cursor-pointer group py-0.5"
-          title="एम्बिशन न्यूज़ - ambitionnews.com"
+          onClick={handleLogoClick}
+          className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 shrink cursor-pointer group py-0.5"
+          title="एम्बिशन न्यूज़ - होमपेज"
         >
           {/* Official 3D Round Logo - Highly Visible, Large & Sharp with Red Studio Glow */}
           <div className="relative shrink-0 flex items-center justify-center">
@@ -231,6 +260,17 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
+          {/* Quick Search Button */}
+          {onToggleSearch && (
+            <button
+              onClick={onToggleSearch}
+              className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-slate-700 bg-slate-800/90 text-slate-300 hover:text-white transition active:scale-95 shrink-0"
+              title="खबरें खोजें (Search)"
+            >
+              <Search size={14} />
+            </button>
+          )}
+
           {/* Theme Toggle */}
           <button 
             onClick={toggleTheme}
@@ -255,7 +295,7 @@ export const Header: React.FC<HeaderProps> = ({
             return (
               <button 
                 key={cat} 
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => handleCategoryClick(cat)}
                 className={`px-3 py-1 rounded-full font-bold text-[11px] sm:text-xs transition-all active:scale-95 ${
                   isActive 
                     ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/40' 
