@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Send, 
   ArrowLeft, 
@@ -41,7 +41,8 @@ interface AdminPortalProps {
   onAddReel?: (post: InstagramPost) => void;
   onDeleteReel?: (id: string) => void;
   youtubeChannelId?: string;
-  onSaveChannelId?: (channelId: string) => void;
+  hasYouTubeApiKey?: boolean;
+  onSaveChannelId?: (channelId: string, apiKey?: string) => void | Promise<void>;
   onSyncChannel?: (channelId: string) => Promise<number>;
 }
 
@@ -60,6 +61,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onAddReel,
   onDeleteReel,
   youtubeChannelId = '',
+  hasYouTubeApiKey = false,
   onSaveChannelId,
   onSyncChannel
 }) => {
@@ -76,11 +78,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [channelIdInput, setChannelIdInput] = useState<string>(() => {
     return youtubeChannelId || localStorage.getItem('anp_yt_channel_id') || 'UC8mIipC7suPuBJ_n8kUzkCg';
   });
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState<boolean>(Boolean(hasYouTubeApiKey));
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   const [autoSyncOnLoad, setAutoSyncOnLoad] = useState<boolean>(() => {
     return localStorage.getItem('anp_auto_sync_enabled') !== 'false';
   });
+
+  useEffect(() => {
+    setHasApiKey(Boolean(hasYouTubeApiKey));
+  }, [hasYouTubeApiKey]);
 
   const handleTriggerSync = async () => {
     const cleanId = extractYouTubeChannelId(channelIdInput) || channelIdInput.trim();
@@ -894,6 +903,58 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
                       >
                         सेव करें
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* YouTube Data API v3 Key (Official Google API) */}
+                  <div className="pt-2 border-t border-white/10">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                        <span>YouTube Data API v3 Key (आधिकारिक Google API)</span>
+                        {hasApiKey ? (
+                          <span className="text-[10px] bg-emerald-950 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-800 flex items-center gap-1">
+                            <Check size={10} className="text-emerald-400" /> एक्टिव
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-slate-800 text-slate-400 font-medium px-2 py-0.5 rounded-full border border-slate-700">
+                            वैकल्पिक (Fallback मोड एक्टिव)
+                          </span>
+                        )}
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type={showApiKey ? "text" : "password"}
+                        value={apiKeyInput}
+                        onChange={(e) => setApiKeyInput(e.target.value)}
+                        placeholder={hasApiKey ? "•••••••••••••••••••• (API Key सुरक्षित है)" : "AIzaSy... (Google Cloud Console से प्राप्त API Key)"}
+                        className="flex-1 bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3.5 py-2 text-xs text-white font-mono outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-2.5 py-2 rounded-xl transition"
+                        title="Key देखें / छिपाएं"
+                      >
+                        {showApiKey ? "छिपाएं" : "देखें"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (apiKeyInput.trim() && onSaveChannelId) {
+                            setSyncFeedback('⏳ API Key MongoDB Atlas में सुरक्षित की जा रही है...');
+                            const clean = extractYouTubeChannelId(channelIdInput) || channelIdInput.trim();
+                            await onSaveChannelId(clean, apiKeyInput.trim());
+                            setHasApiKey(true);
+                            setApiKeyInput('');
+                            setSyncFeedback('✅ YouTube Data API v3 Key सुरक्षित हो गई! अब Google Official API से सिंक होगा।');
+                            setTimeout(() => setSyncFeedback(null), 4000);
+                          }
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition cursor-pointer"
+                      >
+                        Key सेव करें
                       </button>
                     </div>
                   </div>

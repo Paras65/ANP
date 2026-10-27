@@ -71,6 +71,7 @@ export const App: React.FC = () => {
   const [youtubeChannelId, setYoutubeChannelId] = useState<string>(() => {
     return localStorage.getItem('anp_yt_channel_id') || 'UC8mIipC7suPuBJ_n8kUzkCg';
   });
+  const [hasYouTubeApiKey, setHasYouTubeApiKey] = useState(false);
   const [isSyncingYouTube, setIsSyncingYouTube] = useState(false);
 
   // Dynamic Live YouTube Videos & Instagram Reels
@@ -133,13 +134,16 @@ export const App: React.FC = () => {
     return 0;
   };
 
-  // Save Channel ID to MongoDB Atlas & LocalStorage
-  const handleSaveChannelId = async (id: string) => {
+  // Save Channel ID and optional API key to MongoDB Atlas & LocalStorage
+  const handleSaveChannelId = async (id: string, apiKey?: string) => {
     setYoutubeChannelId(id);
     localStorage.setItem('anp_yt_channel_id', id);
     try {
-      await api.post('/youtube/config', { channelId: id });
-      showToast('✅ यूट्यूब चैनल आईडी MongoDB Atlas में सुरक्षित हो गई!');
+      const res = await api.post('/youtube/config', { channelId: id, apiKey });
+      if (res.data?.hasApiKey !== undefined) {
+        setHasYouTubeApiKey(res.data.hasApiKey);
+      }
+      showToast('✅ यूट्यूब सेटिंग्स MongoDB Atlas में सुरक्षित हो गईं!');
     } catch (err) {
       console.warn('Config save error:', err);
     }
@@ -151,6 +155,9 @@ export const App: React.FC = () => {
       if (res.data?.channelId) {
         setYoutubeChannelId(res.data.channelId);
         localStorage.setItem('anp_yt_channel_id', res.data.channelId);
+      }
+      if (res.data?.hasApiKey !== undefined) {
+        setHasYouTubeApiKey(res.data.hasApiKey);
       }
     }).catch(() => {});
   }, []);
@@ -447,6 +454,7 @@ export const App: React.FC = () => {
         onAddReel={handleAddReel}
         onDeleteReel={handleDeleteReel}
         youtubeChannelId={youtubeChannelId}
+        hasYouTubeApiKey={hasYouTubeApiKey}
         onSaveChannelId={handleSaveChannelId}
         onSyncChannel={handleSyncYouTube}
       />

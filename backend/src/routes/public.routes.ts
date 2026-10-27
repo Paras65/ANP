@@ -7,7 +7,7 @@ import { User } from '../models/User.model.js';
 import { Video } from '../models/Video.model.js';
 import { Reel } from '../models/Reel.model.js';
 import { Setting } from '../models/Setting.model.js';
-import { fetchChannelVideos, fetchChannelShorts } from '../services/youtubeSync.js';
+import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI } from '../services/youtubeSync.js';
 
 const router = Router();
 let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg';
@@ -297,63 +297,111 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
       });
     }
 
-    const force = req.query.force === 'true';
-    const videos = await fetchChannelVideos(channelId, force);
+    const apiKeyDoc = await Setting.findOne({ key: 'youtube_api_key' });
+    const apiKey = (process.env.YOUTUBE_API_KEY || apiKeyDoc?.value || '').trim();
 
     let newVideosAdded = 0;
     let newReelsAdded = 0;
+    let syncEngine = 'rss_fallback';
+    let totalFetched = 0;
 
-    for (const v of videos) {
-      const existing = await Video.findOne({ youtubeId: v.youtubeId });
-      if (!existing) {
-        await Video.create({
-          title: v.title,
-          youtubeId: v.youtubeId,
-          thumbnail: v.thumbnail,
-          duration: v.duration,
-          views: v.views,
-          timeAgo: v.timeAgo,
-          category: v.category,
-          youtubeUrl: v.youtubeUrl,
-          isShort: Boolean(v.isShort),
-          publishedAt: v.publishedAt ? new Date(v.publishedAt) : new Date()
-        });
-        newVideosAdded++;
-      }
+    // 1. Try Official Google YouTube Data API v3 if API key is configured
+    if (apiKey) {
+      try {
+        console.log(`[YouTube Sync] Executing official YouTube Data API v3 for channel ${channelId}`);
+        const apiData = await syncFromYouTubeDataAPI(channelId, apiKey);
+        syncEngine = 'youtube_data_api_v3';
+        totalFetched = apiData.videos.length + apiData.reels.length;
 
-      if (v.isShort) {
-        const existingReel = await Reel.findOne({ youtubeId: v.youtubeId });
-        if (!existingReel) {
-          await Reel.create({
-            caption: v.title,
-            imageUrl: v.thumbnail,
-            youtubeId: v.youtubeId,
-            embedUrl: `https://www.youtube-nocookie.com/embed/${v.youtubeId}?autoplay=1&loop=1&playlist=${v.youtubeId}&rel=0`,
-            postUrl: v.youtubeUrl,
-            likes: '1.2K',
-            commentsCount: '80',
-            sharesCount: '45',
-            district: 'कवर्धा',
-            timeAgo: v.timeAgo,
-            audioTrack: 'Ambition News Original'
-          });
-          newReelsAdded++;
+        for (const v of apiData.videos) {
+          const existing = await Video.findOne({ youtubeId: v.youtubeId });
+          if (!existing) {
+            await Video.create({
+              title: v.title,
+              youtubeId: v.youtubeId,
+              thumbnail: v.thumbnail,
+              duration: v.duration,
+              views: v.views,
+              timeAgo: v.timeAgo,
+              category: v.category,
+              youtubeUrl: v.youtubeUrl,
+              isShort: false,
+              publishedAt: v.publishedAt ? new Date(v.publishedAt) : new Date()
+            });
+            newVideosAdded++;
+          }
         }
+
+        for (const s of apiData.reels) {
+          const existing = await Reel.findOne({ youtubeId: s.youtubeId });
+          if (!existing) {
+            await Reel.create(s);
+            newReelsAdded++;
+          }
+        }
+      } catch (apiErr: any) {
+        console.warn('[YouTube Data API v3 Failed, Falling back to RSS/Scraper]:', apiErr?.message);
       }
     }
 
-    // Auto-sync channel Shorts directly from YouTube Shorts feed
-    try {
-      const channelShorts = await fetchChannelShorts(channelId || 'ambition_news');
-      for (const s of channelShorts) {
-        const existing = await Reel.findOne({ youtubeId: s.youtubeId });
+    // 2. Fallback to RSS Feed + Direct Shorts scraper if API key is not present or failed
+    if (syncEngine !== 'youtube_data_api_v3') {
+      const force = req.query.force === 'true';
+      const videos = await fetchChannelVideos(channelId, force);
+      totalFetched = videos.length;
+
+      for (const v of videos) {
+        const existing = await Video.findOne({ youtubeId: v.youtubeId });
         if (!existing) {
-          await Reel.create(s);
-          newReelsAdded++;
+          await Video.create({
+            title: v.title,
+            youtubeId: v.youtubeId,
+            thumbnail: v.thumbnail,
+            duration: v.duration,
+            views: v.views,
+            timeAgo: v.timeAgo,
+            category: v.category,
+            youtubeUrl: v.youtubeUrl,
+            isShort: Boolean(v.isShort),
+            publishedAt: v.publishedAt ? new Date(v.publishedAt) : new Date()
+          });
+          newVideosAdded++;
+        }
+
+        if (v.isShort) {
+          const existingReel = await Reel.findOne({ youtubeId: v.youtubeId });
+          if (!existingReel) {
+            await Reel.create({
+              caption: v.title,
+              imageUrl: v.thumbnail,
+              youtubeId: v.youtubeId,
+              embedUrl: `https://www.youtube-nocookie.com/embed/${v.youtubeId}?autoplay=1&loop=1&playlist=${v.youtubeId}&rel=0`,
+              postUrl: v.youtubeUrl,
+              likes: '1.2K',
+              commentsCount: '80',
+              sharesCount: '45',
+              district: 'कवर्धा',
+              timeAgo: v.timeAgo,
+              audioTrack: 'Ambition News Original'
+            });
+            newReelsAdded++;
+          }
         }
       }
-    } catch (shortErr) {
-      console.warn('[Shorts Sync Error]:', shortErr);
+
+      // Auto-sync channel Shorts directly from YouTube Shorts feed
+      try {
+        const channelShorts = await fetchChannelShorts(channelId || 'ambition_news');
+        for (const s of channelShorts) {
+          const existing = await Reel.findOne({ youtubeId: s.youtubeId });
+          if (!existing) {
+            await Reel.create(s);
+            newReelsAdded++;
+          }
+        }
+      } catch (shortErr) {
+        console.warn('[Shorts Sync Error]:', shortErr);
+      }
     }
 
     activeYouTubeChannelId = channelId;
@@ -363,7 +411,8 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
     return res.json({
       success: true,
       channelId,
-      totalFetched: videos.length,
+      syncEngine,
+      totalFetched,
       newVideosAdded,
       newReelsAdded,
       videos: allVideos.map((v: any) => ({
@@ -397,34 +446,50 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
   }
 });
 
-// 5c. GET & POST /api/youtube/config - Read or update active channel ID in MongoDB Atlas
+// 5c. GET & POST /api/youtube/config - Read or update active channel ID and YouTube API Key in MongoDB Atlas
 router.get('/youtube/config', async (req: Request, res: Response) => {
   try {
     const doc = await Setting.findOne({ key: 'youtube_channel_id' });
+    const keyDoc = await Setting.findOne({ key: 'youtube_api_key' });
     const channelId = doc?.value || activeYouTubeChannelId || process.env.YOUTUBE_CHANNEL_ID || '';
-    res.json({ success: true, channelId });
+    const hasApiKey = Boolean(process.env.YOUTUBE_API_KEY || keyDoc?.value);
+    res.json({ success: true, channelId, hasApiKey });
   } catch {
-    res.json({ success: true, channelId: activeYouTubeChannelId });
+    res.json({ success: true, channelId: activeYouTubeChannelId, hasApiKey: false });
   }
 });
 
 router.post('/youtube/config', async (req: Request, res: Response) => {
   try {
-    const { channelId } = req.body;
-    if (!channelId) {
-      return res.status(400).json({ success: false, message: 'चैनल आईडी प्रदान करें' });
+    const { channelId, apiKey } = req.body;
+    if (channelId) {
+      const clean = String(channelId).trim();
+      activeYouTubeChannelId = clean;
+      await Setting.findOneAndUpdate(
+        { key: 'youtube_channel_id' },
+        { key: 'youtube_channel_id', value: clean },
+        { upsert: true, new: true }
+      );
     }
-    const clean = String(channelId).trim();
-    activeYouTubeChannelId = clean;
-    await Setting.findOneAndUpdate(
-      { key: 'youtube_channel_id' },
-      { key: 'youtube_channel_id', value: clean },
-      { upsert: true, new: true }
-    );
+    if (apiKey !== undefined) {
+      const cleanKey = String(apiKey).trim();
+      if (cleanKey) {
+        await Setting.findOneAndUpdate(
+          { key: 'youtube_api_key' },
+          { key: 'youtube_api_key', value: cleanKey },
+          { upsert: true, new: true }
+        );
+      } else {
+        await Setting.deleteOne({ key: 'youtube_api_key' });
+      }
+    }
+    const keyDoc = await Setting.findOne({ key: 'youtube_api_key' });
+    const hasApiKey = Boolean(process.env.YOUTUBE_API_KEY || keyDoc?.value);
     res.json({
       success: true,
-      message: 'यूट्यूब चैनल आईडी सफलतापूर्वक MongoDB Atlas में सुरक्षित हो गई!',
-      channelId: clean
+      message: 'कॉन्फ़िगरेशन MongoDB Atlas में सफलतापूर्वक सुरक्षित हो गया!',
+      channelId: activeYouTubeChannelId,
+      hasApiKey
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
