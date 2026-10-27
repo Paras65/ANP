@@ -11,7 +11,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ isDark, onOpenAdminPortal, whatsappLink }) => {
   return (
-    <footer className={`border-t py-10 transition-colors text-xs ${
+    <footer className={`border-t pt-10 pb-32 sm:pb-16 transition-colors text-xs ${
       isDark ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-300 text-slate-600'
     }`}>
       <div className="max-w-7xl mx-auto px-4 space-y-8">
