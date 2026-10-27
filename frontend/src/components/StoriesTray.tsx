@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import type { Article, VideoBulletin, MandiRate } from '../types';
 
 export interface StoryItem {
   id: string;
@@ -11,6 +12,7 @@ export interface StoryItem {
   badge?: string;
   ringGradient: string;
   seen?: boolean;
+  articleId?: string;
 }
 
 export const DEMO_STORIES: StoryItem[] = [
@@ -82,17 +84,106 @@ export const DEMO_STORIES: StoryItem[] = [
 interface StoriesTrayProps {
   onSelectStory: (story: StoryItem) => void;
   isDark: boolean;
+  articles?: Article[];
+  latestVideo?: VideoBulletin;
+  topMandiRate?: MandiRate;
 }
 
-export const StoriesTray: React.FC<StoriesTrayProps> = ({ onSelectStory, isDark }) => {
+export const StoriesTray: React.FC<StoriesTrayProps> = ({ 
+  onSelectStory, 
+  isDark,
+  articles = [],
+  latestVideo,
+  topMandiRate
+}) => {
+  // Dynamically synthesize fresh stories from live articles & mandi rates
+  const stories = useMemo<StoryItem[]>(() => {
+    if (!articles || articles.length === 0) {
+      return DEMO_STORIES;
+    }
+
+    const dynamicList: StoryItem[] = [];
+
+    // 1. Live TV Story (Live YouTube video or channel anchor)
+    dynamicList.push({
+      id: 's-live',
+      label: 'लाइव टीवी',
+      title: latestVideo?.title || 'Ambition News लाइव बुलेटिन: कवर्धा व प्रदेश की आज की बड़ी खबरें',
+      image: latestVideo?.thumbnail || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=600&auto=format&fit=crop&q=80',
+      category: '🔴 LIVE',
+      district: 'कवर्धा HQ',
+      excerpt: 'कवर्धा स्टूडियो से सीधा प्रसारण: भोरमदेव, किसान अंतर राशि व मौसम का ताजा हाल।',
+      badge: 'LIVE',
+      ringGradient: 'from-red-500 via-rose-600 to-amber-500'
+    });
+
+    // 2. Kawardha Story (from latest Kawardha / Kabirdham article)
+    const kwdArticle = articles.find(a => a.district.includes('कवर्धा') || a.district.includes('कबीरधाम'));
+    if (kwdArticle) {
+      dynamicList.push({
+        id: `s-${kwdArticle._id}`,
+        label: 'कवर्धा',
+        title: kwdArticle.title,
+        image: kwdArticle.coverImage || 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=80',
+        category: kwdArticle.category,
+        district: kwdArticle.district,
+        excerpt: kwdArticle.excerpt,
+        badge: 'HQ',
+        ringGradient: 'from-amber-400 via-orange-500 to-red-500',
+        articleId: kwdArticle._id
+      });
+    }
+
+    // 3. Live Mandi Story (from top live crop rate)
+    if (topMandiRate) {
+      dynamicList.push({
+        id: 's-mandi',
+        label: 'मंडी भाव',
+        title: `आज के मंडी भाव: ${topMandiRate.crop} (${topMandiRate.mandi}) में ₹${topMandiRate.rate.toLocaleString('en-IN')}`,
+        image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&auto=format&fit=crop&q=80',
+        category: 'कृषि',
+        district: `${topMandiRate.mandi} मंडी`,
+        excerpt: `${topMandiRate.mandi} कृषि उपज मंडी में आज का भाव दर्ज। किसानों को मिला तुरंत नकद भुगतान।`,
+        badge: 'भाव',
+        ringGradient: 'from-emerald-400 via-teal-500 to-green-600'
+      });
+    }
+
+    // 4. Remaining top articles dynamically converted into web story circles
+    const remaining = articles.filter(a => !kwdArticle || a._id !== kwdArticle._id).slice(0, 4);
+    const ringGradients = [
+      'from-cyan-400 via-blue-500 to-indigo-600',
+      'from-purple-500 via-pink-600 to-rose-500',
+      'from-yellow-400 via-amber-500 to-orange-600',
+      'from-fuchsia-500 via-purple-600 to-blue-600'
+    ];
+
+    remaining.forEach((art, idx) => {
+      dynamicList.push({
+        id: `s-${art._id}`,
+        label: art.district.replace(/ \(.*\)/, '').slice(0, 8) || 'ताज़ा खबर',
+        title: art.title,
+        image: art.coverImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=600&auto=format&fit=crop&q=80',
+        category: art.category,
+        district: art.district,
+        excerpt: art.excerpt,
+        badge: art.isBreaking ? 'ब्रेकिंग' : undefined,
+        ringGradient: ringGradients[idx % ringGradients.length],
+        articleId: art._id
+      });
+    });
+
+    return dynamicList.length >= 3 ? dynamicList : DEMO_STORIES;
+  }, [articles, latestVideo, topMandiRate]);
+
   return (
     <div className="w-full max-w-full overflow-x-auto no-scrollbar py-2 px-1">
       <div className="flex items-center gap-3.5 sm:gap-4 w-max">
-        {DEMO_STORIES.map((story) => (
+        {stories.map((story) => (
           <button
             key={story.id}
             onClick={() => onSelectStory(story)}
-            className="flex flex-col items-center gap-1.5 focus:outline-none group active:scale-95 transition-transform"
+            className="flex flex-col items-center gap-1.5 focus:outline-none group active:scale-95 transition-transform cursor-pointer"
           >
             {/* Story Avatar Circle with Gradient Ring */}
             <div className={`relative w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] rounded-full p-[2.5px] bg-gradient-to-tr ${story.ringGradient} shadow-md group-hover:scale-105 transition-transform`}>
@@ -126,4 +217,5 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({ onSelectStory, isDark 
     </div>
   );
 };
+
 

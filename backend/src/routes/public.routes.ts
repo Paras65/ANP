@@ -7,6 +7,7 @@ import { User } from '../models/User.model.js';
 import { Video } from '../models/Video.model.js';
 import { Reel } from '../models/Reel.model.js';
 import { Setting } from '../models/Setting.model.js';
+import { MandiRate } from '../models/MandiRate.model.js';
 import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI } from '../services/youtubeSync.js';
 
 const router = Router();
@@ -636,6 +637,123 @@ router.delete('/reels/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     await Reel.deleteOne({ $or: [{ _id: id }, { youtubeId: id }] });
     res.json({ success: true, message: 'रील हटा दी गई' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9. GET /api/mandi - Fetch all Mandi Rates live from MongoDB Atlas (with initial seed fallback)
+router.get('/mandi', async (req: Request, res: Response) => {
+  try {
+    let rates = await MandiRate.find().sort({ createdAt: 1 }).lean();
+    if (!rates || rates.length === 0) {
+      const initialRates = [
+        { crop: 'गुड़ (देसी/सुपर)', mandi: 'कवर्धा', state: 'CG', rate: 3480, unit: '₹/क्विंटल', change: 'up', diff: 80 },
+        { crop: 'चना (बड़ा)', mandi: 'कवर्धा', state: 'CG', rate: 5950, unit: '₹/क्विंटल', change: 'up', diff: 120 },
+        { crop: 'धान (सरना)', mandi: 'रायपुर/कवर्धा', state: 'CG', rate: 3100, unit: '₹/क्विंटल', change: 'steady', diff: 0 },
+        { crop: 'सोयाबीन (पीला)', mandi: 'राजनांदगांव', state: 'CG', rate: 4720, unit: '₹/क्विंटल', change: 'down', diff: -40 },
+        { crop: 'गेहूं (शरबती)', mandi: 'इंदौर/भोपाल', state: 'MP', rate: 2780, unit: '₹/क्विंटल', change: 'up', diff: 50 },
+        { crop: 'मक्का (हाइब्रिड)', mandi: 'छिंदवाड़ा', state: 'MP', rate: 2150, unit: '₹/क्विंटल', change: 'steady', diff: 0 }
+      ];
+      await MandiRate.insertMany(initialRates);
+      rates = await MandiRate.find().sort({ createdAt: 1 }).lean();
+    }
+    const data = rates.map((r: any) => ({
+      id: r._id.toString(),
+      crop: r.crop,
+      mandi: r.mandi,
+      state: r.state,
+      rate: r.rate,
+      unit: r.unit,
+      change: r.change,
+      diff: r.diff,
+      updatedAt: r.updatedAt
+    }));
+    res.json({ success: true, count: data.length, data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9b. POST /api/mandi - Add new crop rate
+router.post('/mandi', async (req: Request, res: Response) => {
+  try {
+    const { crop, mandi, state, rate, unit, change, diff } = req.body;
+    if (!crop || !rate) {
+      return res.status(400).json({ success: false, message: 'फसल और भाव आवश्यक है' });
+    }
+    const newRate = await MandiRate.create({
+      crop: crop.trim(),
+      mandi: mandi ? mandi.trim() : 'कवर्धा',
+      state: state || 'CG',
+      rate: Number(rate),
+      unit: unit || '₹/क्विंटल',
+      change: change || 'steady',
+      diff: Number(diff) || 0
+    });
+    res.status(201).json({
+      success: true,
+      data: {
+        id: newRate._id.toString(),
+        crop: newRate.crop,
+        mandi: newRate.mandi,
+        state: newRate.state,
+        rate: newRate.rate,
+        unit: newRate.unit,
+        change: newRate.change,
+        diff: newRate.diff
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9c. PUT /api/mandi/:id - Update existing Mandi Rate
+router.put('/mandi/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { crop, mandi, state, rate, unit, change, diff } = req.body;
+    const updated = await MandiRate.findByIdAndUpdate(
+      id,
+      {
+        ...(crop && { crop: crop.trim() }),
+        ...(mandi && { mandi: mandi.trim() }),
+        ...(state && { state }),
+        ...(rate !== undefined && { rate: Number(rate) }),
+        ...(unit && { unit: unit.trim() }),
+        ...(change && { change }),
+        ...(diff !== undefined && { diff: Number(diff) })
+      },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'मंडी भाव नहीं मिला' });
+    }
+    res.json({
+      success: true,
+      data: {
+        id: updated._id.toString(),
+        crop: updated.crop,
+        mandi: updated.mandi,
+        state: updated.state,
+        rate: updated.rate,
+        unit: updated.unit,
+        change: updated.change,
+        diff: updated.diff
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9d. DELETE /api/mandi/:id - Delete Mandi Rate
+router.delete('/mandi/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await MandiRate.findByIdAndDelete(id);
+    res.json({ success: true, message: 'मंडी भाव हटा दिया गया' });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

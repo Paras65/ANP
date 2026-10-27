@@ -40,7 +40,7 @@ import {
   SOCIAL_LINKS 
 } from './data/mockData';
 import type { StoryItem } from './components/StoriesTray';
-import type { Article, DistrictItem, VideoBulletin, InstagramPost } from './types';
+import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate } from './types';
 import api from './api/client';
 import { syncYouTubeChannelVideos } from './utils/mediaUtils';
 
@@ -84,6 +84,47 @@ export const App: React.FC = () => {
     const saved = localStorage.getItem('anp_video_bulletins');
     return saved ? JSON.parse(saved) : VIDEO_BULLETINS;
   });
+
+  // Dynamic Live Mandi Rates
+  const [mandiRates, setMandiRates] = useState<MandiRate[]>(() => {
+    const saved = localStorage.getItem('anp_mandi_rates');
+    return saved ? JSON.parse(saved) : MANDI_RATES;
+  });
+
+  const handleUpdateMandiRate = async (updated: MandiRate) => {
+    const next = mandiRates.map(r => r.id === updated.id ? updated : r);
+    setMandiRates(next);
+    localStorage.setItem('anp_mandi_rates', JSON.stringify(next));
+    showToast(`✅ ${updated.crop} का भाव ₹${updated.rate.toLocaleString('en-IN')} अपडेट हुआ!`);
+    try {
+      await api.put(`/mandi/${updated.id}`, updated);
+    } catch {}
+  };
+
+  const handleAddMandiRate = async (newRate: Omit<MandiRate, 'id'>) => {
+    const tempId = `m-${Date.now()}`;
+    const rateItem: MandiRate = { ...newRate, id: tempId };
+    const next = [...mandiRates, rateItem];
+    setMandiRates(next);
+    localStorage.setItem('anp_mandi_rates', JSON.stringify(next));
+    showToast(`✅ नया मंडी भाव (${newRate.crop}) जोड़ा गया!`);
+    try {
+      const res = await api.post('/mandi', newRate);
+      if (res.data?.data?.id) {
+        setMandiRates(prev => prev.map(r => r.id === tempId ? { ...r, id: res.data.data.id } : r));
+      }
+    } catch {}
+  };
+
+  const handleDeleteMandiRate = async (id: string) => {
+    const next = mandiRates.filter(r => r.id !== id);
+    setMandiRates(next);
+    localStorage.setItem('anp_mandi_rates', JSON.stringify(next));
+    showToast('मंडी भाव हटा दिया गया');
+    try {
+      await api.delete(`/mandi/${id}`);
+    } catch {}
+  };
 
   const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(() => {
     const saved = localStorage.getItem('anp_instagram_posts');
@@ -303,15 +344,20 @@ export const App: React.FC = () => {
   // Load live media (videos & reels) from MongoDB Atlas
   const loadMediaFromBackend = async () => {
     try {
-      const [vRes, rRes] = await Promise.allSettled([
+      const [vRes, rRes, mRes] = await Promise.allSettled([
         api.get('/videos'),
-        api.get('/reels')
+        api.get('/reels'),
+        api.get('/mandi')
       ]);
       if (vRes.status === 'fulfilled' && vRes.value.data?.data && Array.isArray(vRes.value.data.data) && vRes.value.data.data.length > 0) {
         setVideoBulletins(vRes.value.data.data);
       }
       if (rRes.status === 'fulfilled' && rRes.value.data?.data && Array.isArray(rRes.value.data.data) && rRes.value.data.data.length > 0) {
         setInstagramPosts(rRes.value.data.data);
+      }
+      if (mRes.status === 'fulfilled' && mRes.value.data?.data && Array.isArray(mRes.value.data.data) && mRes.value.data.data.length > 0) {
+        setMandiRates(mRes.value.data.data);
+        localStorage.setItem('anp_mandi_rates', JSON.stringify(mRes.value.data.data));
       }
     } catch {
       // Keep local state
@@ -781,6 +827,10 @@ export const App: React.FC = () => {
         onSyncChannel={handleSyncYouTube}
         whatsappLink={whatsappLink}
         onSaveWhatsAppLink={handleSaveWhatsAppLink}
+        mandiRates={mandiRates}
+        onUpdateMandiRate={handleUpdateMandiRate}
+        onAddMandiRate={handleAddMandiRate}
+        onDeleteMandiRate={handleDeleteMandiRate}
       />
     );
   }
@@ -865,7 +915,7 @@ export const App: React.FC = () => {
               </span>
               <span className="text-[10px] text-red-500 font-bold">24h लाइव</span>
             </div>
-            <StoriesTray onSelectStory={(s) => openStoryModal(s)} isDark={isDark} />
+            <StoriesTray onSelectStory={(s) => openStoryModal(s)} isDark={isDark} articles={articles} latestVideo={videoBulletins[0]} topMandiRate={mandiRates[0]} />
           </div>
         </div>
 
@@ -969,7 +1019,7 @@ export const App: React.FC = () => {
                 <span className="text-emerald-500 font-black text-lg">🌾</span>
                 <h2 className="text-base font-black text-white">कवर्धा व क्षेत्रीय कृषि मंडी भाव</h2>
               </div>
-              <MandiWidget rates={MANDI_RATES} isDark={isDark} />
+              <MandiWidget rates={mandiRates} isDark={isDark} />
               
               <div className={`p-4 rounded-2xl border space-y-3 ${
                 isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'
@@ -1088,7 +1138,7 @@ export const App: React.FC = () => {
               </div>
 
               {/* MANDI BHAV COMPACT BAR */}
-              <MandiWidget rates={MANDI_RATES} isDark={isDark} />
+              <MandiWidget rates={mandiRates} isDark={isDark} />
 
               {/* FEED HEADER */}
               <div id="news-feed-section" className="flex items-center justify-between pt-1 scroll-mt-28">
