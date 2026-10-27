@@ -60,6 +60,19 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   const [countdown, setCountdown] = useState<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Lock body scroll while video modal is active to prevent background rubber-band jerks
+  useEffect(() => {
+    if (activeVideo) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.classList.remove('modal-open');
+      };
+    }
+  }, [activeVideo]);
+
   const handleUrlChange = (val: string) => {
     setInputUrl(val);
     const parsed = parseYouTubeUrl(val);
@@ -575,17 +588,24 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             </div>
 
             {/* Scrollable Content */}
-            <div className="overflow-y-auto no-scrollbar flex-1">
+            <div className="overflow-y-auto no-scrollbar flex-1 overscroll-contain">
               
-              {/* 16:9 Video Embed Player with Autoplay Countdown Overlay */}
-              <div className="relative aspect-video w-full bg-black">
+              {/* 16:9 Video Embed Player with Poster & Autoplay Countdown Overlay */}
+              <div className="relative aspect-video w-full bg-black overflow-hidden">
+                {activeVideo.thumbnail && (
+                  <img 
+                    src={activeVideo.thumbnail} 
+                    alt="" 
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none" 
+                  />
+                )}
                 <iframe 
                   ref={iframeRef}
                   key={activeVideo.youtubeId}
                   src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}&rel=0&modestbranding=1&playsinline=1`}
                   title={activeVideo.title}
                   onLoad={onIframeLoad}
-                  className="w-full h-full border-0"
+                  className="w-full h-full border-0 relative z-10"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 ></iframe>

@@ -6,7 +6,8 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  /* Prevent horizontal layout shifts / jerks when modals open/close and scrollbars toggle */
+  scrollbar-gutter: stable;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -17,6 +18,14 @@ body {
   min-height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent rubber-band stretch jerks on mobile browsers */
+  overscroll-behavior-y: none;
+}
+
+/* Modal overlay & backdrop scroll lock helper */
+body.modal-open {
+  overflow: hidden !important;
+  touch-action: none;
 }
 
 /* 100% Seamless Infinite Marquee with Zero Jump / Reflow */
@@ -34,6 +43,7 @@ body {
   white-space: nowrap;
   will-change: transform;
   animation: seamlessMarquee 32s linear infinite;
+  transform: translateZ(0);
 }
 
 /* Audio Marquee in Reels */
@@ -51,6 +61,7 @@ body {
   white-space: nowrap;
   will-change: transform;
   animation: audioMarquee 16s linear infinite;
+  transform: translateZ(0);
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -66,8 +77,8 @@ body {
 
 /* Native glass effect */
 .glass-nav {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* Story gradient ring pulse */
@@ -78,4 +89,10 @@ body {
 
 .story-active {
   animation: story-pulse 2.5s infinite ease-in-out;
+}
+
+/* Contain overscroll inside modal sheets */
+.overscroll-contain {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }

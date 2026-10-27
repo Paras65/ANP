@@ -1064,9 +1064,10 @@ export const App: React.FC = () => {
         <BottomNav 
           activeTab={activeTab}
           setActiveTab={(tab) => {
-            setActiveTab(tab);
             if (tab === 'insta') {
               setActiveReelId(instagramPosts[0]?.id || null);
+            } else {
+              setActiveTab(tab);
             }
           }}
           savedCount={savedArticles.length}

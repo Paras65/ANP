@@ -25,6 +25,17 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
 
   const currentStory = DEMO_STORIES[currentIndex] || initialStory;
 
+  // Lock body scroll while story modal is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.classList.remove('modal-open');
+    };
+  }, []);
+
   // Auto-advance progress timer (5 seconds per story)
   useEffect(() => {
     setProgress(0);

@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   toggleDeviceView
 }) => {
   return (
-    <header className={`sticky top-0 z-40 border-b backdrop-blur-xl transition-colors ${
+    <header className={`sticky top-0 z-40 border-b backdrop-blur-md will-change-transform transition-colors ${
       isDark ? 'bg-[#080c14]/98 border-red-950/40 text-slate-100 shadow-xl shadow-black/50' : 'bg-white/98 border-red-100 text-slate-900 shadow-md'
     }`}>
       

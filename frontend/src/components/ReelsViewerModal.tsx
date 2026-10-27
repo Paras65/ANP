@@ -93,6 +93,19 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
   const [isAutoScroll, setIsAutoScroll] = useState<boolean>(true);
+  const isTouchRef = useRef(false);
+  const lastWheelRef = useRef(0);
+
+  // Lock body scroll while modal is active to prevent background rubber-band jerks
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.classList.remove('modal-open');
+    };
+  }, []);
 
   // Send control commands directly into YouTube IFrame without reload/restart
   const sendYouTubeCommand = (func: string, args: any[] = []) => {
@@ -142,28 +155,19 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Navigate reels
+  // Navigate reels (smooth, functional updater)
   const handlePrev = () => {
     setShowSwipeHint(false);
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setIsCaptionExpanded(false);
-      setShowComments(false);
-    }
+    setCurrentIndex(ci => (ci > 0 ? ci - 1 : ci));
+    setIsCaptionExpanded(false);
+    setShowComments(false);
   };
 
   const handleNext = () => {
     setShowSwipeHint(false);
-    if (currentIndex < posts.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setIsCaptionExpanded(false);
-      setShowComments(false);
-    } else {
-      // Loop back to start
-      setCurrentIndex(0);
-      setIsCaptionExpanded(false);
-      setShowComments(false);
-    }
+    setCurrentIndex(ci => (ci < posts.length - 1 ? ci + 1 : 0));
+    setIsCaptionExpanded(false);
+    setShowComments(false);
   };
 
   // Keyboard navigation
@@ -179,25 +183,24 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, isPlaying, onClose]);
+  }, [isPlaying, onClose]);
 
-  // Wheel / Trackpad scroll navigation (desktop & laptop touchpads)
+  // Wheel / Trackpad scroll navigation with proper ref debouncing
   useEffect(() => {
-    let lastWheel = 0;
     const handleWheel = (e: WheelEvent) => {
       const now = Date.now();
-      if (now - lastWheel < 500) return;
-      if (e.deltaY > 25) {
-        lastWheel = now;
+      if (now - lastWheelRef.current < 600) return;
+      if (e.deltaY > 30) {
+        lastWheelRef.current = now;
         handleNext();
-      } else if (e.deltaY < -25) {
-        lastWheel = now;
+      } else if (e.deltaY < -30) {
+        lastWheelRef.current = now;
         handlePrev();
       }
     };
     window.addEventListener('wheel', handleWheel, { passive: true });
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [currentIndex]);
+  }, []);
 
   // Continuous Auto-advance when video ends
   useEffect(() => {
@@ -221,10 +224,11 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [currentIndex, isAutoScroll, posts.length]);
+  }, [isAutoScroll]);
 
-  // Touch Swipe detection (Ultra-responsive on mobile screens)
+  // Touch Swipe & Tap detection (Cleanly distinguishes swipe from tap to prevent duplicate triggers)
   const handleTouchStart = (e: React.TouchEvent) => {
+    isTouchRef.current = true;
     const touch = e.touches[0];
     setTouchStartY(touch.clientY);
     setTouchStartX(touch.clientX);
@@ -236,8 +240,8 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     const diffY = touchStartY - touch.clientY;
     const diffX = touchStartX - touch.clientX;
 
-    // Detect vertical swipe (diffY threshold: 30px, vertical dominance over horizontal)
-    if (Math.abs(diffY) > 30 && Math.abs(diffY) > Math.abs(diffX) * 0.7) {
+    // Detect vertical swipe (threshold: 35px, vertical dominance over horizontal)
+    if (Math.abs(diffY) > 35 && Math.abs(diffY) > Math.abs(diffX) * 0.7) {
       if (diffY > 0) {
         // Swiped UP -> Next Reel
         handleNext();
@@ -245,9 +249,20 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
         // Swiped DOWN -> Previous Reel
         handlePrev();
       }
+    } else if (Math.abs(diffY) < 12 && Math.abs(diffX) < 12) {
+      // Clean Tap -> Toggle Play/Pause
+      togglePlay();
     }
     setTouchStartY(null);
     setTouchStartX(null);
+  };
+
+  const handleDesktopClick = () => {
+    if (isTouchRef.current) {
+      isTouchRef.current = false;
+      return;
+    }
+    togglePlay();
   };
 
   // Like Toggle with LocalStorage persistence
@@ -315,10 +330,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
 
       {/* REEL PHONE CONTAINER */}
       <div 
-        className="relative w-full h-full sm:h-[92vh] sm:max-w-[410px] sm:rounded-[36px] overflow-hidden shadow-2xl bg-slate-950 flex flex-col justify-between z-10 border border-slate-800"
-        style={{ touchAction: 'none' }}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        className="relative w-full h-full sm:h-[92vh] sm:max-w-[410px] sm:rounded-[36px] overflow-hidden shadow-2xl bg-slate-950 flex flex-col justify-between z-10 border border-slate-800 overscroll-contain"
       >
         
         {/* 1. REEL VIDEO / VISUAL BACKGROUND (Z-0, POINTER-EVENTS-NONE) */}
@@ -329,6 +341,14 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
             if (ytId) {
               return (
                 <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center pointer-events-none">
+                  {/* Poster Thumbnail behind IFrame eliminates black flash during buffer/transition */}
+                  {currentReel.imageUrl && (
+                    <img 
+                      src={currentReel.imageUrl} 
+                      alt="" 
+                      className="absolute inset-0 w-full h-full object-cover" 
+                    />
+                  )}
                   <iframe
                     ref={iframeRef}
                     key={ytId}
@@ -337,7 +357,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                     onLoad={() => {
                       sendYouTubeCommand('addEventListener', ['onStateChange']);
                     }}
-                    className="w-[170%] h-[120%] -ml-[35%] -mt-[10%] object-cover border-0 pointer-events-none"
+                    className="w-[170%] h-[120%] -ml-[35%] -mt-[10%] object-cover border-0 pointer-events-none relative z-10"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   ></iframe>
@@ -392,7 +412,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           style={{ touchAction: 'none' }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          onClick={togglePlay}
+          onClick={handleDesktopClick}
           onDoubleClick={handleDoubleTap}
         />
 

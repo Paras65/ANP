@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Volume2, VolumeX, Eye, Calendar, UserCheck, MapPin, Heart, Bookmark } from 'lucide-react';
 import type { Article } from '../types';
 import { WhatsAppIcon } from './SocialIcons';
@@ -24,6 +24,17 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [likes, setLikes] = useState(() => Math.floor((article.views || 1000) / 12) + 42);
   const [isLiked, setIsLiked] = useState(false);
+
+  // Prevent background page from rubber-banding / scrolling while modal is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.classList.remove('modal-open');
+    };
+  }, []);
 
   const toggleAudio = () => {
     setIsPlayingAudio(!isPlayingAudio);
@@ -128,7 +139,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 overscroll-contain">
           
           {/* Audio Player notification banner if active */}
           {isPlayingAudio && (
