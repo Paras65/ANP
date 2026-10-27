@@ -10,6 +10,7 @@ import { Video } from '../models/Video.model.js';
 import { Reel } from '../models/Reel.model.js';
 import { Setting } from '../models/Setting.model.js';
 import { MandiRate } from '../models/MandiRate.model.js';
+import { requireAdminAuth } from '../middleware/auth.middleware.js';
 import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI } from '../services/youtubeSync.js';
 
 const router = Router();
@@ -150,7 +151,7 @@ router.get('/articles', async (req: Request, res: Response) => {
 });
 
 // 4. POST /api/articles - Submit new article directly into MongoDB Atlas
-router.post('/articles', async (req: Request, res: Response) => {
+router.post('/articles', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { title, excerpt, content, district, category, author, state, isBreaking, isFeatured, coverImage } = req.body;
 
@@ -255,7 +256,7 @@ router.post('/articles', async (req: Request, res: Response) => {
 });
 
 // 4b. DELETE /api/articles/:id - Soft delete article from MongoDB Atlas
-router.delete('/articles/:id', async (req: Request, res: Response) => {
+router.delete('/articles/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await Article.findByIdAndUpdate(id, { deletedAt: new Date() });
@@ -487,7 +488,7 @@ router.get('/youtube/config', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/youtube/config', async (req: Request, res: Response) => {
+router.post('/youtube/config', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { channelId } = req.body;
     if (!channelId) {
@@ -512,7 +513,7 @@ router.post('/youtube/config', async (req: Request, res: Response) => {
 });
 
 // 6. POST /api/videos - Add new YouTube Bulletin directly into MongoDB Atlas
-router.post('/videos', async (req: Request, res: Response) => {
+router.post('/videos', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { title, youtubeId, category, duration } = req.body;
     if (!title || !youtubeId) {
@@ -554,7 +555,7 @@ router.post('/videos', async (req: Request, res: Response) => {
 });
 
 // 6b. DELETE /api/videos/:id - Delete YouTube Bulletin from MongoDB Atlas
-router.delete('/videos/:id', async (req: Request, res: Response) => {
+router.delete('/videos/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await Video.deleteOne({ $or: [{ _id: id }, { youtubeId: id }] });
@@ -592,7 +593,7 @@ router.get('/reels', async (req: Request, res: Response) => {
 });
 
 // 8. POST /api/reels - Add new Reel / Short directly into MongoDB Atlas
-router.post('/reels', async (req: Request, res: Response) => {
+router.post('/reels', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { caption, postUrl, youtubeId, imageUrl, district, audioTrack, embedUrl } = req.body;
     if (!caption) {
@@ -634,7 +635,7 @@ router.post('/reels', async (req: Request, res: Response) => {
 });
 
 // 8b. DELETE /api/reels/:id - Delete Reel from MongoDB Atlas
-router.delete('/reels/:id', async (req: Request, res: Response) => {
+router.delete('/reels/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await Reel.deleteOne({ $or: [{ _id: id }, { youtubeId: id }] });
@@ -678,7 +679,7 @@ router.get('/mandi', async (req: Request, res: Response) => {
 });
 
 // 9b. POST /api/mandi - Add new crop rate
-router.post('/mandi', async (req: Request, res: Response) => {
+router.post('/mandi', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { crop, mandi, state, rate, unit, change, diff } = req.body;
     if (!crop || !rate) {
@@ -712,7 +713,7 @@ router.post('/mandi', async (req: Request, res: Response) => {
 });
 
 // 9c. PUT /api/mandi/:id - Update existing Mandi Rate
-router.put('/mandi/:id', async (req: Request, res: Response) => {
+router.put('/mandi/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { crop, mandi, state, rate, unit, change, diff } = req.body;
@@ -751,7 +752,7 @@ router.put('/mandi/:id', async (req: Request, res: Response) => {
 });
 
 // 9d. DELETE /api/mandi/:id - Delete Mandi Rate
-router.delete('/mandi/:id', async (req: Request, res: Response) => {
+router.delete('/mandi/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await MandiRate.findByIdAndDelete(id);
@@ -870,8 +871,8 @@ router.post('/auth/verify-admin', async (req: Request, res: Response) => {
   }
 });
 
-// 10d. POST /api/auth/change-pin - Securely Update PIN Hash
-router.post('/auth/change-pin', async (req: Request, res: Response) => {
+// 10d. POST /api/auth/change-pin - Securely Update PIN Hash (Requires Active Admin Token)
+router.post('/auth/change-pin', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { currentPin, newPin } = req.body;
     if (!currentPin || !newPin) {

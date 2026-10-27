@@ -17,5 +17,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 Unauthorized globally (e.g. expired or revoked token after PIN change)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && (error.response?.data?.expired || error.response?.data?.revoked)) {
+      localStorage.removeItem('anp_admin_auth');
+      sessionStorage.removeItem('anp_admin_auth');
+      localStorage.removeItem('anp_admin_token');
+      sessionStorage.removeItem('anp_admin_token');
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
 
