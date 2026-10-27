@@ -27,7 +27,7 @@ import { DistrictPickerModal } from './components/DistrictPickerModal';
 import { BottomNav } from './components/BottomNav';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import type { TabType } from './components/BottomNav';
-import { YoutubeIcon, InstagramIcon, WhatsAppIcon } from './components/SocialIcons';
+import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './components/SocialIcons';
 
 import { 
   INITIAL_ARTICLES, 
@@ -1151,15 +1151,26 @@ export const App: React.FC = () => {
                       कवर्धा की ताज़ा तस्वीरें, रील्स व त्वरित अपडेट सीधे इंस्टाग्राम पर देखें।
                     </p>
 
-                    <a 
-                      href={SOCIAL_LINKS.instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow"
-                    >
-                      <InstagramIcon size={13} />
-                      <span>इंस्टाग्राम पर फॉलो करें</span>
-                    </a>
+                    <div className="flex gap-2">
+                      <a 
+                        href={SOCIAL_LINKS.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow"
+                      >
+                        <InstagramIcon size={13} />
+                        <span>इंस्टाग्राम</span>
+                      </a>
+                      <a 
+                        href={SOCIAL_LINKS.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow transition"
+                      >
+                        <FacebookIcon size={13} />
+                        <span>फेसबुक पेज</span>
+                      </a>
+                    </div>
                   </div>
 
                   {/* WhatsApp News Group & Community Join Card */}

@@ -10,6 +10,8 @@ export const SOCIAL_LINKS = {
   youtube: 'https://www.youtube.com/@ambition_news',
   youtubeHandle: '@ambition_news',
   youtubeSubs: '4.2K+',
+  facebook: 'https://www.facebook.com/people/Ambitionnews-Kawardha/61585264107649/',
+  facebookHandle: 'Ambitionnews Kawardha',
   whatsappShare: 'https://wa.me/?text=',
   whatsappChannel: 'https://chat.whatsapp.com/LlvVXPw56G9IRY7YmeDsj2?s=cl&p=a&mlu=4&ilr=4',
   whatsappGroup: 'https://chat.whatsapp.com/LlvVXPw56G9IRY7YmeDsj2?s=cl&p=a&mlu=4&ilr=4',

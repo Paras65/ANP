@@ -1,6 +1,6 @@
 import React from 'react';
 import { ShieldCheck, Sun, Moon, MapPin, Smartphone, Monitor, Search } from 'lucide-react';
-import { YoutubeIcon, InstagramIcon, WhatsAppIcon } from './SocialIcons';
+import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './SocialIcons';
 import { SOCIAL_LINKS } from '../data/mockData';
 import type { TabType } from './BottomNav';
 
@@ -135,6 +135,18 @@ export const Header: React.FC<HeaderProps> = ({
               <YoutubeIcon size={12} />
               <span>YouTube</span>
               <span className="hidden sm:inline text-[9px]">({SOCIAL_LINKS.youtubeSubs})</span>
+            </a>
+
+            {/* Facebook Link */}
+            <a 
+              href={SOCIAL_LINKS.facebook} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
+              title="Ambition News Facebook Page"
+            >
+              <FacebookIcon size={12} />
+              <span>Facebook</span>
             </a>
 
             {/* Instagram Link */}

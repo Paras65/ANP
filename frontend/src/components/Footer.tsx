@@ -1,6 +1,6 @@
 import React from 'react';
 import { ShieldCheck, Mail, MapPin } from 'lucide-react';
-import { YoutubeIcon, InstagramIcon, WhatsAppIcon } from './SocialIcons';
+import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './SocialIcons';
 import { SOCIAL_LINKS } from '../data/mockData';
 
 interface FooterProps {
@@ -97,6 +97,21 @@ export const Footer: React.FC<FooterProps> = ({ isDark, onOpenAdminPortal, whats
                 <div>
                   <div className="font-bold">WhatsApp ग्रुप / चैनल</div>
                   <div className="text-[10px] text-slate-400">कवर्धा व CG-MP 88 जिला न्यूज़</div>
+                </div>
+              </a>
+
+              <a 
+                href={SOCIAL_LINKS.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 p-2 rounded-lg bg-blue-950/40 border border-blue-900/60 hover:border-blue-500 text-blue-300 hover:text-white transition group"
+              >
+                <div className="p-1 rounded bg-blue-600 text-white group-hover:scale-110 transition">
+                  <FacebookIcon size={14} />
+                </div>
+                <div>
+                  <div className="font-bold">Facebook Page</div>
+                  <div className="text-[10px] text-slate-400">{SOCIAL_LINKS.facebookHandle}</div>
                 </div>
               </a>
 
