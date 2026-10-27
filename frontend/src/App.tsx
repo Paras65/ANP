@@ -45,7 +45,10 @@ import api from './api/client';
 import { syncYouTubeChannelVideos } from './utils/mediaUtils';
 
 export const App: React.FC = () => {
-  const [isDark, setIsDark] = useState(true);
+  // Theme state: defaults to false (White / Light mode)
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    return localStorage.getItem('anp_theme') === 'dark';
+  });
   const [currentView, setCurrentView] = useState<'public' | 'admin'>('public');
   const [selectedState, setSelectedState] = useState<'chhattisgarh' | 'madhya-pradesh'>('chhattisgarh');
   const [currentDistrict, setCurrentDistrict] = useState<string>('सभी');
@@ -223,19 +226,28 @@ export const App: React.FC = () => {
     } catch {}
   };
 
-  // Toggle Dark Mode
+  // Toggle Dark / White (Light) Mode
   const toggleTheme = () => {
-    setIsDark(!isDark);
-    if (!isDark) {
+    setIsDark(prev => {
+      const next = !prev;
+      localStorage.setItem('anp_theme', next ? 'dark' : 'light');
+      if (next) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return next;
+    });
+  };
+
+  // Sync theme with HTML root class on change
+  useEffect(() => {
+    if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  };
-
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
+  }, [isDark]);
 
   // Show Toast
   const showToast = (msg: string) => {
