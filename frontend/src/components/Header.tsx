@@ -173,7 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand Logo & Headquarters Tag */}
         <div 
           onClick={handleLogoClick}
-          className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 shrink cursor-pointer group py-0.5"
+          className="flex items-center gap-2 sm:gap-3.5 shrink-0 cursor-pointer group py-0.5"
           title="एम्बिशन न्यूज़ - होमपेज"
         >
           {/* Official 3D Round Logo - Highly Visible, Large & Sharp with Red Studio Glow */}
@@ -181,48 +181,48 @@ export const Header: React.FC<HeaderProps> = ({
             <img 
               src="/logo.png" 
               alt="एम्बिशन न्यूज़ Logo" 
-              className="w-12 h-12 sm:w-15 sm:h-15 md:w-16 md:h-16 object-contain filter drop-shadow-[0_4px_16px_rgba(220,38,38,0.55)] transition-transform duration-300 group-hover:scale-105" 
+              className="w-10 h-10 sm:w-15 sm:h-15 md:w-16 md:h-16 object-contain filter drop-shadow-[0_4px_16px_rgba(220,38,38,0.55)] transition-transform duration-300 group-hover:scale-105" 
             />
             <span 
-              className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#080c14] shadow-sm animate-pulse" 
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-[#080c14] shadow-sm animate-pulse" 
               title={backendSynced ? "लाइव सर्वर कनेक्टेड" : "लाइव मोड"}
             />
           </div>
 
           <div className="flex flex-col justify-center">
             {/* Sleek Hindi Channel Title */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-black text-xl sm:text-2xl tracking-tight leading-none text-red-500 drop-shadow-sm">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className="font-black text-base sm:text-2xl tracking-tight leading-none text-red-500 drop-shadow-sm">
                 एम्बिशन
               </span>
-              <span className={`font-black text-xl sm:text-2xl tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'} drop-shadow-sm`}>
+              <span className={`font-black text-base sm:text-2xl tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'} drop-shadow-sm`}>
                 न्यूज़
               </span>
-              <span className="flex items-center gap-1 bg-red-600 text-white text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm shadow-red-600/40 tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+              <span className="flex items-center gap-0.5 bg-red-600 text-white text-[8px] sm:text-[10px] font-black px-1 sm:px-1.5 py-0.5 rounded shadow-sm shadow-red-600/40 tracking-wider shrink-0">
+                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white animate-ping"></span>
                 LIVE
               </span>
             </div>
 
             {/* Subtitle: Bureau & Coverage */}
-            <div className="text-[10px] sm:text-xs font-semibold text-slate-400 mt-1 flex items-center gap-1.5 leading-none">
+            <div className="text-[9px] sm:text-xs font-semibold text-slate-400 mt-0.5 sm:mt-1 flex items-center gap-1 leading-none">
               <span className="text-red-400 font-bold">कवर्धा (कबीरधाम)</span>
-              <span className="text-slate-600">•</span>
-              <span className="truncate max-w-[130px] sm:max-w-none text-slate-300 font-medium">CG-MP 88 जिला नेटवर्क</span>
+              <span className="text-slate-600 hidden sm:inline">•</span>
+              <span className="hidden sm:inline text-slate-300 font-medium">CG-MP 88 जिला नेटवर्क</span>
             </div>
           </div>
         </div>
 
         {/* State Toggle & Quick Action Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           
           {/* State Switcher (Styled with News Theme) */}
-          <div className={`flex p-0.5 rounded-xl border text-[10px] sm:text-xs font-bold ${
+          <div className={`flex p-0.5 rounded-lg sm:rounded-xl border ${
             isDark ? 'bg-[#05070d] border-red-950/60' : 'bg-slate-100 border-slate-300'
           }`}>
             <button 
               onClick={() => setSelectedState('chhattisgarh')}
-              className={`px-2 sm:px-3.5 py-1 rounded-lg text-[10px] sm:text-xs transition-all ${
+              className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
                 selectedState === 'chhattisgarh' ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -231,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button 
               onClick={() => setSelectedState('madhya-pradesh')}
-              className={`px-2 sm:px-3.5 py-1 rounded-lg text-[10px] sm:text-xs transition-all ${
+              className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
                 selectedState === 'madhya-pradesh' ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -243,18 +243,18 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Admin Desk Button */}
           <button 
             onClick={onOpenAdminPortal}
-            className="flex bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-700/80 items-center gap-1 transition active:scale-95 shadow shrink-0"
+            className="flex bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-700/80 items-center gap-1 transition active:scale-95 shadow shrink-0"
             title="Open Editorial & Admin Desk"
           >
             <ShieldCheck size={14} className="text-amber-400 shrink-0" />
             <span className="hidden sm:inline text-xs">एडमिन</span>
           </button>
 
-          {/* WhatsApp Share App Button */}
+          {/* WhatsApp Share App Button - shown on tablet & desktop, hidden on small mobile to avoid crowding */}
           {onShareAppWhatsApp && (
             <button 
               onClick={onShareAppWhatsApp}
-              className="flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl items-center gap-1 transition active:scale-95 shadow shadow-emerald-950/40 shrink-0"
+              className="hidden sm:flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl items-center gap-1 transition active:scale-95 shadow shadow-emerald-950/40 shrink-0"
               title="व्हाट्सएप पर ऐप शेयर करें"
             >
               <WhatsAppIcon size={14} className="shrink-0" />
