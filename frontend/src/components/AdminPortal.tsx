@@ -7,6 +7,7 @@ import {
   Users, 
   Trash2, 
   Eye, 
+  EyeOff,
   CheckCircle2, 
   Flame, 
   MapPin, 
@@ -112,8 +113,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     const token = sessionStorage.getItem('anp_admin_token') || localStorage.getItem('anp_admin_token');
     return Boolean(token);
   });
-  const [enteredPin, setEnteredPin] = useState('');
-  const [pinError, setPinError] = useState<string | null>(null);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -224,16 +226,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   }, []);
 
-  // Verify PIN strictly with backend (Validated exclusively via process.env.ADMIN_PIN)
-  const handleVerifyPin = async (pinCandidate?: string) => {
-    const pin = (pinCandidate !== undefined ? pinCandidate : enteredPin).trim();
+  // Verify Password strictly with backend (Validated exclusively via process.env.ADMIN_PIN)
+  const handleVerifyPassword = async (passCandidate?: string) => {
+    const pin = (passCandidate !== undefined ? passCandidate : adminPassword).trim();
     if (!pin) {
-      setPinError('कृपया एडमिन पिन दर्ज करें');
+      setPasswordError('कृपया एडमिन पासवर्ड दर्ज करें');
       return;
     }
 
     setIsVerifying(true);
-    setPinError(null);
+    setPasswordError(null);
 
     try {
       const res = await api.post('/auth/verify-admin', { pin });
@@ -249,10 +251,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           }
         }
         setIsAuthenticated(true);
+        setAdminPassword('');
         return;
       }
     } catch (err: any) {
-      setPinError(err?.response?.data?.message || 'अमान्य एडमिन पिन — कृपया सही पिन दर्ज करें');
+      setPasswordError(err?.response?.data?.message || 'अमान्य एडमिन पासवर्ड — कृपया सही पासवर्ड दर्ज करें');
     } finally {
       setIsVerifying(false);
     }
@@ -265,7 +268,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     localStorage.removeItem('anp_admin_token');
     sessionStorage.removeItem('anp_admin_token');
     setIsAuthenticated(false);
-    setEnteredPin('');
+    setAdminPassword('');
   };
 
 
@@ -528,106 +531,69 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   एम्बिशन न्यूज़
                 </span>
                 <span className="text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded">
-                  एडमिन डेस्क
+                  संपादकीय डेस्क
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-2">
                 🔒 अधिकृत संपादकीय नियंत्रण कक्ष (Restricted Access)
               </p>
+              <p className="text-[11px] text-amber-400/90 bg-amber-950/40 border border-amber-800/40 px-3 py-1 rounded-xl mt-2 inline-block">
+                🔐 प्रमाणीकरण केवल सर्वर एनवायरनमेंट (ADMIN_PIN) से मान्य है
+              </p>
             </div>
           </div>
 
-          {/* PIN Input & Display */}
+          {/* Secure Admin Password Input Form */}
           <form 
             onSubmit={(e) => {
               e.preventDefault();
-              handleVerifyPin();
+              handleVerifyPassword();
             }}
-            className="space-y-4"
+            className="space-y-4 text-left"
           >
             <div>
+              <label className="text-xs font-bold text-slate-400 block mb-1.5">
+                एडमिन पासवर्ड (Admin Password / Master Passkey)
+              </label>
               <div className="relative">
                 <input 
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={enteredPin}
+                  type={showPassword ? 'text' : 'password'}
+                  value={adminPassword}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '');
-                    setEnteredPin(val);
-                    if (pinError) setPinError(null);
+                    setAdminPassword(e.target.value);
+                    if (passwordError) setPasswordError(null);
                   }}
-                  placeholder="एडमिन पिन दर्ज करें (4-6 अंक)"
-                  className="w-full text-center text-xl tracking-[0.35em] font-black bg-[#05070e] border border-white/20 focus:border-red-500 rounded-2xl py-3 px-4 text-white outline-none shadow-inner"
-                  />
+                  placeholder="अपना गुप्त एडमिन पासवर्ड दर्ज करें"
+                  className="w-full bg-[#05070e] border border-white/20 focus:border-red-500 rounded-2xl py-3.5 pl-4 pr-11 text-white text-sm font-mono tracking-wider outline-none shadow-inner transition"
+                  autoFocus
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition"
+                  title={showPassword ? 'पासवर्ड छुपाएं' : 'पासवर्ड देखें'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
 
-              {pinError && (
-                <div className="mt-2 text-xs font-bold text-rose-400 bg-rose-950/40 border border-rose-800/60 p-2 rounded-xl animate-in fade-in">
-                  ⚠️ {pinError}
+              {passwordError && (
+                <div className="mt-2 text-xs font-bold text-rose-400 bg-rose-950/50 border border-rose-800/60 p-2.5 rounded-xl animate-in fade-in flex items-center gap-1.5">
+                  <span>⚠️</span>
+                  <span>{passwordError}</span>
                 </div>
               )}
             </div>
 
-            {/* Quick 1-Touch Keypad for Mobile Convenience */}
-            <div className="grid grid-cols-3 gap-2 pt-1 max-w-[280px] mx-auto">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => {
-                    if (enteredPin.length < 6) {
-                      const next = enteredPin + num;
-                      setEnteredPin(next);
-                      if (next.length >= 4) {
-                        // Soft auto-check
-                        if (pinError) setPinError(null);
-                      }
-                    }
-                  }}
-                  className="py-3 rounded-2xl text-base font-black bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-white transition border border-white/5 shadow-sm"
-                >
-                  {num}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => setEnteredPin('')}
-                className="py-3 rounded-2xl text-xs font-bold bg-slate-800/40 hover:bg-slate-800 active:scale-95 text-slate-400 transition"
-              >
-                Clear
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (enteredPin.length < 6) {
-                    setEnteredPin(enteredPin + '0');
-                  }
-                }}
-                className="py-3 rounded-2xl text-base font-black bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-white transition border border-white/5"
-              >
-                0
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setEnteredPin(enteredPin.slice(0, -1))}
-                className="py-3 rounded-2xl text-sm font-bold bg-slate-800/40 hover:bg-slate-800 active:scale-95 text-slate-300 transition"
-              >
-                ⌫
-              </button>
-            </div>
-
             {/* Remember Me Toggle */}
-            <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-1">
+            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input 
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded accent-red-600 w-4 h-4"
+                  className="rounded accent-red-600 w-4 h-4 cursor-pointer"
                 />
                 <span>इस डिवाइस पर लॉगिन याद रखें</span>
               </label>
@@ -636,26 +602,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isVerifying || enteredPin.length < 4}
-              className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-2xl transition shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              disabled={isVerifying || !adminPassword.trim()}
+              className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold text-sm py-3.5 rounded-2xl transition shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
             >
               <Unlock size={16} />
-              <span>{isVerifying ? 'प्रमाणीकरण हो रहा है...' : 'सुरक्षित प्रवेश (Unlock Portal)'}</span>
+              <span>{isVerifying ? 'प्रमाणीकरण हो रहा है...' : 'सुरक्षित एडमिन प्रवेश (Login to Desk)'}</span>
             </button>
           </form>
 
           {/* Bottom Back Button & Hint */}
-          <div className="pt-2 border-t border-slate-800/60 flex flex-col gap-2">
+          <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-500">
             <button
               onClick={onBackToPublic}
-              className="text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition py-1"
+              className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition py-1"
             >
               <ArrowLeft size={13} />
-              <span>पाठक पोर्टल पर वापस जाएं</span>
+              <span>पाठक पोर्टल</span>
             </button>
-            <p className="text-[11px] text-slate-500">
-              🛡️ एम्बिशन न्यूज़ संपादकीय डेस्क • अनधिकृत प्रवेश पूर्णतः वर्जित है
-            </p>
+            <span className="text-[10px] text-slate-500">
+              HMAC-SHA256 • Timing-Safe
+            </span>
           </div>
         </div>
       </div>

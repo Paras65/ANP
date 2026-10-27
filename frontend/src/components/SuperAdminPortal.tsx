@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   Lock, 
+  Eye,
+  EyeOff,
   Database, 
   Users, 
   LogOut, 
@@ -48,6 +50,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
     return Boolean(token);
   });
   const [masterPin, setMasterPin] = useState('');
+  const [showMasterPass, setShowMasterPass] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
@@ -166,18 +169,30 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4 text-left">
             <div>
-              <label className="text-xs font-bold text-slate-400 block mb-1.5">सुपर एडमिन मास्टर पिन</label>
-              <input
-                type="password"
-                value={masterPin}
-                onChange={(e) => setMasterPin(e.target.value)}
-                placeholder="••••••"
-                className="w-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-center text-xl tracking-widest focus:border-indigo-500 focus:outline-none"
-                autoFocus
-                required
-              />
+              <label className="text-xs font-bold text-slate-400 block mb-1.5">
+                सुपर एडमिन मास्टर पासवर्ड (Root Password)
+              </label>
+              <div className="relative">
+                <input
+                  type={showMasterPass ? 'text' : 'password'}
+                  value={masterPin}
+                  onChange={(e) => setMasterPin(e.target.value)}
+                  placeholder="अपना मास्टर पासवर्ड दर्ज करें"
+                  className="w-full p-3.5 pl-4 pr-11 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-sm tracking-wider focus:border-indigo-500 focus:outline-none shadow-inner transition"
+                  autoFocus
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowMasterPass(!showMasterPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition"
+                  title={showMasterPass ? 'पासवर्ड छुपाएं' : 'पासवर्ड देखें'}
+                >
+                  {showMasterPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-between text-xs text-slate-400">
