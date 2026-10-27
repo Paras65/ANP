@@ -39,7 +39,7 @@ import {
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate } from '../types';
 import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos } from '../utils/mediaUtils';
 import { WhatsAppIcon } from './SocialIcons';
-import api from '../api/client';
+import api, { setAuthToken } from '../api/client';
 import { SOCIAL_LINKS } from '../data/mockData';
 
 interface AdminPortalProps {
@@ -122,9 +122,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [articleSearchQuery, setArticleSearchQuery] = useState('');
   const [articleDistrictFilter, setArticleDistrictFilter] = useState('सभी');
 
-  // Check whether Admin PIN is configured on the server
+  // Check whether Admin PIN is configured on the server & restore in-memory token
   useEffect(() => {
     let isMounted = true;
+
+    // Strict Zero LocalStorage Token Policy: purge any persistent token
+    localStorage.removeItem('anp_admin_token');
+    const existingSessionToken = sessionStorage.getItem('anp_admin_token');
+    if (existingSessionToken) {
+      setAuthToken(existingSessionToken);
+    }
+
     const checkStatus = async () => {
       try {
         const res = await api.get('/auth/pin-status');
@@ -158,12 +166,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     try {
       const res = await api.post('/auth/setup-pin', { newPin: setupPinInput.trim() });
       if (res.data?.success) {
+        if (res.data?.token) {
+          setAuthToken(res.data.token);
+          sessionStorage.setItem('anp_admin_token', res.data.token);
+        }
+        localStorage.removeItem('anp_admin_token'); // NEVER store token in localStorage
         if (rememberMe) {
           localStorage.setItem('anp_admin_auth', 'true');
-          if (res.data?.token) localStorage.setItem('anp_admin_token', res.data.token);
         } else {
           sessionStorage.setItem('anp_admin_auth', 'true');
-          if (res.data?.token) sessionStorage.setItem('anp_admin_token', res.data.token);
         }
         setIsPinConfigured(true);
         setIsAuthenticated(true);
@@ -189,12 +200,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     try {
       const res = await api.post('/auth/verify-admin', { pin });
       if (res.data?.success) {
+        if (res.data?.token) {
+          setAuthToken(res.data.token);
+          sessionStorage.setItem('anp_admin_token', res.data.token);
+        }
+        localStorage.removeItem('anp_admin_token'); // NEVER store token in localStorage
         if (rememberMe) {
           localStorage.setItem('anp_admin_auth', 'true');
-          if (res.data?.token) localStorage.setItem('anp_admin_token', res.data.token);
         } else {
           sessionStorage.setItem('anp_admin_auth', 'true');
-          if (res.data?.token) sessionStorage.setItem('anp_admin_token', res.data.token);
         }
         setIsAuthenticated(true);
         return;
@@ -212,6 +226,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   };
 
   const handleLogout = () => {
+    setAuthToken(null);
     localStorage.removeItem('anp_admin_auth');
     sessionStorage.removeItem('anp_admin_auth');
     localStorage.removeItem('anp_admin_token');
@@ -240,12 +255,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       });
       if (res.data?.success) {
         if (res.data?.token) {
-          if (localStorage.getItem('anp_admin_auth') === 'true') {
-            localStorage.setItem('anp_admin_token', res.data.token);
-          } else {
-            sessionStorage.setItem('anp_admin_token', res.data.token);
-          }
+          setAuthToken(res.data.token);
+          sessionStorage.setItem('anp_admin_token', res.data.token);
         }
+        localStorage.removeItem('anp_admin_token');
         setChangePinMsg({ text: '✅ एडमिन पिन सफलतापूर्वक बदल दिया गया!', isError: false });
         setTimeout(() => {
           setShowChangePinModal(false);
