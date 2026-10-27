@@ -36,13 +36,23 @@ import {
   LogOut,
   ShieldCheck,
   Upload,
-  MoreHorizontal
+  MoreHorizontal,
+  Mic,
+  MessageCircle,
+  Image as ImageIcon,
+  Bell,
+  Wand2
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate } from '../types';
 import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos } from '../utils/mediaUtils';
 import { WhatsAppIcon } from './SocialIcons';
 import api, { setAuthToken } from '../api/client';
 import { SOCIAL_LINKS } from '../data/mockData';
+import { WhatsAppBulletinModal } from './WhatsAppBulletinModal';
+import { NewsCardGeneratorModal } from './NewsCardGeneratorModal';
+import { generateHeadlinesAI, autoSummarizeAI, polishArticleAI, type AIHeadlineSuggestion } from '../utils/aiNewsAssistant';
+import { sendBreakingPushNotification } from '../utils/pushNotification';
+import { useVoiceTyping } from '../hooks/useVoiceTyping';
 
 interface AdminPortalProps {
   articles: Article[];
@@ -129,6 +139,64 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Mobile UX States
   const [tab1MobileView, setTab1MobileView] = useState<'form' | 'preview'>('form');
   const [showBackToTop, setShowBackToTop] = useState(false);
+  // Power Features State: WhatsApp, Photo Card, AI, Voice & Push
+  const [sendPushAlert, setSendPushAlert] = useState(false);
+  const [whatsAppArticle, setWhatsAppArticle] = useState<Article | null>(null);
+  const [cardArticle, setCardArticle] = useState<Article | null>(null);
+  const [aiHeadlineSuggestions, setAiHeadlineSuggestions] = useState<AIHeadlineSuggestion[]>([]);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+
+  // Voice Typing Hooks (Web Speech API)
+  const {
+    isListening: isListeningHeadline,
+    isSupported: isVoiceSupported,
+    toggleListening: toggleVoiceHeadline
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setTitle((prev) => (prev ? prev + ' ' + text : text));
+    }
+  });
+
+  const {
+    isListening: isListeningContent,
+    toggleListening: toggleVoiceContent
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setContent((prev) => (prev ? prev + ' ' + text : text));
+    }
+  });
+
+  // AI Assistant Handlers
+  const handleGenerateHeadlines = async () => {
+    setIsGeneratingAI(true);
+    try {
+      const suggestions = await generateHeadlinesAI(title || excerpt || content, district);
+      setAiHeadlineSuggestions(suggestions);
+      setAiFeedback('✅ 3 नए शीर्षक तैयार हैं! नीचे से मनपसंद शीर्षक चुनें:');
+    } catch {
+      setAiFeedback('हेडलाइन जनरेट करने में असमर्थ');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const handleAutoSummarize = () => {
+    const sum = autoSummarizeAI(content, district);
+    setExcerpt(sum);
+    setAiFeedback('✅ समाचार सामग्री से संक्षिप्त सारांश तैयार हो गया!');
+    setTimeout(() => setAiFeedback(null), 3000);
+  };
+
+  const handlePolishArticle = () => {
+    const polished = polishArticleAI(content, title, district, author);
+    setContent(polished);
+    setAiFeedback('✅ समाचार को प्रेस-स्टाइल और ब्यूरो विवरण के साथ फॉर्मेट किया गया!');
+    setTimeout(() => setAiFeedback(null), 3000);
+  };
+
   const [showMobileMoreDrawer, setShowMobileMoreDrawer] = useState(false);
 
   useEffect(() => {
@@ -487,6 +555,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         setEditingArticleId(null);
       } else {
         onPublishArticle(payload);
+        if (sendPushAlert || isBreaking) {
+          sendBreakingPushNotification(title, excerpt || content, district);
+        }
       }
 
       setIsSubmitting(false);
@@ -1188,11 +1259,98 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
                 </div>
 
-                {/* Headline */}
+                                {/* 0. AI NEWS ASSISTANT BAR */}
+                <div className={`p-3 rounded-2xl border flex flex-col gap-2 ${
+                  isDark ? 'bg-gradient-to-r from-red-950/30 via-slate-900 to-amber-950/20 border-red-900/40' : 'bg-gradient-to-r from-red-50 via-white to-amber-50 border-red-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-red-500">
+                      <Sparkles size={14} className="text-amber-400" />
+                      <span>🤖 AI न्यूज़ असिस्टेंट (Smart Hindi Assistant)</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400">कच्चे ड्राफ्ट से 1-क्लिक रिपोर्ट</span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleGenerateHeadlines}
+                      disabled={isGeneratingAI}
+                      className="px-2.5 py-1 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 text-xs font-bold transition flex items-center gap-1 active:scale-95 disabled:opacity-50"
+                    >
+                      <Wand2 size={12} />
+                      <span>{isGeneratingAI ? 'जनरेट हो रहा...' : '✨ 3 कैची हेडलाइन्स'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleAutoSummarize}
+                      className="px-2.5 py-1 rounded-xl bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/40 text-xs font-bold transition flex items-center gap-1 active:scale-95"
+                    >
+                      <span>📝 1-क्लिक सारांश</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handlePolishArticle}
+                      className="px-2.5 py-1 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/40 text-xs font-bold transition flex items-center gap-1 active:scale-95"
+                    >
+                      <span>✍️ प्रेस फॉर्मेट में पॉलिश करें</span>
+                    </button>
+                  </div>
+
+                  {aiFeedback && (
+                    <div className="text-[11px] font-bold text-amber-400 animate-in fade-in">
+                      {aiFeedback}
+                    </div>
+                  )}
+
+                  {aiHeadlineSuggestions.length > 0 && (
+                    <div className="space-y-1.5 pt-1 border-t border-white/10 animate-in fade-in">
+                      <div className="text-[10px] text-slate-400 font-bold">हेडलाइन चुनने के लिए क्लिक करें:</div>
+                      {aiHeadlineSuggestions.map((s, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => {
+                            setTitle(s.headline);
+                            setAiHeadlineSuggestions([]);
+                            setAiFeedback('✓ हेडलाइन लागू कर दी गई!');
+                            setTimeout(() => setAiFeedback(null), 2500);
+                          }}
+                          className="p-2 rounded-xl bg-black/40 hover:bg-red-600/20 border border-slate-700 hover:border-red-500/50 text-xs font-bold text-slate-200 hover:text-white cursor-pointer transition flex items-center justify-between"
+                        >
+                          <span>{s.headline}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-600/30 text-red-300 font-mono">
+                            चुनें ↵
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Headline with Voice Typing */}
                 <div>
-                  <label className="block text-slate-400 mb-1 font-semibold">
-                    समाचार शीर्षक (Headline) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-400 font-semibold flex items-center gap-1 text-xs">
+                      समाचार शीर्षक (Headline) *
+                    </label>
+                    {isVoiceSupported && (
+                      <button
+                        type="button"
+                        onClick={toggleVoiceHeadline}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition active:scale-95 ${
+                          isListeningHeadline
+                            ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40'
+                            : isDark ? 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700' : 'bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300'
+                        }`}
+                        title="बोलकर शीर्षक लिखें (Hindi Voice Typing)"
+                      >
+                        <Mic size={12} className={isListeningHeadline ? 'animate-bounce' : ''} />
+                        <span>{isListeningHeadline ? 'सुन रहा हूँ... बोलिए' : '🎙️ बोलकर लिखें'}</span>
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={title}
@@ -1241,13 +1399,30 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                 {/* Full Article Content */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center justify-between mb-1">
                     <label className={`block font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                       विस्तृत समाचार सामग्री (Full Article Text)
                     </label>
-                    <span className="text-[11px] text-slate-400">
-                      शब्द: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{content.trim() ? content.trim().split(/\s+/).length : 0}</strong> • अक्षर: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{content.length}</strong>
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {isVoiceSupported && (
+                        <button
+                          type="button"
+                          onClick={toggleVoiceContent}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition active:scale-95 ${
+                            isListeningContent
+                              ? 'bg-red-600 text-white animate-pulse shadow-md shadow-red-600/40'
+                              : isDark ? 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700' : 'bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300'
+                          }`}
+                          title="बोलकर पूरी खबर लिखें (Hindi Speech-to-Text)"
+                        >
+                          <Mic size={12} className={isListeningContent ? 'animate-bounce' : ''} />
+                          <span>{isListeningContent ? 'रिकॉर्डिंग चालू है...' : '🎙️ बोलकर पूरी खबर लिखें'}</span>
+                        </button>
+                      )}
+                      <span className="text-[11px] text-slate-400">
+                        शब्द: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{content.trim() ? content.trim().split(/\s+/).length : 0}</strong> • अक्षर: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{content.length}</strong>
+                      </span>
+                    </div>
                   </div>
                   <textarea
                     rows={7}
@@ -1339,6 +1514,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     <span className="text-white font-bold text-xs flex items-center gap-1">
                       <Flame size={13} className="text-orange-500" />
                       <span>🔥 होमपेज का मुख्य समाचार (Hero) बनाएं</span>
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={sendPushAlert}
+                      onChange={(e) => setSendPushAlert(e.target.checked)}
+                      className="w-4 h-4 rounded text-red-600 focus:ring-0 cursor-pointer"
+                    />
+                    <span className="text-white font-bold text-xs flex items-center gap-1">
+                      <Bell size={13} className="text-amber-400" />
+                      <span>🔔 पाठकों को तुरंत पुश नोटिफिकेशन अलर्ट भेजें</span>
                     </span>
                   </label>
                 </div>
@@ -1557,6 +1745,31 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5 self-end sm:self-center">
+                      <button
+                        onClick={() => setWhatsAppArticle(art)}
+                        className={`p-2 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
+                          isDark 
+                            ? 'bg-emerald-950/50 hover:bg-emerald-900 text-emerald-300 border border-emerald-800/60' 
+                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm'
+                        }`}
+                        title="1-क्लिक WhatsApp बुलेटिन जनरेट करें"
+                      >
+                        <MessageCircle size={13} />
+                        <span className="hidden sm:inline">WhatsApp</span>
+                      </button>
+
+                      <button
+                        onClick={() => setCardArticle(art)}
+                        className={`p-2 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
+                          isDark 
+                            ? 'bg-rose-950/50 hover:bg-rose-900 text-rose-300 border border-rose-800/60' 
+                            : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-sm'
+                        }`}
+                        title="सोशल मीडिया फोटो कार्ड जनरेट करें"
+                      >
+                        <ImageIcon size={13} />
+                        <span className="hidden sm:inline">फोटो कार्ड</span>
+                      </button>
                       <button
                         onClick={() => handleStartEdit(art)}
                         className={`p-2 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
@@ -2837,6 +3050,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       )}
 
 
+
+      
+      {/* WHATSAPP BULLETIN MODAL */}
+      {whatsAppArticle && (
+        <WhatsAppBulletinModal
+          article={whatsAppArticle}
+          whatsappLink={whatsappInput}
+          isDark={isDark}
+          onClose={() => setWhatsAppArticle(null)}
+        />
+      )}
+
+      {/* SOCIAL MEDIA NEWS CARD GENERATOR MODAL */}
+      {cardArticle && (
+        <NewsCardGeneratorModal
+          article={cardArticle}
+          isDark={isDark}
+          onClose={() => setCardArticle(null)}
+        />
+      )}
 
       {/* CHANGE PIN MODAL */}
       {showChangePinModal && (
