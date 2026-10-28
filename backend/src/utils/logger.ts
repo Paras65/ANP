@@ -20,17 +20,25 @@ function formatLog(level: LogLevel, message: any, ...args: any[]): string {
   return `[${timestamp}] [${level}] ${sanitized}`;
 }
 
+const isProductionQuiet = () => process.env.NODE_ENV === 'production' && process.env.ENABLE_CONSOLE_LOGS !== 'true';
+
 export const logger = {
   info: (message: any, ...args: any[]) => {
-    console.log(formatLog('INFO', message, ...args));
+    if (!isProductionQuiet()) {
+      console.log(formatLog('INFO', message, ...args));
+    }
   },
 
   warn: (message: any, ...args: any[]) => {
-    console.warn(formatLog('WARN', message, ...args));
+    if (!isProductionQuiet()) {
+      console.warn(formatLog('WARN', message, ...args));
+    }
   },
 
   error: (message: any, ...args: any[]) => {
-    console.error(formatLog('ERROR', message, ...args));
+    if (!isProductionQuiet()) {
+      console.error(formatLog('ERROR', message, ...args));
+    }
   },
 
   debug: (message: any, ...args: any[]) => {

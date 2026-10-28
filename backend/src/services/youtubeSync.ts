@@ -1,4 +1,5 @@
 import https from 'https';
+import { logger } from '../utils/logger.js';
 
 export interface SyncedYouTubeVideo {
   id: string;
@@ -57,7 +58,7 @@ export async function fetchChannelVideos(channelId: string, forceRefresh = false
 
     https.get(url, (res) => {
       if (res.statusCode !== 200) {
-        console.warn(`[YouTube Sync] Feed returned status code ${res.statusCode} for channel ${channelId}`);
+        logger.warn(`[YouTube Sync] Feed returned status code ${res.statusCode} for channel ${channelId}`);
         return resolve(cachedVideos);
       }
 
@@ -110,17 +111,17 @@ export async function fetchChannelVideos(channelId: string, forceRefresh = false
           if (entries.length > 0) {
             cachedVideos = entries;
             lastCacheTime = Date.now();
-            console.log(`✅ [YouTube Auto-Sync] Successfully synced ${entries.length} latest videos for channel ${channelId}`);
+            logger.info(`✅ [YouTube Auto-Sync] Successfully synced ${entries.length} latest videos for channel ${channelId}`);
           }
 
           resolve(cachedVideos);
         } catch (err) {
-          console.error('[YouTube Sync] Error parsing XML feed:', err);
+          logger.error('[YouTube Sync] Error parsing XML feed:', err);
           resolve(cachedVideos);
         }
       });
     }).on('error', (err) => {
-      console.error('[YouTube Sync] Network error fetching feed:', err.message);
+      logger.error('[YouTube Sync] Network error fetching feed:', err.message);
       resolve(cachedVideos);
     });
   });
@@ -232,7 +233,7 @@ export async function fetchChannelShorts(handleOrChannelId = 'ambition_news'): P
     }
     return unique;
   } catch (err) {
-    console.error('[YouTube Shorts Sync] Error:', err);
+    logger.error('[YouTube Shorts Sync] Error:', err);
     return [];
   }
 }
@@ -342,7 +343,7 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
 
     return { videos, reels };
   } catch (err: any) {
-    console.error('[YouTube Data API v3 Engine Error]:', err.message);
+    logger.error('[YouTube Data API v3 Engine Error]:', err.message);
     throw err;
   }
 }

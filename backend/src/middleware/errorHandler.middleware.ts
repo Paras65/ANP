@@ -78,10 +78,10 @@ export function errorHandler(
   const sanitizedMessage = redactSecretKeys(message);
 
   // Extract forensic metadata for optimized real-time debugging
-  const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+  const clientIp = req.ip || (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
   const userAgent = String(req.headers['user-agent'] || 'unknown').slice(0, 120);
 
-  // High-visibility, categorized security and error logging
+  // High-visibility, categorized security and error logging (Quiet in production)
   if (statusCode >= 400 && statusCode < 500) {
     logger.warn(
       `🛡️ [BLOCKED_${statusCode}] [${errorCode}] IP=${clientIp} UA="${userAgent}" ${req.method} ${req.originalUrl} - ${sanitizedMessage}`
@@ -92,33 +92,15 @@ export function errorHandler(
     );
   }
 
-  // Save security incidents and system failures to MongoDB Atlas for Super Admin monitoring
-  const trackableCodes = [
-    'BASE64_PAYLOAD_FORBIDDEN',
-    'PAYLOAD_TOO_LARGE',
-    'PAYLOAD_TOO_COMPLEX',
-    'STRING_LENGTH_EXCEEDED',
-    'INVALID_URL_SCHEME',
-    'AUTH_RATE_LIMIT_EXCEEDED',
-    'AI_RATE_LIMIT_EXCEEDED',
-    'CONTENT_WRITE_LIMIT_EXCEEDED',
-    'TOKEN_EXPIRED_OR_INVALID',
-    'UNAUTHORIZED_ACCESS',
-    'INVALID_JSON',
-    'AI_SERVICE_ERROR',
-    'INTERNAL_SERVER_ERROR'
-  ];
-
-  if (trackableCodes.includes(errorCode) || statusCode >= 500) {
-    let severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'HIGH';
-    if (['BASE64_PAYLOAD_FORBIDDEN', 'PAYLOAD_TOO_COMPLEX', 'AUTH_RATE_LIMIT_EXCEEDED'].includes(errorCode)) {
+  // Save all errors (4xx and 5xx) to MongoDB Atlas for Super Admin monitoring
+  if (statusCode >= 400) {
+    let severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM';
+    if (['BASE64_PAYLOAD_FORBIDDEN', 'PAYLOAD_TOO_COMPLEX', 'AUTH_RATE_LIMIT_EXCEEDED'].includes(errorCode) || statusCode >= 500) {
       severity = 'CRITICAL';
-    } else if (errorCode === 'AI_SERVICE_ERROR') {
+    } else if (errorCode === 'AI_SERVICE_ERROR' || statusCode === 429) {
       severity = 'HIGH';
-    } else if (statusCode >= 500) {
-      severity = 'CRITICAL';
-    } else if (['TOKEN_EXPIRED_OR_INVALID', 'UNAUTHORIZED_ACCESS'].includes(errorCode)) {
-      severity = 'MEDIUM';
+    } else if (statusCode === 404) {
+      severity = 'LOW';
     }
 
     const actionDetail = req.body?.action ? `कार्य: ${req.body.action}` : undefined;

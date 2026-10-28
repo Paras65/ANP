@@ -517,7 +517,7 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
           }
         }
       } catch (apiErr: any) {
-        console.warn('[YouTube Data API v3 Failed, Falling back to RSS/Scraper]:', apiErr?.message);
+        logger.warn('[YouTube Data API v3 Failed, Falling back to RSS/Scraper]:', apiErr?.message);
       }
     }
 
@@ -577,7 +577,7 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
           }
         }
       } catch (shortErr) {
-        console.warn('[Shorts Sync Error]:', shortErr);
+        logger.warn('[Shorts Sync Error]:', shortErr);
       }
     }
 

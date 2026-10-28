@@ -3,11 +3,16 @@ import { logger } from '../utils/logger.js';
 import { redactSecretKeys } from '../utils/sanitize.js';
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
+  // If in production and console logs are silenced, bypass request logging to keep Render completely quiet
+  if (process.env.NODE_ENV === 'production' && process.env.ENABLE_CONSOLE_LOGS !== 'true') {
+    return next();
+  }
+
   const start = Date.now();
   const { method, originalUrl } = req;
 
-  // Don't log spammy Render health checks in production
-  if (originalUrl === '/api/health' && process.env.NODE_ENV === 'production') {
+  // Don't log spammy Render health checks
+  if (originalUrl === '/api/health') {
     return next();
   }
 
@@ -23,9 +28,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
       logger.error(logLine);
     } else if (statusCode >= 400) {
       logger.warn(logLine);
-    } else if (process.env.NODE_ENV !== 'production' || process.env.VERBOSE_LOGS === 'true') {
-      // In production, silence routine 200/304 GET requests to keep Render console clean
-      // Actual errors and warnings remain prominent, while detailed logs are in MongoDB Atlas
+    } else {
       logger.info(logLine);
     }
   });

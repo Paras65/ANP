@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { getSafeGeminiErrorMessage, redactSecretKeys } from '../utils/sanitize.js';
+import { logger } from '../utils/logger.js';
 
 export interface AIHeadlineResponse {
   style: 'breaking' | 'investigative' | 'viral';
@@ -53,7 +54,7 @@ async function generateWithFallback(ai: GoogleGenAI, contents: string): Promise<
       ) {
         throw err;
       }
-      console.warn(`[GEMINI_FALLBACK] Model ${model} failed, trying next candidate. Error: ${redactSecretKeys(errMsg).slice(0, 100)}`);
+      logger.warn(`[GEMINI_FALLBACK] Model ${model} failed, trying next candidate. Error: ${redactSecretKeys(errMsg).slice(0, 100)}`);
     }
   }
 
@@ -166,7 +167,7 @@ ${rawContent || topic}
 
     throw new Error(`अमान्य AI कार्य: ${req.action}`);
   } catch (err: any) {
-    console.error('💥 [GEMINI_ERROR]', redactSecretKeys(err?.message || String(err)));
+    logger.error('💥 [GEMINI_ERROR]', redactSecretKeys(err?.message || String(err)));
     const safeMessage = getSafeGeminiErrorMessage(err);
     throw new Error(safeMessage);
   }

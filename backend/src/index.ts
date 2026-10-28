@@ -133,10 +133,7 @@ app.use(errorHandler);
 // Start Server
 const startServer = async () => {
   app.listen(Number(PORT), '0.0.0.0', () => {
-    logger.info(`🚀 [Server] Running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-    logger.info(`📡 [Health] http://localhost:${PORT}/api/health`);
-    logger.info(`📍 [Districts API] http://localhost:${PORT}/api/districts`);
-    logger.info(`📰 [Articles API] http://localhost:${PORT}/api/articles`);
+    console.log(`🚀 [Server] Ambition News Portal active on port ${PORT}`);
   });
   await connectDB();
 };
