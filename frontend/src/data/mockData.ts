@@ -1,8 +1,8 @@
 import type { Article, VideoBulletin, InstagramPost, MandiRate, DistrictItem } from '../types';
 
 export const SOCIAL_LINKS = {
-  website: 'https://ambitionnews.com',
-  domain: 'ambitionnews.com',
+  website: 'https://ambitionnews.init65.co.in',
+  domain: 'ambitionnews.init65.co.in',
   email: 'grievance@ambitionnews.in',
   grievanceEmail: 'grievance@ambitionnews.in',
   logo: '/logo.png',

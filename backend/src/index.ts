@@ -63,10 +63,11 @@ app.use(helmet({
   }
 }));
 
-// 2. Strict CORS Configuration for Local, Vercel & Production Domains
+// 2. Strict CORS Configuration for Local, Vercel, Cloudflare & Production Domains
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'https://ambitionnews.init65.co.in',
   'https://ambition-news-portal.vercel.app',
   'https://ambitionnews.com',
   'https://www.ambitionnews.com',
@@ -79,6 +80,10 @@ app.use(cors({
     if (!origin) return callback(null, true);
     // Allow Vercel preview & production deployments
     if (/\.vercel\.app$/.test(origin)) return callback(null, true);
+    // Allow Cloudflare Pages deployments
+    if (/\.pages\.dev$/.test(origin)) return callback(null, true);
+    // Allow init65.co.in subdomains & custom production domain
+    if (/\.init65\.co\.in$/.test(origin) || origin === 'https://init65.co.in') return callback(null, true);
     // Allow registered whitelist domains
     if (allowedOrigins.includes(origin)) return callback(null, true);
     // Allow local development

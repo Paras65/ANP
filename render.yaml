@@ -15,7 +15,7 @@ services:
       - key: PORT
         value: 10000
       - key: FRONTEND_URL
-        value: https://ambition-news-portal.vercel.app
+        value: https://ambitionnews.init65.co.in
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET

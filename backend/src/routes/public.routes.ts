@@ -184,7 +184,7 @@ router.get(['/rss', '/rss.xml', '/feed.xml'], async (_req: Request, res: Respons
       .populate('categoryId')
       .lean();
 
-    const baseUrl = process.env.FRONTEND_URL || 'https://ambition-news-portal.vercel.app';
+    const baseUrl = process.env.FRONTEND_URL || 'https://ambitionnews.init65.co.in';
     const buildDate = new Date().toUTCString();
 
     let itemsXml = '';
