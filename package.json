@@ -12,7 +12,7 @@
     "dev:frontend": "npm --prefix frontend run dev",
     "build:backend": "npm --prefix backend run build",
     "build:frontend": "npm --prefix frontend run build",
-    "build": "cd frontend && npm run build"
+    "build": "npm --prefix frontend run build"
   }
 }
 
