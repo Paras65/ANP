@@ -1517,6 +1517,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                   <div className="flex flex-wrap gap-2 mb-2">
                     {[
+                      { label: '🔴 Ambition लोगो', url: '/logo.png' },
                       { label: '🏛️ कवर्धा/भोरमदेव', url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🌾 कृषि/मंडी', url: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🏛️ मंत्रालय/सरकार', url: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1000&auto=format&fit=crop&q=80' },
@@ -2855,7 +2856,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     onAddReel({
                       id: 'reel_' + Date.now(),
                       caption: reelCaption.trim(),
-                      imageUrl: parsedReel.previewThumb || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800',
+                      imageUrl: parsedReel.previewThumb || '/logo.png',
                       videoUrl: parsedReel.videoUrl,
                       youtubeId: parsedReel.type === 'youtube_short' ? parsedReel.rawId : undefined,
                       embedUrl: parsedReel.embedUrl,

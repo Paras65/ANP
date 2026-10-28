@@ -465,7 +465,7 @@ export const App: React.FC = () => {
       state: selectedState,
       category: newArticleData.category || '🔴 कवर्धा स्पेशल',
       author: newArticleData.author || 'फ़ील्ड रिपोर्टर',
-      coverImage: newArticleData.coverImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1000&auto=format&fit=crop&q=80',
+      coverImage: newArticleData.coverImage || '/logo.png',
       views: 1,
       isBreaking: true,
       isFeatured: false,
@@ -1453,6 +1453,9 @@ export const App: React.FC = () => {
                           <img 
                             src={heroArticle.coverImage || "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80"} 
                             alt={heroArticle.title} 
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/logo.png';
+                            }}
                             className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
                           />
                           
@@ -1849,21 +1852,47 @@ export const App: React.FC = () => {
                     </div>
 
                     <div 
-                      className="relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-800 cursor-pointer group"
+                      className="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-red-950/90 border border-red-900/40 cursor-pointer group shadow-md"
                       onClick={() => window.open(SOCIAL_LINKS.youtube, '_blank')}
                     >
-                      <img 
-                        src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=600&auto=format&fit=crop&q=80" 
-                        alt="YouTube Bulletin"
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
-                      />
-                      <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-2 text-center">
-                        <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
-                          <div className="w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[10px] border-l-white ml-0.5"></div>
-                        </div>
-                        <span className="text-white text-[11px] font-bold mt-1.5">
-                          कवर्धा व CG-MP का महाबुलेटिन
+                      {/* Ambient Studio Lighting Glow */}
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-600/20 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition duration-500"></div>
+
+                      {/* Official Ambition Logo Center Backdrop */}
+                      <div className="absolute inset-0 flex items-center justify-center p-3">
+                        <img 
+                          src="/logo.png" 
+                          alt="Ambition TV"
+                          className="w-24 h-24 object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.5)] group-hover:scale-110 transition duration-500" 
+                        />
+                      </div>
+
+                      {/* Top Badges */}
+                      <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10 pointer-events-none">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-600 text-white shadow-lg animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                          LIVE TV
                         </span>
+                        <span className="text-[9px] font-black tracking-widest text-amber-400 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded border border-amber-500/30">
+                          HD 1080p
+                        </span>
+                      </div>
+
+                      {/* Central Play Button Overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                        <div className="w-11 h-11 bg-red-600/95 group-hover:bg-red-500 rounded-full flex items-center justify-center shadow-xl shadow-red-600/50 group-hover:scale-110 transition duration-300 border-2 border-white/80">
+                          <div className="w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[11px] border-l-white ml-0.5"></div>
+                        </div>
+                      </div>
+
+                      {/* Bottom Title Banner */}
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent p-2.5 pt-6 text-center z-10">
+                        <p className="text-white text-[11px] font-extrabold tracking-wide drop-shadow line-clamp-1">
+                          कवर्धा व CG-MP का महाबुलेटिन
+                        </p>
+                        <p className="text-amber-400 text-[9px] font-medium tracking-wider flex items-center justify-center gap-1 mt-0.5">
+                          <span>Ambition News</span> • <span>24x7 डिजिटल प्रसारण</span>
+                        </p>
                       </div>
                     </div>
 
@@ -1886,8 +1915,8 @@ export const App: React.FC = () => {
                   }`}>
                     <div className="flex items-center gap-2.5 mb-2.5">
                       <div className="w-9 h-9 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600 shrink-0">
-                        <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-[10px] font-black text-white">
-                          ANP
+                        <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center overflow-hidden p-0.5">
+                          <img src="/logo.png" alt="Ambition News" className="w-full h-full object-cover rounded-full" />
                         </div>
                       </div>
                       <div>

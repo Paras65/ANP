@@ -20,7 +20,7 @@ export const DEMO_STORIES: StoryItem[] = [
     id: 's-live',
     label: 'लाइव टीवी',
     title: 'Ambition News लाइव बुलेटिन: कवर्धा व प्रदेश की आज की 50 बड़ी खबरें',
-    image: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=600&auto=format&fit=crop&q=80',
+    image: '/logo.png',
     category: '🔴 LIVE',
     district: 'कवर्धा HQ',
     excerpt: 'कवर्धा स्टूडियो से सीधा प्रसारण: भोरमदेव महोत्सव, धान अंतर राशि व मौसम का ताजा हाल।',
@@ -103,7 +103,7 @@ export function generateStoriesList(
     id: 's-live',
     label: 'लाइव टीवी',
     title: latestVideo?.title || 'Ambition News लाइव बुलेटिन: कवर्धा व प्रदेश की आज की बड़ी खबरें',
-    image: latestVideo?.thumbnail || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=600&auto=format&fit=crop&q=80',
+    image: latestVideo?.thumbnail && !latestVideo.thumbnail.includes('photo-1585829365295') ? latestVideo.thumbnail : '/logo.png',
     category: '🔴 LIVE',
     district: 'कवर्धा HQ',
     excerpt: 'कवर्धा स्टूडियो से सीधा प्रसारण: भोरमदेव, किसान अंतर राशि व मौसम का ताजा हाल।',
@@ -158,7 +158,7 @@ export function generateStoriesList(
       id: `s-${art._id}`,
       label: art.district.replace(/ \(.*\)/, '').slice(0, 8) || 'ताज़ा खबर',
       title: art.title,
-      image: art.coverImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=600&auto=format&fit=crop&q=80',
+      image: art.coverImage || '/logo.png',
       category: art.category,
       district: art.district,
       excerpt: art.excerpt,
@@ -202,6 +202,9 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
                 <img 
                   src={story.image} 
                   alt={story.label}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/logo.png';
+                  }}
                   className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300" 
                 />
               </div>

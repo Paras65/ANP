@@ -23,9 +23,7 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
   const [district, setDistrict] = useState('कबीरधाम (कवर्धा)');
   const [category, setCategory] = useState('🔴 कवर्धा स्पेशल');
   const [author, setAuthor] = useState('फ़ील्ड रिपोर्टर (कवर्धा)');
-  const [coverImage, setCoverImage] = useState(
-    'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1000&auto=format&fit=crop&q=80'
-  );
+  const [coverImage, setCoverImage] = useState('/logo.png');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Voice Typing Hooks
@@ -256,8 +254,9 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
             <label className="block text-slate-400 mb-1 font-semibold flex items-center gap-1">
               <Camera size={12} className="text-emerald-500" /> फोटो चुनें
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {[
+                { label: '🔴 Ambition लोगो', url: '/logo.png' },
                 { label: '🏛️ विकास/सड़क', url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop&q=80' },
                 { label: '🌾 कृषि/मंडी', url: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80' },
                 { label: '🚔 पुलिस/कानून', url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80' },

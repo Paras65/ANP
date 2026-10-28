@@ -130,7 +130,7 @@ export function parseReelMedia(input: string): ParsedReelMedia | null {
       type: 'direct_video',
       videoUrl: url,
       postUrl: url,
-      previewThumb: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800'
+      previewThumb: '/logo.png'
     };
   }
   return null;

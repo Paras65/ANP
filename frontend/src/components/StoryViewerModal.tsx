@@ -111,15 +111,26 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
       >
         
         {/* Story Background Image with Error Fallback */}
-        <div className="absolute inset-0">
-          <img 
-            src={currentStory.image || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop&q=80"} 
-            alt={currentStory.title}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop&q=80";
-            }}
-            className="w-full h-full object-cover animate-in fade-in zoom-in-105 duration-700 pointer-events-none" 
-          />
+        <div className="absolute inset-0 bg-slate-950 flex items-center justify-center overflow-hidden">
+          {currentStory.image?.includes('logo') ? (
+            <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-br from-red-950 via-slate-950 to-black">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 via-transparent to-transparent"></div>
+              <img 
+                src="/logo.png" 
+                alt="Ambition News"
+                className="w-48 h-48 object-contain drop-shadow-[0_8px_32px_rgba(220,38,38,0.6)] animate-pulse"
+              />
+            </div>
+          ) : (
+            <img 
+              src={currentStory.image || "/logo.png"} 
+              alt={currentStory.title}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/logo.png";
+              }}
+              className="w-full h-full object-cover animate-in fade-in zoom-in-105 duration-700 pointer-events-none" 
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/60 pointer-events-none"></div>
         </div>
 

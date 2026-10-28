@@ -34,7 +34,7 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
     // Load Image
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = article.coverImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80';
+    img.src = article.coverImage || '/logo.png';
 
     const drawContent = (imageElement: HTMLImageElement | null) => {
       // 1. Draw Background Image or Fallback Gradient

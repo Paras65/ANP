@@ -158,7 +158,7 @@ export const VIDEO_BULLETINS: VideoBulletin[] = [
     id: 'vid-1',
     title: 'Ambition News Special: कवर्धा शहर के प्रमुख मुद्दों पर नागरिकों और जनप्रतिनिधियों की सीधी बहस',
     youtubeId: 'b_oYfF8jO4M',
-    thumbnail: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop&q=80',
+    thumbnail: '/logo.png',
     duration: '14:28',
     views: '8.4K',
     timeAgo: '2 घंटे पहले',

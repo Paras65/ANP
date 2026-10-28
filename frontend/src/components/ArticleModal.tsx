@@ -285,7 +285,10 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
               <img 
                 src={article.coverImage} 
                 alt={article.title}
-                className="w-full h-full object-cover" 
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo.png';
+                }}
+                className={`w-full h-full ${article.coverImage?.includes('logo') ? 'object-contain p-8 bg-slate-950' : 'object-cover'}`} 
               />
               <div className="absolute bottom-2 right-2 bg-black/75 text-[10px] text-white px-2 py-0.5 rounded-md backdrop-blur">
                 फोटो: Ambition News नेटवर्क
