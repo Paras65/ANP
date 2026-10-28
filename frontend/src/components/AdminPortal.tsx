@@ -3148,6 +3148,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                                   isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
                                 }`}
                                 title="Open on YouTube"
+                                aria-label="यूट्यूब पर वीडियो खोलें"
                               >
                                 <ExternalLink size={14} />
                               </a>

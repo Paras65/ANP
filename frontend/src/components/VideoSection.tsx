@@ -249,6 +249,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             href={SOCIAL_LINKS.youtube} 
             target="_blank" 
             rel="noopener noreferrer"
+            aria-label="एम्बिशन टीवी यूट्यूब चैनल सब्सक्राइब करें"
             className="flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition active:scale-95 shrink-0"
           >
             <YoutubeIcon size={15} />

@@ -121,6 +121,7 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
           href={`https://wa.me/91${SOCIAL_LINKS.phone}?text=${encodeURIComponent('नमस्ते Ambition News, मैं अपने क्षेत्र से ताज़ा खबर / ग्राउंड फोटो-वीडियो भेजना चाहता हूँ:')}`}
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="व्हाट्सएप पर तुरंत खबर भेजें"
           className={`flex items-center justify-between p-3 rounded-2xl border transition group cursor-pointer ${
             isDark 
               ? 'bg-emerald-950/40 border-emerald-800/80 hover:border-emerald-500 text-emerald-200' 

@@ -412,7 +412,7 @@ router.post('/articles', requireAdminAuth, contentCreationLimiter, async (req: R
       slug,
       excerpt: excerpt.trim(),
       content: content || excerpt,
-      coverImage: coverImage || 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80',
+      coverImage: coverImage || 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=65',
       stateId: stateDoc?._id,
       districtId: districtDoc?._id,
       categoryId: catDoc?._id,

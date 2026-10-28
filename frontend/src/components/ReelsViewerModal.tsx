@@ -702,6 +702,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
             rel="noopener noreferrer"
             className="p-2 rounded-full bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600 text-white shadow-lg active:scale-75 transition"
             title="Open on Instagram"
+            aria-label="यह रील इंस्टाग्राम पर देखें"
           >
             <InstagramIcon size={18} />
           </a>

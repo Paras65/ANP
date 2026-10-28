@@ -44,7 +44,7 @@ export const INITIAL_ARTICLES: Article[] = [
 4. मैकल पर्वत श्रृंखला की तलहटी में इको-टूरिज्म पार्क व नौकायन सुविधा।
 
 कलेक्टर एवं स्थानीय जन प्रतिनिधियों ने संयुक्त निरीक्षण कर 15 माह के भीतर कार्य पूर्ण करने के निर्देश दिए हैं। स्थानीय नागरिकों एवं व्यापारियों में इस निर्णय से हर्ष का माहौल है।`,
-    coverImage: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=65',
     district: 'कबीरधाम (कवर्धा)',
     state: 'chhattisgarh',
     category: '🏗️ विकास',
@@ -62,7 +62,7 @@ export const INITIAL_ARTICLES: Article[] = [
     content: `रायपुर: मंत्रालय महानदी भवन में मुख्यमंत्री ने कृषि एवं सहकारिता विभाग के वरिष्ठ अधिकारियों के साथ विस्तृत समीक्षा बैठक की। बैठक में स्पष्ट किया गया कि खरीफ विपणन वर्ष के तहत पंजीकृत किसानों को धान की अंतर राशि (बोनस) समय पर अंतरित की जाएगी।
 
 बैठक में यह निर्णय लिया गया कि सभी 33 जिलों के उपार्जन केंद्रों पर बारदाने, नमी मापक यंत्र और तौल मशीनों का अग्रिम सत्यापन कराया जाए ताकि मंडियों में किसानों को अनावश्यक विलंब न झेलना पड़े।`,
-    coverImage: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1000&auto=format&fit=crop&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=600&auto=format&fit=crop&q=65',
     district: 'रायपुर',
     state: 'chhattisgarh',
     category: '🏛️ राजनीति व किसान',
@@ -80,7 +80,7 @@ export const INITIAL_ARTICLES: Article[] = [
     content: `कबीरधाम: छत्तीसगढ़ का गुड़ का कटोरा कहे जाने वाले कवर्धा में इस सीजन के नए गुड़ की आवक चरम पर पहुंच गई है। स्थानीय गुड़ व्यापारियों और बाहर से आए खरीदारों के बीच खुली बोली में गुड़ के दाम ₹3,450 से ₹3,550 प्रति क्विंटल तक दर्ज किए गए।
 
 मंडी सचिव ने बताया कि पारदर्शी नीलामी व्यवस्था और तत्काल भुगतान प्रणाली लागू होने से किसानों में उत्साह है। प्रशासन ने मिलावट रोकने के लिए खाद्य सुरक्षा जांच दल को तैनात रखा है।`,
-    coverImage: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=1000&auto=format&fit=crop&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&auto=format&fit=crop&q=65',
     district: 'कबीरधाम (कवर्धा)',
     state: 'chhattisgarh',
     category: '🌾 कृषि व मंडी',
@@ -98,7 +98,7 @@ export const INITIAL_ARTICLES: Article[] = [
     content: `बिलासपुर: छत्तीसगढ़ उच्च न्यायालय ने राजस्व न्यायालयों में वर्षों से अटके नामांतरण, बंटवारा और सीमांकन मामलों पर सख्त रुख अपनाया है। 
 
 अदालत ने कहा कि आम किसानों व नागरिकों को अपनी ही भूमि के अभिलेख दुरुस्त कराने के लिए तहसीलों के चक्कर काटना प्राकृतिक न्याय के विरुद्ध है। मुख्य सचिव को निर्देश दिए गए हैं कि सभी जिलों के एसडीएम और तहसीलदारों की मासिक प्रगति रिपोर्ट डिजिटल पोर्टल पर प्रदर्शित की जाए।`,
-    coverImage: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1000&auto=format&fit=crop&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=65',
     district: 'बिलासपुर',
     state: 'chhattisgarh',
     category: '⚖️ हाई कोर्ट व कानून',
@@ -116,7 +116,7 @@ export const INITIAL_ARTICLES: Article[] = [
     content: `भोपाल: मध्यप्रदेश मेट्रो रेल कॉर्पोरेशन ने भोपाल मेट्रो के बहुप्रतीक्षित दूसरे चरण का सफल हाई-स्पीड सेफ्टी ट्रायल पूरा कर लिया है। एम्स से करोंद चौराहे तक फैले इस रूट पर ऊर्जा खपत, इमरजेंसी ब्रेकिंग और सिग्नलिंग का सघन परीक्षण किया गया। 
 
 परिवहन विशेषज्ञों के अनुसार इससे प्रतिदिन 1.5 लाख से अधिक यात्रियों का सफर 40 मिनट तक तेज और सुरक्षित हो जाएगा।`,
-    coverImage: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1000&auto=format&fit=crop&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=65',
     district: 'भोपाल',
     state: 'madhya-pradesh',
     category: '🏗️ विकास',
@@ -134,7 +134,7 @@ export const INITIAL_ARTICLES: Article[] = [
     content: `इंदौर: देश में स्वच्छता का पर्याय बन चुके इंदौर ने अब भविष्य के पर्यावरण अनुकूल शहर की ओर कदम बढ़ा दिए हैं। इंदौर नगर निगम ने शून्य-कार्बन उत्सर्जन की दिशा में 200 नई इलेक्ट्रिक बसें और शहर भर में 150 नए ईवी चार्जिंग स्टेशन स्थापित करने का फैसला किया है। 
 
 साथ ही गीले कचरे से बायो-सीएनजी उत्पादन क्षमता को दोगुना किया जाएगा।`,
-    coverImage: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=1000&auto=format&fit=crop&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=600&auto=format&fit=crop&q=65',
     district: 'इंदौर',
     state: 'madhya-pradesh',
     category: '🏗️ विकास',
@@ -152,7 +152,7 @@ export const INITIAL_ARTICLES: Article[] = [
     content: `कबीरधाम: जिले के सीमावर्ती चिल्फी घाटी और वनांचल बोड़ला क्षेत्र में ठंड के तेवर तीखे हो गए हैं। घने साल वनों से आच्छादित मैकल पर्वत श्रृंखला में कोहरे की चादर बिछ जाने से अद्भुत दृश्य निर्मित हो गया है।
 
 छुट्टियों के चलते छत्तीसगढ़ और पड़ोसी राज्य मध्यप्रदेश के मंडला, बालाघाट से बड़ी संख्या में पर्यटक सनराइज पॉइंट और चिल्फी रेस्ट हाउस पहुंचे हैं। वन विभाग ने घाटी मोड़ पर सावधानी बरतने के चेतावनी बोर्ड लगाए हैं।`,
-    coverImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&auto=format&fit=crop&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=65',
     district: 'कबीरधाम (कवर्धा)',
     state: 'chhattisgarh',
     category: '🌦️ मौसम व पर्यटन',
@@ -181,7 +181,7 @@ export const VIDEO_BULLETINS: VideoBulletin[] = [
     id: 'vid-2',
     title: 'छत्तीसगढ़ आज शाम का महाबुलेटिन: धान खरीदी, कैबिनेट बैठक और बस्तर से ग्राउंड रिपोर्ट',
     youtubeId: 'L_LUpnjgPso',
-    thumbnail: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&auto=format&fit=crop&q=80',
+    thumbnail: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop&q=65',
     duration: '18:50',
     views: '12.1K',
     timeAgo: '5 घंटे पहले',
@@ -192,7 +192,7 @@ export const VIDEO_BULLETINS: VideoBulletin[] = [
     id: 'vid-3',
     title: 'भोरमदेव महोत्सव 2026 की भव्य तैयारियां: मंदिर के इतिहास और रहस्य पर विशेष वृत्तचित्र',
     youtubeId: 'kJQP7kiw5Fk',
-    thumbnail: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop&q=80',
+    thumbnail: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=65',
     duration: '09:15',
     views: '6.8K',
     timeAgo: '1 दिन पहले',
@@ -203,7 +203,7 @@ export const VIDEO_BULLETINS: VideoBulletin[] = [
     id: 'vid-4',
     title: 'मंडी हलचल: कवर्धा, राजनांदगांव और इंदौर मंडियों में आज के रिकॉर्ड भाव और किसानों की राय',
     youtubeId: 'fJ9rUzIMcZQ',
-    thumbnail: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
+    thumbnail: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&auto=format&fit=crop&q=65',
     duration: '07:42',
     views: '5.2K',
     timeAgo: '1 दिन पहले',
@@ -216,7 +216,7 @@ export const INSTAGRAM_POSTS: InstagramPost[] = [
   {
     id: 'insta-1',
     caption: 'कवर्धा चिल्फी घाटी का विहंगम दृश्य... मैकल की वादियों में कोहरे की चादर 📸 @ambition_news #Kawardha #ChilphiGhati #MaikalRange #ChhattisgarhTourism',
-    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=65',
     youtubeId: 'kJQP7kiw5Fk',
     postUrl: 'https://www.instagram.com/ambition_news/',
     likes: '1,420',
@@ -229,7 +229,7 @@ export const INSTAGRAM_POSTS: InstagramPost[] = [
   {
     id: 'insta-2',
     caption: 'ऐतिहासिक भोरमदेव मंदिर — छत्तीसगढ़ का खजुराहो! 45 करोड़ की भव्य योजना का एलान। #Bhoramdeo #AmbitionNews #Kawardha #Heritage',
-    imageUrl: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=65',
     youtubeId: 'b_oYfF8jO4M',
     postUrl: 'https://www.instagram.com/ambition_news/',
     likes: '2,180',
@@ -242,7 +242,7 @@ export const INSTAGRAM_POSTS: InstagramPost[] = [
   {
     id: 'insta-3',
     caption: 'कवर्धा गुड़ मंडी में रिकॉर्ड आवक! देसी स्वाद और किसानों की मेहनत की खुशबू चारों ओर। #MandiBhav #CGKisan #KawardhaMandi',
-    imageUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&auto=format&fit=crop&q=65',
     youtubeId: 'fJ9rUzIMcZQ',
     postUrl: 'https://www.instagram.com/ambition_news/',
     likes: '980',
@@ -255,7 +255,7 @@ export const INSTAGRAM_POSTS: InstagramPost[] = [
   {
     id: 'insta-4',
     caption: 'अंबिशन न्यूज़ टीम ग्राउंड पर! जनता की हर आवाज़ निष्पक्षता से आप तक पहुंचाना हमारा संकल्प। #GroundReporting #KawardhaNews #AmbitionJournalism',
-    imageUrl: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop&q=65',
     youtubeId: 'L_LUpnjgPso',
     postUrl: 'https://www.instagram.com/ambition_news/',
     likes: '1,750',
@@ -268,7 +268,7 @@ export const INSTAGRAM_POSTS: InstagramPost[] = [
   {
     id: 'insta-5',
     caption: 'कवर्धा रानीदहरा जलप्रपात — वनांचल की हरी-भरी वादियों के बीच बहती दूधिया जलधारा! वीकेंड पर पर्यटकों की उमड़ी भारी भीड़। #Ranidahra #KawardhaWaterfall #KabirdhamTourism #AmbitionNews',
-    imageUrl: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=600&auto=format&fit=crop&q=65',
     videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-waterfall-in-forest-2213-large.mp4',
     youtubeId: 'kJQP7kiw5Fk',
     postUrl: 'https://www.instagram.com/ambition_news/',
@@ -282,7 +282,7 @@ export const INSTAGRAM_POSTS: InstagramPost[] = [
   {
     id: 'insta-6',
     caption: 'छत्तीसगढ़िया ओलंपिक और पारंपरिक खेलों में कवर्धा के युवाओं का जलवा! गेड़ी दौड़ और कबड्डी में दिखा गजब का उत्साह। #CGOlympics #KawardhaSports #AmbitionNewsLive #Kabaddi',
-    imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=600&auto=format&fit=crop&q=65',
     videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-running-on-a-rural-road-42674-large.mp4',
     youtubeId: 'b_oYfF8jO4M',
     postUrl: 'https://www.instagram.com/ambition_news/',
@@ -296,7 +296,7 @@ export const INSTAGRAM_POSTS: InstagramPost[] = [
   {
     id: 'insta-7',
     caption: 'कवर्धा भारत माता चौक पर भव्य शाम की महाआरती और रोशनी का मनोरम दृश्य! जय छत्तीसगढ़ महतारी। #KawardhaCity #BharatMataChowk #NightView #Kabirdham',
-    imageUrl: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=600&auto=format&fit=crop&q=65',
     youtubeId: 'L_LUpnjgPso',
     postUrl: 'https://www.instagram.com/ambition_news/',
     likes: '4,120',

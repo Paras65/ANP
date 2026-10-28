@@ -51,7 +51,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <span className="text-[10px] text-red-400 font-semibold mt-1">ambitionnews.com</span>
               </div>
             </div>
-            <p className="text-[11px] leading-relaxed text-slate-400">
+            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
               कवर्धा (कबीरधाम) का अग्रणी डिजिटल न्यूज़ नेटवर्क। छत्तीसगढ़ के 33 और मध्यप्रदेश के 55 जिलों की निष्पक्ष, निर्भीक और सटीक जमीनी पत्रकारिता।
             </p>
             <div className="flex flex-wrap items-center gap-3 text-[11px]">
@@ -70,11 +70,11 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Col 2: Social Links Hub */}
           <div className="space-y-2.5">
-            <h4 className={`text-xs font-bold uppercase tracking-wider ${
+            <h3 className={`text-xs font-bold uppercase tracking-wider ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}>
               सोशल मीडिया नेटवर्क
-            </h4>
+            </h3>
             <div className="space-y-2 text-[11px]">
               
               <a 
@@ -91,7 +91,7 @@ export const Footer: React.FC<FooterProps> = ({
                 </div>
                 <div>
                   <div className="font-bold">YouTube Official</div>
-                  <div className="text-[10px] text-slate-400">{SOCIAL_LINKS.youtubeHandle} • {SOCIAL_LINKS.youtubeSubs}</div>
+                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{SOCIAL_LINKS.youtubeHandle} • {SOCIAL_LINKS.youtubeSubs}</div>
                 </div>
               </a>
 
@@ -109,7 +109,7 @@ export const Footer: React.FC<FooterProps> = ({
                 </div>
                 <div>
                   <div className="font-bold">Instagram Official</div>
-                  <div className="text-[10px] text-slate-400">Ambition news (कवर्धा)</div>
+                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Ambition news (कवर्धा)</div>
                 </div>
               </a>
 
@@ -127,7 +127,7 @@ export const Footer: React.FC<FooterProps> = ({
                 </div>
                 <div>
                   <div className="font-bold">WhatsApp ग्रुप / चैनल</div>
-                  <div className="text-[10px] text-slate-400">कवर्धा व CG-MP 88 जिला न्यूज़</div>
+                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>कवर्धा व CG-MP 88 जिला न्यूज़</div>
                 </div>
               </a>
 
@@ -145,7 +145,7 @@ export const Footer: React.FC<FooterProps> = ({
                 </div>
                 <div>
                   <div className="font-bold">Facebook Page</div>
-                  <div className="text-[10px] text-slate-400">{SOCIAL_LINKS.facebookHandle}</div>
+                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{SOCIAL_LINKS.facebookHandle}</div>
                 </div>
               </a>
 
@@ -154,12 +154,12 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Col 3: Regional Bureaus & Helpline */}
           <div className="space-y-2">
-            <h4 className={`text-xs font-bold uppercase tracking-wider ${
+            <h3 className={`text-xs font-bold uppercase tracking-wider ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}>
               प्रमुख ब्यूरो व संपर्क
-            </h4>
-            <ul className={`space-y-1.5 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            </h3>
+            <ul className={`space-y-1.5 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
               <li>• <b className={isDark ? 'text-slate-200' : 'text-slate-900'}>कवर्धा (मुख्यालय):</b> राजमहल रोड, कबीरधाम</li>
               <li className="flex items-center gap-1.5 pt-1">
                 <Phone size={12} className="text-emerald-500 shrink-0" />
@@ -186,6 +186,7 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Col 4: IT Rules 2021 Redressal */}
           <div className="space-y-2">
+            <h3 className="sr-only">कानूनी अनुपालन</h3>
             <button
               type="button"
               onClick={() => onOpenCompliance?.('grievance')}
@@ -208,10 +209,10 @@ export const Footer: React.FC<FooterProps> = ({
               <div className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 श्री उत्तम चंद्रवंशी
               </div>
-              <div className={`flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              <div className={`flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                 <Mail size={11} /> grievance@ambitionnews.in
               </div>
-              <div className={`text-[10px] pt-1 border-t ${isDark ? 'text-slate-500 border-slate-800' : 'text-slate-400 border-slate-200'}`}>
+              <div className={`text-[10px] pt-1 border-t ${isDark ? 'text-slate-500 border-slate-800' : 'text-slate-600 border-slate-200'}`}>
                 24 घंटे में acknowledgment और 15 दिन में समाधान अनिवार्य। विवरण देखें ↗
               </div>
             </div>
@@ -220,11 +221,15 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* Row 2: Bottom Copyright & Disclaimer */}
-        <div className="pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] text-slate-500 text-center sm:text-left">
+        <div className={`pt-6 border-t flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] text-center sm:text-left ${
+          isDark ? 'border-slate-800/80 text-slate-400' : 'border-slate-300 text-slate-700'
+        }`}>
           <div>
             © 2026 Ambition News Portal. सर्वाधिकार सुरक्षित • कवर्धा (कबीरधाम), छत्तीसगढ़।
           </div>
-          <div className="flex flex-wrap justify-center items-center gap-3 text-slate-400">
+          <div className={`flex flex-wrap justify-center items-center gap-3 ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>
             <button
               type="button"
               onClick={() => onOpenCompliance?.('privacy')}

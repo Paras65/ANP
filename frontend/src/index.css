@@ -125,6 +125,8 @@ body.modal-open {
 
 .story-active {
   animation: story-pulse 2.5s infinite ease-in-out;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* Contain overscroll inside modal sheets */

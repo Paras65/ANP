@@ -76,3 +76,6 @@ Sitemap: https://ambitionnews.init65.co.in/sitemap.xml
 # LLMs Text Specification (Agentic Browsing Standard: https://llmstxt.org)
 # llms.txt: https://ambitionnews.init65.co.in/llms.txt
 # llms-full.txt: https://ambitionnews.init65.co.in/llms-full.txt
+
+# Agentic Resource Discovery Manifest (ARD Standard)
+# ai-catalog.json: https://ambitionnews.init65.co.in/.well-known/ai-catalog.json

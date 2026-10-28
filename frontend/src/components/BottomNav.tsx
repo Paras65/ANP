@@ -32,7 +32,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           aria-label="होमपेज (ताज़ा समाचार)"
           aria-current={activeTab === 'home' ? 'page' : undefined}
           onClick={() => setActiveTab('home')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
+          className={`flex-1 min-h-[48px] flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'home' 
               ? 'text-red-500 font-bold' 
               : 'hover:text-slate-200'
@@ -53,7 +53,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           aria-label="वीडियो बुलेटिन और लाइव टीवी"
           aria-current={activeTab === 'videos' ? 'page' : undefined}
           onClick={() => setActiveTab('videos')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
+          className={`flex-1 min-h-[48px] flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'videos' 
               ? 'text-red-500 font-bold' 
               : 'hover:text-slate-200'
@@ -74,7 +74,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           aria-label="शॉर्ट्स और इंस्टाग्राम रील्स"
           aria-current={activeTab === 'insta' ? 'page' : undefined}
           onClick={() => setActiveTab('insta')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
+          className={`flex-1 min-h-[48px] flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'insta' 
               ? 'text-pink-500 font-bold' 
               : 'hover:text-slate-200'
@@ -95,7 +95,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           aria-label="लाइव कृषि मंडी भाव"
           aria-current={activeTab === 'mandi' ? 'page' : undefined}
           onClick={() => setActiveTab('mandi')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
+          className={`flex-1 min-h-[48px] flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'mandi' 
               ? 'text-emerald-500 font-bold' 
               : 'hover:text-slate-200'
@@ -116,7 +116,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           aria-label="सहेजी गई खबरें और रील्स"
           aria-current={activeTab === 'saved' ? 'page' : undefined}
           onClick={() => setActiveTab('saved')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
+          className={`flex-1 min-h-[48px] flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'saved' 
               ? 'text-amber-400 font-bold' 
               : 'hover:text-slate-200'

@@ -1227,6 +1227,9 @@ export const App: React.FC = () => {
         {/* 4. MAIN CONTENT CONTAINER (PADDED BOTTOM FOR NATIVE BOTTOM NAV) */}
         <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full max-w-full min-w-0 space-y-6 pb-28">
 
+          {/* Semantic Top-Level H1 for WCAG & Agentic Browsing Heading Hierarchy */}
+          <h1 className="sr-only">एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश डिजिटल न्यूज़ नेटवर्क</h1>
+
           {/* TAB: SAVED ARTICLES & REELS VIEW */}
           {activeTab === 'saved' && (
             <div className="space-y-4 animate-in fade-in duration-300">
@@ -1376,6 +1379,8 @@ export const App: React.FC = () => {
                                 <img 
                                   src={cover} 
                                   alt={art.title}
+                                  loading="lazy"
+                                  decoding="async"
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src = '/logo.png';
@@ -1856,8 +1861,14 @@ export const App: React.FC = () => {
                       >
                         <div className="relative h-64 sm:h-96 w-full overflow-hidden bg-slate-950">
                           <img 
-                            src={heroArticle.coverImage || "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80"} 
+                            src={heroArticle.coverImage || "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=65"} 
                             alt={heroArticle.title} 
+                            // @ts-ignore
+                            fetchpriority="high"
+                            loading="eager"
+                            decoding="async"
+                            width="800"
+                            height="450"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = getSmartCoverImage('', heroArticle.category, heroArticle.title, heroArticle.district);
                             }}
@@ -1902,9 +1913,9 @@ export const App: React.FC = () => {
                               </span>
                             </div>
 
-                            <h1 className="text-base sm:text-2xl font-black text-white leading-snug group-hover:text-red-400 transition-colors">
+                            <h3 className="text-base sm:text-2xl font-black text-white leading-snug group-hover:text-red-400 transition-colors">
                               {heroArticle.title}
-                            </h1>
+                            </h3>
                             <p className="text-xs sm:text-sm text-slate-300 mt-1.5 line-clamp-2 leading-relaxed hidden sm:block">
                               {heroArticle.excerpt}
                             </p>
@@ -2010,8 +2021,8 @@ export const App: React.FC = () => {
                                 <span className="bg-red-950/40 border border-red-900/60 px-2 py-0.5 rounded text-[10px]">
                                   {art.category}
                                 </span>
-                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
-                                  <span className="flex items-center gap-0.5 text-slate-400">
+                                <div className={`flex items-center gap-1.5 text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                  <span className={`flex items-center gap-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                                     <Clock size={10} className="text-red-400" />
                                     <span>{formatRelativeHindiTime(art.publishedAt)}</span>
                                   </span>
@@ -2028,17 +2039,19 @@ export const App: React.FC = () => {
                                 {art.title}
                               </h3>
 
-                              <p className="text-[11px] text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+                              <p className={`text-[11px] mt-1.5 line-clamp-2 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                                 {art.excerpt}
                               </p>
                             </div>
 
-                            <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+                            <div className={`mt-3 pt-2 border-t flex items-center justify-between text-xs ${
+                              isDark ? 'border-slate-800/60 text-slate-400' : 'border-slate-200 text-slate-600'
+                            }`}>
                               <span className="text-[10px] truncate max-w-[120px]">
                                 ✍️ {art.author}
                               </span>
                               <div className="flex items-center gap-2">
-                                <span className="text-[9px] text-slate-500 hidden sm:inline">
+                                <span className={`text-[9px] hidden sm:inline ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                                   {estimateReadingTime(art.content || art.excerpt)}
                                 </span>
                                 <button
@@ -2281,7 +2294,11 @@ export const App: React.FC = () => {
                       <div className="absolute inset-0 flex items-center justify-center p-3">
                         <img 
                           src="/logo.png" 
-                          alt="Ambition TV"
+                          alt="Ambition TV Logo"
+                          loading="lazy"
+                          decoding="async"
+                          width="96"
+                          height="96"
                           className="w-24 h-24 object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.5)] group-hover:scale-110 transition duration-500" 
                         />
                       </div>
@@ -2320,6 +2337,7 @@ export const App: React.FC = () => {
                         href={SOCIAL_LINKS.youtube}
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label="एम्बिशन न्यूज़ आधिकारिक यूट्यूब चैनल खोलें"
                         className="w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow transition"
                       >
                         <YoutubeIcon size={13} />
@@ -2335,7 +2353,7 @@ export const App: React.FC = () => {
                     <div className="flex items-center gap-2.5 mb-2.5">
                       <div className="w-9 h-9 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600 shrink-0">
                         <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center overflow-hidden p-0.5">
-                          <img src="/logo.png" alt="Ambition News" className="w-full h-full object-cover rounded-full" />
+                          <img src="/logo.png" alt="Ambition News Logo" loading="lazy" decoding="async" width="36" height="36" className="w-full h-full object-cover rounded-full" />
                         </div>
                       </div>
                       <div>

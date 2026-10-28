@@ -303,10 +303,12 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Subtitle: Bureau & Coverage */}
-            <div className="text-[9px] sm:text-xs font-semibold text-slate-400 mt-0.5 sm:mt-1 flex items-center gap-1 leading-none">
-              <span className="text-red-400 font-bold">कवर्धा (कबीरधाम)</span>
-              <span className="text-slate-600 hidden sm:inline">•</span>
-              <span className="hidden sm:inline text-slate-300 font-medium">CG-MP 88 जिला नेटवर्क</span>
+            <div className={`text-[9px] sm:text-xs font-semibold mt-0.5 sm:mt-1 flex items-center gap-1 leading-none ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              <span className="text-red-500 font-bold">कवर्धा (कबीरधाम)</span>
+              <span className={isDark ? "text-slate-600" : "text-slate-400"}>•</span>
+              <span className={`hidden sm:inline font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>CG-MP 88 जिला नेटवर्क</span>
             </div>
           </div>
         </div>
@@ -321,7 +323,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={() => setSelectedState('chhattisgarh')}
               aria-label="छत्तीसगढ़ राज्य के 33 जिलों के समाचार चुनें"
-              className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
+              className={`px-2 sm:px-3.5 py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all min-h-[32px] sm:min-h-[36px] flex items-center justify-center ${
                 selectedState === 'chhattisgarh' 
                   ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
                   : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
@@ -333,7 +335,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={() => setSelectedState('madhya-pradesh')}
               aria-label="मध्य प्रदेश राज्य के 55 जिलों के समाचार चुनें"
-              className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
+              className={`px-2 sm:px-3.5 py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all min-h-[32px] sm:min-h-[36px] flex items-center justify-center ${
                 selectedState === 'madhya-pradesh' 
                   ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
                   : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
@@ -349,7 +351,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={onOpenReporterModal}
               aria-label="नागरिक रिपोर्टर - तुरंत खबर भेजें"
-              className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl flex items-center gap-1 transition active:scale-95 shadow-md shadow-red-950/40 shrink-0"
+              className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl flex items-center gap-1 transition active:scale-95 shadow-md shadow-red-950/40 shrink-0 min-h-[36px]"
               title="नागरिक व फ़ील्ड रिपोर्टर • तुरंत खबर भेजें"
             >
               <span>📢</span>
@@ -361,7 +363,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button 
             onClick={onOpenAdminPortal}
             aria-label="संपादकीय एवं एडमिन पोर्टल खोलें"
-            className={`flex text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border items-center gap-1 transition active:scale-95 shadow shrink-0 ${
+            className={`flex text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border items-center gap-1 transition active:scale-95 shadow shrink-0 min-h-[36px] ${
               isDark ? 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700/80' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
             }`}
             title="Open Editorial & Admin Desk"
@@ -375,7 +377,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={onShareAppWhatsApp}
               aria-label="व्हाट्सएप पर ऐप शेयर करें"
-              className="hidden sm:flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl items-center gap-1 transition active:scale-95 shadow shadow-emerald-950/40 shrink-0"
+              className="hidden sm:flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl items-center gap-1 transition active:scale-95 shadow shadow-emerald-950/40 shrink-0 min-h-[36px]"
               title="व्हाट्सएप पर ऐप शेयर करें"
             >
               <WhatsAppIcon size={14} className="shrink-0" />
@@ -388,7 +390,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => setActiveTab('saved')}
               aria-label="सहेजी गई खबरें व रील्स देखें"
-              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 flex items-center gap-1.5 text-xs font-bold ${
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 flex items-center gap-1.5 text-xs font-bold min-h-[36px] ${
                 activeTab === 'saved'
                   ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-sm'
                   : isDark 
@@ -412,7 +414,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onToggleSearch}
               aria-label="समाचार खोजें"
-              className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 ${
+              className={`p-2 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${
                 isDark ? 'border-slate-700 bg-slate-800/90 text-slate-300 hover:text-white' : 'border-slate-300 bg-slate-100 text-slate-700 hover:text-slate-950'
               }`}
               title="खबरें खोजें (Search)"
@@ -425,7 +427,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button 
             onClick={toggleTheme}
             aria-label={isDark ? "लाइट थीम पर स्विच करें" : "डार्क थीम पर स्विच करें"}
-            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border text-sm transition shrink-0 ${
+            className={`p-2 rounded-lg sm:rounded-xl border text-sm transition shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center ${
               isDark ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
             }`}
             title="Toggle theme"
