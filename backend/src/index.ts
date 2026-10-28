@@ -63,32 +63,53 @@ app.use(helmet({
   }
 }));
 
-// 2. Strict CORS Configuration for Local, Vercel, Cloudflare & Production Domains
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://ambitionnews.init65.co.in',
-  'https://ambition-news-portal.vercel.app',
-  'https://ambitionnews.com',
-  'https://www.ambitionnews.com',
-  process.env.FRONTEND_URL
-].filter(Boolean) as string[];
+// 2. Dynamic Environment-Driven CORS (Zero Code Policy: 100% Configured via Environment Variables)
+const getAllowedOrigins = (): string[] => {
+  const configured = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
+
+  if (process.env.FRONTEND_URL) {
+    configured.push(process.env.FRONTEND_URL.trim());
+  }
+
+  // Always permit local development in non-production
+  if (process.env.NODE_ENV !== 'production') {
+    configured.push('http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173');
+  }
+
+  return Array.from(new Set(configured));
+};
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser requests (mobile native apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    // Allow Vercel preview & production deployments
-    if (/\.vercel\.app$/.test(origin)) return callback(null, true);
-    // Allow Cloudflare Pages deployments
-    if (/\.pages\.dev$/.test(origin)) return callback(null, true);
-    // Allow init65.co.in subdomains & custom production domain
-    if (/\.init65\.co\.in$/.test(origin) || origin === 'https://init65.co.in') return callback(null, true);
-    // Allow registered whitelist domains
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Allow local development
+
+    const origins = getAllowedOrigins();
+
+    // 1. Allow explicitly configured origins from process.env.ALLOWED_ORIGINS & FRONTEND_URL
+    if (origins.includes(origin)) return callback(null, true);
+
+    // 2. Allow dynamic domain suffix patterns configured in process.env.ALLOWED_DOMAIN_PATTERNS
+    const patternEnv = process.env.ALLOWED_DOMAIN_PATTERNS || '.init65.co.in,.vercel.app,.pages.dev';
+    const patterns = patternEnv.split(',').map(p => p.trim()).filter(Boolean);
+    const matchesPattern = patterns.some(pattern => {
+      try {
+        const url = new URL(origin);
+        return url.hostname.endsWith(pattern) || url.hostname === pattern.replace(/^\./, '');
+      } catch {
+        return false;
+      }
+    });
+
+    if (matchesPattern) return callback(null, true);
+
+    // 3. Allow any origin in non-production development
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
-    return callback(new Error('CORS blocked: अनधिकृत डोमेन से अनुरोध अस्वीकृत (Origin not allowed)'));
+
+    return callback(new Error(`CORS blocked: अनधिकृत डोमेन (${origin}) से अनुरोध अस्वीकृत (Origin not allowed)`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

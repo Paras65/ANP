@@ -1,14 +1,21 @@
 import type { Article, VideoBulletin, InstagramPost, MandiRate, DistrictItem } from '../types';
 
+// Zero Code Policy: Dynamic Environment Variables & Runtime Resolution
+const siteUrl = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://ambitionnews.init65.co.in');
+const siteDomain = import.meta.env.VITE_SITE_DOMAIN || (typeof window !== 'undefined' ? window.location.hostname : 'ambitionnews.init65.co.in');
+const supportEmail = import.meta.env.VITE_GRIEVANCE_EMAIL || 'grievance@ambitionnews.in';
+const contactPhone = import.meta.env.VITE_CONTACT_PHONE || '7000139694';
+const contactPhoneFormatted = import.meta.env.VITE_CONTACT_PHONE_FORMATTED || '+91 70001 39694';
+
 export const SOCIAL_LINKS = {
-  website: 'https://ambitionnews.init65.co.in',
-  domain: 'ambitionnews.init65.co.in',
-  email: 'grievance@ambitionnews.in',
-  grievanceEmail: 'grievance@ambitionnews.in',
+  website: siteUrl,
+  domain: siteDomain,
+  email: supportEmail,
+  grievanceEmail: supportEmail,
   logo: '/logo.png',
-  phone: '7000139694',
-  phoneFormatted: '+91 70001 39694',
-  whatsappDirect: 'https://wa.me/917000139694',
+  phone: contactPhone,
+  phoneFormatted: contactPhoneFormatted,
+  whatsappDirect: `https://wa.me/91${contactPhone.replace(/\D/g, '')}`,
   instagram: 'https://www.instagram.com/ambition_news/',
   instagramHandle: '@ambition_news',
   instagramBio: 'Ambition news ( कवर्धा ) • निष्पक्ष एवं निर्भीक क्षेत्रीय पत्रकारिता',

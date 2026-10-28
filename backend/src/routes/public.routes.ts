@@ -184,7 +184,9 @@ router.get(['/rss', '/rss.xml', '/feed.xml'], async (_req: Request, res: Respons
       .populate('categoryId')
       .lean();
 
-    const baseUrl = process.env.FRONTEND_URL || 'https://ambitionnews.init65.co.in';
+    const baseUrl = process.env.FRONTEND_URL 
+      || (_req.headers.origin as string) 
+      || `${_req.protocol}://${_req.get('host')}`;
     const buildDate = new Date().toUTCString();
 
     let itemsXml = '';
