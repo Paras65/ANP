@@ -19,7 +19,7 @@ interface SecurityIncidentInput {
 // In-memory sliding window deduplication to prevent DB exhaustion attacks on SecurityLog itself!
 const deduplicationCache = new Map<string, { timestamp: number; logId?: string; count: number }>();
 
-// Cleanup cache every 10 minutes
+// Cleanup deduplication cache every 10 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [key, val] of deduplicationCache.entries()) {
@@ -28,6 +28,35 @@ setInterval(() => {
     }
   }
 }, 10 * 60 * 1000);
+
+// Background Database Auto-Cleanup Routine:
+// 1. Purges records older than 7 days
+// 2. Hard caps total logs at 1,500 entries (prunes oldest overflow)
+async function autoPruneOldLogs(): Promise<void> {
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    await SecurityLog.deleteMany({ createdAt: { $lt: sevenDaysAgo } });
+
+    const totalCount = await SecurityLog.countDocuments();
+    if (totalCount > 1500) {
+      const overflow = totalCount - 1500;
+      const oldestDocs = await SecurityLog.find()
+        .sort({ createdAt: 1 })
+        .limit(overflow)
+        .select('_id')
+        .lean();
+      if (oldestDocs.length > 0) {
+        await SecurityLog.deleteMany({ _id: { $in: oldestDocs.map((d: any) => d._id) } });
+      }
+    }
+  } catch (_err) {
+    // Silent fail-safe: background cleanup never interrupts server execution
+  }
+}
+
+// Initial prune 30 seconds after server boot, then every 1 hour
+setTimeout(autoPruneOldLogs, 30 * 1000);
+setInterval(autoPruneOldLogs, 60 * 60 * 1000);
 
 /**
  * Asynchronously records security incidents in MongoDB Atlas.

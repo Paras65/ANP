@@ -76,9 +76,9 @@ const SecurityLogSchema = new Schema<ISecurityLog>({
   createdAt: { 
     type: Date, 
     default: Date.now,
-    // Automatic TTL (Time-To-Live) index: Purges records older than 14 days automatically
+    // Automatic TTL (Time-To-Live) index: Purges records older than 7 days automatically
     // This ensures security logs NEVER bloat or fill up MongoDB Atlas 512MB storage!
-    expires: 14 * 24 * 60 * 60 // 14 days in seconds
+    expires: 7 * 24 * 60 * 60 // 7 days in seconds
   }
 }, { timestamps: false });
 
