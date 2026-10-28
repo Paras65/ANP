@@ -6,6 +6,7 @@ import {
   Eye, 
   Clock, 
   Tv, 
+  RefreshCw,
   SkipBack, 
   SkipForward 
 } from 'lucide-react';

@@ -44,12 +44,11 @@ import {
   Wand2,
   Phone,
   Printer,
-  QrCode,
-  Building2,
-  BadgeCheck
+  BadgeCheck,
+  X
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter } from '../types';
-import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos, parseReelMedia } from '../utils/mediaUtils';
+import { parseYouTubeUrl, extractYouTubeChannelId, syncYouTubeChannelVideos, parseReelMedia } from '../utils/mediaUtils';
 import { WhatsAppIcon } from './SocialIcons';
 import api, { setAuthToken } from '../api/client';
 import { SOCIAL_LINKS } from '../data/mockData';

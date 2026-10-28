@@ -96,7 +96,6 @@ export const App: React.FC = () => {
     return localStorage.getItem('anp_yt_channel_id') || 'UC8mIipC7suPuBJ_n8kUzkCg';
   });
   const [hasYouTubeApiKey, setHasYouTubeApiKey] = useState(false);
-  const [isSyncingYouTube, setIsSyncingYouTube] = useState(false);
 
   // Dynamic Live YouTube Videos & Instagram Reels
   const [videoBulletins, setVideoBulletins] = useState<VideoBulletin[]>(() => {
@@ -194,7 +193,6 @@ export const App: React.FC = () => {
     const targetId = channelIdToSync || youtubeChannelId;
     if (!targetId) return 0;
 
-    setIsSyncingYouTube(true);
     try {
       const res = await syncYouTubeChannelVideos(targetId);
       if (res.success && res.videos.length > 0) {
@@ -232,8 +230,6 @@ export const App: React.FC = () => {
       }
     } catch (err) {
       console.warn('YouTube auto-sync error:', err);
-    } finally {
-      setIsSyncingYouTube(false);
     }
     return 0;
   };
@@ -1272,7 +1268,7 @@ export const App: React.FC = () => {
                 </div>
 
                 <button 
-                  onClick={loadArticles} 
+                  onClick={() => loadArticles()} 
                   className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl transition"
                 >
                   <RefreshCw size={11} className={isLoading ? 'animate-spin text-red-500' : ''} />
@@ -1691,7 +1687,7 @@ export const App: React.FC = () => {
         {/* 11. CITIZEN JOURNALIST / FIELD REPORTER SCOOP SUBMISSION MODAL */}
         {showReporterModal && (
           <ReporterModal 
-            districts={districts}
+            districts={districtsList}
             selectedState={selectedState}
             onSubmit={handleScoopSubmit}
             onClose={() => setShowReporterModal(false)}
