@@ -16,7 +16,8 @@ import {
   ChevronDown,
   MapPinOff,
   Trash2,
-  Play
+  Play,
+  Loader2
 } from 'lucide-react';
 import { formatRelativeHindiTime, estimateReadingTime, formatHindiViews } from './utils/dateUtils';
 
@@ -104,6 +105,10 @@ export const App: React.FC = () => {
   const [showDistrictModal, setShowDistrictModal] = useState(false);
   const [showReporterModal, setShowReporterModal] = useState(false);
   const [visibleCount, setVisibleCount] = useState<number>(7);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [hasMoreBackend, setHasMoreBackend] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [totalArticlesCount, setTotalArticlesCount] = useState<number>(0);
 
   // Voice Search Hook for Public Portal
   const {
@@ -450,24 +455,53 @@ export const App: React.FC = () => {
     }
   };
 
-  // Load live articles (includes Citizen Scoops with includeReview=true for Admin Portal)
-  const loadArticles = async (isAdminView = currentView === 'admin') => {
-    setIsLoading(true);
+  // Load live articles (with server-side Pagination & seamless append support)
+  const loadArticles = async (isAdminView = currentView === 'admin', page = 1, append = false) => {
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
+
     try {
       const includeReviewParam = isAdminView ? '&includeReview=true' : '';
+      const allParam = isAdminView ? '&all=true' : '';
       const districtParam = (!isAdminView && currentDistrict !== 'सभी') ? `&district=${encodeURIComponent(currentDistrict)}` : '';
-      const query = `/articles?state=${selectedState}${districtParam}${includeReviewParam}`;
+      const pageParam = isAdminView ? '' : `&page=${page}&limit=12`;
+
+      const query = `/articles?state=${selectedState}${districtParam}${includeReviewParam}${allParam}${pageParam}`;
       const res = await api.get(query);
-      if (res.data?.data && res.data.data.length > 0) {
-        setArticles(res.data.data);
+
+      if (res.data?.data && Array.isArray(res.data.data)) {
+        const fetchedData: Article[] = res.data.data;
+        if (append) {
+          setArticles(prev => {
+            const existingIds = new Set(prev.map(a => a._id));
+            const freshItems = fetchedData.filter(a => !existingIds.has(a._id));
+            return [...prev, ...freshItems];
+          });
+        } else {
+          setArticles(fetchedData);
+        }
+
+        if (res.data.pagination) {
+          setCurrentPage(res.data.pagination.currentPage);
+          setHasMoreBackend(res.data.pagination.hasNextPage);
+          setTotalArticlesCount(res.data.pagination.totalArticles);
+        } else {
+          setHasMoreBackend(fetchedData.length >= 12);
+          setTotalArticlesCount(fetchedData.length);
+        }
+
         setBackendSynced(true);
       } else {
-        setBackendSynced(false);
+        if (!append) setBackendSynced(false);
       }
     } catch {
-      setBackendSynced(false);
+      if (!append) setBackendSynced(false);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
@@ -986,14 +1020,31 @@ export const App: React.FC = () => {
   const gridArticles = displayArticles.length > 1 ? displayArticles.slice(1) : [];
   const breakingList = articles.filter(a => a.isBreaking);
 
-  // Progressive Disclosure: visible count
+  // Progressive Disclosure: visible count & server-side pagination bridge
   const visibleGridArticles = gridArticles.slice(0, visibleCount - 1);
-  const hasMoreArticles = gridArticles.length > visibleGridArticles.length;
-  const remainingCount = gridArticles.length - visibleGridArticles.length;
+  const hasMoreArticles = gridArticles.length > visibleGridArticles.length || hasMoreBackend;
+  const remainingCount = totalArticlesCount > (visibleGridArticles.length + (heroArticle ? 1 : 0))
+    ? Math.max(0, totalArticlesCount - (visibleGridArticles.length + (heroArticle ? 1 : 0)))
+    : Math.max(0, gridArticles.length - visibleGridArticles.length);
 
-  // Reset visibleCount when filters change
+  // Handle Load More (Seamlessly reveals local buffered articles or fetches next page from MongoDB)
+  const handleLoadMore = async () => {
+    if (gridArticles.length > visibleGridArticles.length) {
+      setVisibleCount(prev => prev + 6);
+      return;
+    }
+
+    if (hasMoreBackend && !isLoadingMore) {
+      const nextPage = currentPage + 1;
+      await loadArticles(false, nextPage, true);
+      setVisibleCount(prev => prev + 6);
+    }
+  };
+
+  // Reset visibleCount & pagination when filters change
   useEffect(() => {
     setVisibleCount(7);
+    setCurrentPage(1);
   }, [currentDistrict, selectedCategory, selectedState, searchQuery]);
 
   // Top 5 Trending stories for Sidebar & Mobile Quick Strip
@@ -2039,23 +2090,33 @@ export const App: React.FC = () => {
                     {hasMoreArticles && (
                       <div className="pt-2 text-center">
                         <button
-                          onClick={() => setVisibleCount(prev => prev + 6)}
-                          className={`border font-bold text-xs px-5 py-2.5 rounded-2xl shadow-md transition active:scale-95 flex items-center gap-2 mx-auto cursor-pointer ${
+                          onClick={handleLoadMore}
+                          disabled={isLoadingMore}
+                          className={`border font-bold text-xs px-5 py-2.5 rounded-2xl shadow-md transition active:scale-95 flex items-center gap-2 mx-auto cursor-pointer disabled:opacity-60 ${
                             isDark 
                               ? 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200 hover:text-white' 
                               : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-800 hover:text-slate-950'
                           }`}
                         >
-                          <ChevronDown size={14} className="text-red-500 animate-bounce" />
-                          <span>और खबरें देखें ({remainingCount} और उपलब्ध)</span>
+                          {isLoadingMore ? (
+                            <>
+                              <Loader2 size={14} className="text-red-500 animate-spin" />
+                              <span>अगला पेज लोड हो रहा है...</span>
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown size={14} className="text-red-500 animate-bounce" />
+                              <span>और खबरें देखें {remainingCount > 0 ? `(${remainingCount} और उपलब्ध)` : ''}</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     )}
 
-                    {!hasMoreArticles && displayArticles.length > 6 && (
+                    {!hasMoreArticles && (displayArticles.length > 6 || totalArticlesCount > 6) && (
                       <div className="pt-4 text-center text-xs text-slate-500 flex items-center justify-center gap-1.5">
                         <span>✓</span>
-                        <span>आपने {displayArticles.length} की सभी ताज़ा खबरें पढ़ ली हैं</span>
+                        <span>आपने {totalArticlesCount || displayArticles.length} की सभी ताज़ा खबरें पढ़ ली हैं</span>
                       </div>
                     )}
 

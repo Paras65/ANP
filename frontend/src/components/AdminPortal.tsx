@@ -47,7 +47,9 @@ import {
   BadgeCheck,
   X,
   Sun,
-  Moon
+  Moon,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter } from '../types';
 import { parseYouTubeUrl, extractYouTubeChannelId, syncYouTubeChannelVideos, parseReelMedia } from '../utils/mediaUtils';
@@ -137,10 +139,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  // Articles Search & Filter State (Tab 2)
+  // Articles Search, Filter & Pagination State (Tab 2)
   const [articleSearchQuery, setArticleSearchQuery] = useState('');
   const [articleDistrictFilter, setArticleDistrictFilter] = useState('सभी');
   const [articleStatusFilter, setArticleStatusFilter] = useState<'all' | 'PUBLISHED' | 'REVIEW'>('all');
+  const [adminArticlePage, setAdminArticlePage] = useState(1);
+
+  // Reset pagination to page 1 on filter/search change
+  useEffect(() => {
+    setAdminArticlePage(1);
+  }, [articleSearchQuery, articleDistrictFilter, articleStatusFilter]);
 
   // Reporters Management States (Tab 4)
   const [reporterSearch, setReporterSearch] = useState('');
@@ -1801,6 +1809,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             return matchesSearch && matchesDistrict && matchesStatus;
           });
 
+          const adminPageSize = 10;
+          const totalAdminPages = Math.max(1, Math.ceil(filteredManagedArticles.length / adminPageSize));
+          const currentAdminPage = Math.min(adminArticlePage, totalAdminPages);
+          const paginatedArticles = filteredManagedArticles.slice(
+            (currentAdminPage - 1) * adminPageSize,
+            currentAdminPage * adminPageSize
+          );
+
           return (
             <div className={`p-5 rounded-3xl border ${
               isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
@@ -1961,7 +1977,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   }`}>
                     कोई खबर नहीं मिली। कृपया अलग कीवर्ड या जिला चुनें।
                   </div>
-                ) : filteredManagedArticles.map((art) => (
+                ) : paginatedArticles.map((art) => (
                   <div
                     key={art._id}
                     className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition ${
@@ -2064,6 +2080,79 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
                 ))}
               </div>
+
+              {/* Admin Pagination Controls */}
+              {totalAdminPages > 1 && (
+                <div className={`mt-4 pt-3 flex flex-wrap items-center justify-between gap-3 border-t text-xs ${
+                  isDark ? 'border-slate-800 text-slate-300' : 'border-slate-200 text-slate-700'
+                }`}>
+                  <div className="font-semibold">
+                    पेज <span className="font-bold text-red-500">{currentAdminPage}</span> of {totalAdminPages} 
+                    <span className={`font-normal ml-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      (कुल {filteredManagedArticles.length} खबरें)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={currentAdminPage <= 1}
+                      onClick={() => setAdminArticlePage(p => Math.max(1, p - 1))}
+                      className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 border disabled:opacity-40 disabled:cursor-not-allowed ${
+                        isDark 
+                          ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700' 
+                          : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-sm'
+                      }`}
+                    >
+                      <ChevronLeft size={14} />
+                      <span>पिछला</span>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalAdminPages }, (_, idx) => idx + 1)
+                        .filter(pageNum => 
+                          pageNum === 1 || 
+                          pageNum === totalAdminPages || 
+                          Math.abs(pageNum - currentAdminPage) <= 1
+                        )
+                        .map((pageNum, idx, arr) => (
+                          <React.Fragment key={pageNum}>
+                            {idx > 0 && arr[idx - 1] !== pageNum - 1 && (
+                              <span className="px-1 text-slate-500 font-bold">...</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setAdminArticlePage(pageNum)}
+                              className={`w-7 h-7 rounded-xl font-bold text-xs transition flex items-center justify-center ${
+                                pageNum === currentAdminPage
+                                  ? 'bg-red-600 text-white shadow'
+                                  : isDark
+                                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          </React.Fragment>
+                        ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={currentAdminPage >= totalAdminPages}
+                      onClick={() => setAdminArticlePage(p => Math.min(totalAdminPages, p + 1))}
+                      className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 border disabled:opacity-40 disabled:cursor-not-allowed ${
+                        isDark 
+                          ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700' 
+                          : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-sm'
+                      }`}
+                    >
+                      <span>अगला</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })()}

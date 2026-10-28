@@ -96,10 +96,10 @@ router.get('/breaking', async (req: Request, res: Response) => {
   }
 });
 
-// 3. GET /api/articles - List published articles filtered live from MongoDB Atlas
+// 3. GET /api/articles - List published articles filtered live from MongoDB Atlas (with Pagination Support)
 router.get('/articles', async (req: Request, res: Response) => {
   try {
-    const { district, state, category, search, includeReview } = req.query;
+    const { district, state, category, search, includeReview, page, limit, all } = req.query;
     let filter: any = { deletedAt: null };
     if (includeReview === 'true') {
       filter.status = { $in: ['PUBLISHED', 'REVIEW'] };
@@ -144,14 +144,29 @@ router.get('/articles', async (req: Request, res: Response) => {
       ];
     }
 
-    const articles = await Article.find(filter)
-      .populate('districtId')
-      .populate('categoryId')
-      .populate('stateId')
-      .populate('authorId')
-      .sort({ publishedAt: -1, createdAt: -1 })
-      .limit(50)
-      .lean();
+    // Pagination Parameters
+    const pageNum = Math.max(1, parseInt(String(page || '1'), 10) || 1);
+    const isAll = all === 'true';
+    const defaultLimit = 12;
+    const limitNum = isAll 
+      ? 200 
+      : Math.min(100, Math.max(1, parseInt(String(limit || defaultLimit), 10) || defaultLimit));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [articles, totalArticles] = await Promise.all([
+      Article.find(filter)
+        .populate('districtId')
+        .populate('categoryId')
+        .populate('stateId')
+        .populate('authorId')
+        .sort({ publishedAt: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Article.countDocuments(filter)
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(totalArticles / limitNum));
 
     const data = articles.map((a: any) => ({
       _id: a._id.toString(),
@@ -171,7 +186,19 @@ router.get('/articles', async (req: Request, res: Response) => {
       publishedAt: a.publishedAt ? new Date(a.publishedAt).toISOString() : new Date().toISOString()
     }));
 
-    res.json({ success: true, count: data.length, data });
+    res.json({ 
+      success: true, 
+      count: data.length, 
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalArticles,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      },
+      data 
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

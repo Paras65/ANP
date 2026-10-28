@@ -90,3 +90,12 @@ export interface Reporter {
   createdAt?: string;
 }
 
+export interface PaginationMeta {
+  currentPage: number;
+  totalPages: number;
+  totalArticles: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
