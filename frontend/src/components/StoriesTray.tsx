@@ -16,7 +16,7 @@ export interface StoryItem {
   articleId?: string;
 }
 
-export const DEMO_STORIES: StoryItem[] = [
+export const EDITORIAL_STORIES: StoryItem[] = [
   {
     id: 's-live',
     label: 'लाइव टीवी',
@@ -81,6 +81,8 @@ export const DEMO_STORIES: StoryItem[] = [
     ringGradient: 'from-yellow-400 via-amber-500 to-orange-600'
   }
 ];
+
+export const DEMO_STORIES = EDITORIAL_STORIES;
 
 export interface StoriesTrayProps {
   onSelectStory: (story: StoryItem) => void;
@@ -163,7 +165,7 @@ export function generateStoriesList(
     });
   });
 
-  return dynamicList.length >= 3 ? dynamicList : DEMO_STORIES;
+  return dynamicList.length >= 3 ? dynamicList : EDITORIAL_STORIES;
 }
 
 export const StoriesTray: React.FC<StoriesTrayProps> = ({ 

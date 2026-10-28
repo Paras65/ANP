@@ -110,6 +110,7 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
           </div>
           <button 
             onClick={onClose} 
+            aria-label="रिपोर्टर फॉर्म बंद करें"
             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
           >
             <X size={20} />

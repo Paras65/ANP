@@ -1646,7 +1646,7 @@ export const App: React.FC = () => {
                         <MapPin size={16} />
                       </div>
                       <div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                        <div className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                           <span>जिला अनुसार ({selectedState === 'chhattisgarh' ? 'छ.ग.' : 'म.प्र.'})</span>
                           <span className="text-red-500 underline text-[9px]">बदलें</span>
                         </div>
@@ -1808,7 +1808,7 @@ export const App: React.FC = () => {
                           ? 'कोई खबर उपलब्ध नहीं है' 
                           : `${currentDistrict} में अभी कोई खबर प्रकाशित नहीं हुई`}
                     </h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       {searchQuery 
                         ? `"${searchQuery}" से संबंधित कोई समाचार नहीं मिला। कृपया अन्य कीवर्ड लिखकर पुनः खोजें।`
                         : `हमारा क्षेत्रीय संवाददाता नेटवर्क ${currentDistrict === 'सभी' ? 'क्षेत्र' : currentDistrict} की ताज़ा खबरों को एकत्र कर रहा है। क्या आपके पास इस क्षेत्र की कोई सूचना, वीडियो या खबर है?`}
@@ -2204,7 +2204,7 @@ export const App: React.FC = () => {
                                 {idx + 1}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-0.5">
+                                <div className={`flex items-center gap-1.5 text-[10px] mb-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                                   <span className="font-bold text-red-500">{tArt.district}</span>
                                   <span>•</span>
                                   <span>{formatRelativeHindiTime(tArt.publishedAt)}</span>

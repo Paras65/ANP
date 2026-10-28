@@ -48,7 +48,7 @@ export const INITIAL_ARTICLES: Article[] = [
     district: 'कबीरधाम (कवर्धा)',
     state: 'chhattisgarh',
     category: '🏗️ विकास',
-    author: 'अमित चंद्रवंशी (कवर्धा ब्यूरो चीफ)',
+    author: 'उत्तम चंद्रवंशी (वरिष्ठ संपादक व ब्यूरो चीफ)',
     views: 3420,
     isBreaking: true,
     isFeatured: true,

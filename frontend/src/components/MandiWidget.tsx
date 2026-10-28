@@ -47,7 +47,7 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
                 }`}
                 title={`${item.mandi} - ${item.crop}: ₹${item.rate}`}
               >
-                <span className="text-[10px] text-slate-400 font-medium">
+                <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   {item.mandi}
                 </span>
                 <span className="font-bold text-[11px]">
@@ -115,7 +115,7 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
             }`}
           >
             <div>
-              <div className="flex justify-between items-center text-[10px] text-slate-400 font-medium">
+              <div className={`flex justify-between items-center text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 <span>{item.mandi}</span>
                 <span className={`px-1 rounded text-[9px] font-bold ${
                   isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
@@ -139,7 +139,7 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
                   ? 'text-emerald-400' 
                   : item.change === 'down' 
                     ? 'text-red-400' 
-                    : 'text-slate-400'
+                    : (isDark ? 'text-slate-400' : 'text-slate-600')
               }`}>
                 {item.change === 'up' && <TrendingUp size={10} />}
                 {item.change === 'down' && <TrendingDown size={10} />}

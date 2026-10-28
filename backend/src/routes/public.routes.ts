@@ -1340,11 +1340,11 @@ router.get('/reporters', async (req: Request, res: Response) => {
 
       const initialReporters = [
         {
-          name: 'अमित चंद्रवंशी',
-          nameHindi: 'अमित चंद्रवंशी',
-          phone: '9826011111',
+          name: 'उत्तम चंद्रवंशी',
+          nameHindi: 'उत्तम चंद्रवंशी',
+          phone: '7000139694',
           role: 'EDITOR',
-          bureau: 'कवर्धा (कबीरधाम) ब्यूरो चीफ',
+          bureau: 'कवर्धा (कबीरधाम) वरिष्ठ संपादक व ब्यूरो चीफ',
           districtId: kawardhaDistrict?._id,
           reporterIdCode: 'ANP-CG-KBR-01',
           photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
@@ -1353,7 +1353,7 @@ router.get('/reporters', async (req: Request, res: Response) => {
         {
           name: 'संजय वर्मा',
           nameHindi: 'संजय वर्मा',
-          phone: '9826022222',
+          phone: '7000139691',
           role: 'REPORTER',
           bureau: 'कवर्धा कृषि व मंडी डेस्क',
           districtId: kawardhaDistrict?._id,
@@ -1364,7 +1364,7 @@ router.get('/reporters', async (req: Request, res: Response) => {
         {
           name: 'मनीष यादव',
           nameHindi: 'मनीष यादव',
-          phone: '9826033333',
+          phone: '7000139692',
           role: 'REPORTER',
           bureau: 'चिल्फी घाटी / बोड़ला वनांचल',
           districtId: kawardhaDistrict?._id,
@@ -1375,7 +1375,7 @@ router.get('/reporters', async (req: Request, res: Response) => {
         {
           name: 'विशेष संवाददाता',
           nameHindi: 'विशेष संवाददाता',
-          phone: '9826044444',
+          phone: '7000139693',
           role: 'REPORTER',
           bureau: 'रायपुर मंत्रालय डेस्क',
           districtId: raipurDistrict?._id,
@@ -1386,7 +1386,7 @@ router.get('/reporters', async (req: Request, res: Response) => {
         {
           name: 'राजेश शुक्ला',
           nameHindi: 'राजेश शुक्ला',
-          phone: '9826055555',
+          phone: '7000139695',
           role: 'REPORTER',
           bureau: 'बिलासपुर हाईकोर्ट डेस्क',
           districtId: bilaspurDistrict?._id,
@@ -1397,7 +1397,7 @@ router.get('/reporters', async (req: Request, res: Response) => {
         {
           name: 'नीलेश शर्मा',
           nameHindi: 'नीलेश शर्मा',
-          phone: '9826066666',
+          phone: '7000139696',
           role: 'REPORTER',
           bureau: 'भोपाल ब्यूरो (एमपी प्रभारी)',
           districtId: bhopalDistrict?._id,

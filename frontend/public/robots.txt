@@ -4,6 +4,9 @@
 
 User-agent: *
 Allow: /
+Allow: /api/articles
+Allow: /api/mandi
+Allow: /api/rss
 Disallow: /admin
 Disallow: /*?portal=admin
 Disallow: /api/

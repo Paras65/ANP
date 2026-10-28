@@ -213,6 +213,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             {/* Close Button */}
             <button 
               onClick={handleClose}
+              aria-label="समाचार विवरण बंद करें"
               className={`p-1 rounded-lg transition ml-1 ${
                 isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
               }`}

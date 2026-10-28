@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, ChevronRight, MapPin, Pause } from 'lucide-react';
 import type { StoryItem } from './StoriesTray';
-import { DEMO_STORIES } from './StoriesTray';
+import { EDITORIAL_STORIES } from './StoriesTray';
 import { WhatsAppIcon } from './SocialIcons';
 import { getCategoryTheme } from '../utils/categoryTheme';
 
@@ -24,7 +24,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
   onOpenVideo,
   onOpenMandi
 }) => {
-  const storyList = stories && stories.length > 0 ? stories : DEMO_STORIES;
+  const storyList = stories && stories.length > 0 ? stories : EDITORIAL_STORIES;
 
   const [currentIndex, setCurrentIndex] = useState(() => {
     const idx = storyList.findIndex(s => s.id === initialStory.id);

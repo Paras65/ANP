@@ -33,12 +33,8 @@ interface Comment {
   avatar: string;
 }
 
-const INITIAL_COMMENTS: Comment[] = [
-  { id: 'c1', user: 'राकेश साहू (कवर्धा)', text: 'कवर्धा की सच्ची व निष्पक्ष आवाज! जय भोरमदेव बाबा 🙏', time: '1h', avatar: '👨‍🌾' },
-  { id: 'c2', user: 'सुनील चंद्रवंशी', text: 'चिल्फी घाटी का दृश्य सच में बहुत मनमोहक है। बेहतरीन कवरेज!', time: '2h', avatar: '🏔️' },
-  { id: 'c3', user: 'मंडी व्यापारी संघ', text: 'गुड़ मंडी के सही भाव बताने के लिए धन्यवाद अंबिशन न्यूज़।', time: '3h', avatar: '🌾' },
-  { id: 'c4', user: 'दीपक वर्मा', text: 'ग्राउंड रिपोर्टिंग हमेशा नंबर 1 रहती है आप लोगों की!', time: '5h', avatar: '📱' }
-];
+// Pure empty default: Zero fake comments policy. Only genuine user-submitted comments are displayed.
+const DEFAULT_COMMENTS: Comment[] = [];
 
 export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   initialPostId,
@@ -84,9 +80,9 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   const [commentsList, setCommentsList] = useState<Comment[]>(() => {
     try {
       const saved = localStorage.getItem('anp_reel_comments');
-      return saved ? JSON.parse(saved) : INITIAL_COMMENTS;
+      return saved ? JSON.parse(saved) : DEFAULT_COMMENTS;
     } catch {
-      return INITIAL_COMMENTS;
+      return DEFAULT_COMMENTS;
     }
   });
   const [newComment, setNewComment] = useState('');
@@ -799,18 +795,25 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
 
             {/* Comments List */}
             <div className="flex-1 overflow-y-auto py-3 space-y-3 text-xs">
-              {commentsList.map(c => (
-                <div key={c.id} className="flex items-start gap-2.5">
-                  <span className="text-base">{c.avatar}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-[11px]">{c.user}</span>
-                      <span className="text-[10px] text-slate-500">{c.time}</span>
-                    </div>
-                    <p className="text-slate-300 text-[11px] mt-0.5 leading-snug">{c.text}</p>
-                  </div>
+              {commentsList.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 space-y-1">
+                  <p className="text-xs font-semibold">इस रील पर अभी कोई टिप्पणी नहीं है</p>
+                  <p className="text-[11px] text-slate-500">पहली टिप्पणी लिखकर अपनी राय साझा करें!</p>
                 </div>
-              ))}
+              ) : (
+                commentsList.map(c => (
+                  <div key={c.id} className="flex items-start gap-2.5">
+                    <span className="text-base">{c.avatar}</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-[11px]">{c.user}</span>
+                        <span className="text-[10px] text-slate-500">{c.time}</span>
+                      </div>
+                      <p className="text-slate-300 text-[11px] mt-0.5 leading-snug">{c.text}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Comment Input */}
@@ -824,6 +827,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
               />
               <button 
                 type="submit"
+                aria-label="टिप्पणी पोस्ट करें"
                 className="bg-pink-600 hover:bg-pink-500 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center transition active:scale-95"
               >
                 <Send size={13} />

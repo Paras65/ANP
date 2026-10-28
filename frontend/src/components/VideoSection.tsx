@@ -293,7 +293,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
           isDark ? 'border-slate-800 bg-slate-950/40 text-slate-300' : 'border-slate-300 bg-slate-50 text-slate-700'
         }`}>
           <Tv size={32} className="mx-auto text-red-500 opacity-60" />
-          <h4 className="text-sm font-bold">इस श्रेणी में अभी कोई वीडियो बुलेटिन नहीं है</h4>
+          <h3 className="text-sm font-bold">इस श्रेणी में अभी कोई वीडियो बुलेटिन नहीं है</h3>
           <p className="text-xs text-slate-400">अन्य श्रेणी चुनें या सभी वीडियो बुलेटिन देखें</p>
           <button 
             onClick={() => setSelectedCategory('all')}
@@ -414,6 +414,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   href={featuredVideo.youtubeUrl || `https://www.youtube.com/watch?v=${featuredVideo.youtubeId}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="यूट्यूब पर वीडियो देखें"
                   className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs p-2.5 rounded-xl transition cursor-pointer"
                   title="YouTube पर देखें"
                 >
@@ -486,6 +487,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={(e) => handleShare(video, e)}
+                      aria-label="WhatsApp पर वीडियो शेयर करें"
                       className="p-1 hover:text-emerald-400 transition"
                       title="WhatsApp शेयर"
                     >
@@ -521,9 +523,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">यूट्यूब चैनल</span>
-                  <h4 className={`text-xs sm:text-sm font-bold leading-snug mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  <h3 className={`text-xs sm:text-sm font-bold leading-snug mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     Ambition TV पर 500+ वीडियो बुलेटिन उपलब्ध
-                  </h4>
+                  </h3>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">
                   कवर्धा व CG-MP की ताज़ा खबरें, लाइव डिबेट व ग्राउंड रिपोर्ट्स सीधे यूट्यूब पर देखें।
@@ -673,9 +675,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
                       अगला बुलेटिन {countdown} सेकंड में शुरू हो रहा है...
                     </p>
-                    <h4 className="text-white font-black text-sm sm:text-base max-w-lg line-clamp-2 mb-4">
+                    <h3 className="text-white font-black text-sm sm:text-base max-w-lg line-clamp-2 mb-4">
                       {nextVideo.title}
-                    </h4>
+                    </h3>
                     <div className="flex items-center gap-3">
                       <button
                         onClick={handleNext}
