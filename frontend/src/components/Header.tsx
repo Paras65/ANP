@@ -61,13 +61,18 @@ export const Header: React.FC<HeaderProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Real-time dynamic Hindi date (e.g. मंगलवार, 27 अक्टूबर 2026)
+  // Real-time dynamic Hindi date (e.g. बुधवार, 28 अक्टूबर 2026 / बुध, 28 अक्टू)
   const now = new Date();
   const todayHindiDate = now.toLocaleDateString('hi-IN', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric'
+  });
+  const shortHindiDate = now.toLocaleDateString('hi-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short'
   });
 
   // Dynamic seasonal weather for Kawardha HQ based on hour
@@ -121,22 +126,36 @@ export const Header: React.FC<HeaderProps> = ({
       }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           
-          {/* Bureau Location & Date */}
-          <div className="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-[11px] min-w-0 shrink">
+          {/* Bureau Location, Dynamic Date & Live Weather */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 text-[10px] sm:text-[11px] min-w-0">
             <span 
               onClick={onOpenDistrictPicker}
-              className={`flex items-center gap-1 font-bold text-red-500 shrink-0 ${onOpenDistrictPicker ? 'cursor-pointer hover:underline' : ''}`}
+              className={`flex items-center gap-0.5 font-bold text-red-500 shrink-0 ${onOpenDistrictPicker ? 'cursor-pointer hover:underline' : ''}`}
               title="सभी 88 जिले चुनें"
             >
               <MapPin size={11} className="shrink-0" />
               <span className="sm:hidden">कवर्धा</span>
               <span className="hidden sm:inline">मुख्यालय: कवर्धा (कबीरधाम)</span>
             </span>
-            <span className="hidden md:inline text-slate-500">|</span>
-            <span className="hidden md:inline capitalize">{todayHindiDate}</span>
-            <span className="hidden lg:inline text-slate-500">|</span>
-            <span className="hidden lg:inline text-amber-400 font-medium" title="कवर्धा (कबीरधाम) मौसम">
-              {weatherInfo.icon} {weatherInfo.temp} कवर्धा
+
+            <span className="text-slate-500">•</span>
+
+            {/* Date: Compact on Mobile, Full on Desktop */}
+            <span className="capitalize text-slate-300 font-medium whitespace-nowrap">
+              <span className="sm:hidden">{shortHindiDate}</span>
+              <span className="hidden sm:inline">{todayHindiDate}</span>
+            </span>
+
+            <span className="text-slate-500">•</span>
+
+            {/* Weather: Always Visible on Mobile & Desktop */}
+            <span 
+              className="text-amber-400 font-bold flex items-center gap-1 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 text-[10px] shrink-0" 
+              title="कवर्धा (कबीरधाम) लाइव मौसम"
+            >
+              <span>{weatherInfo.icon}</span>
+              <span>{weatherInfo.temp}</span>
+              <span className="hidden lg:inline text-amber-300/80 font-normal">{weatherInfo.label} कवर्धा</span>
             </span>
           </div>
 
@@ -164,20 +183,20 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* YouTube Link */}
+            {/* YouTube Link (Desktop/Tablet) */}
             <a 
               href={SOCIAL_LINKS.youtube} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
+              className="hidden sm:flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
               title="Ambition News YouTube Channel"
             >
               <YoutubeIcon size={12} />
               <span>YouTube</span>
-              <span className="hidden sm:inline text-[9px]">({SOCIAL_LINKS.youtubeSubs})</span>
+              <span className="hidden md:inline text-[9px]">({SOCIAL_LINKS.youtubeSubs})</span>
             </a>
 
-            {/* Facebook Link */}
+            {/* Facebook Link (Desktop) */}
             <a 
               href={SOCIAL_LINKS.facebook} 
               target="_blank" 
@@ -189,17 +208,16 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Facebook</span>
             </a>
 
-            {/* Instagram Link */}
+            {/* Instagram Link (Desktop) */}
             <a 
               href={SOCIAL_LINKS.instagram} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="flex items-center gap-1 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-90 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
+              className="hidden md:flex items-center gap-1 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-90 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
               title="Ambition News Kawardha Instagram"
             >
               <InstagramIcon size={12} />
               <span>Insta</span>
-              <span className="hidden sm:inline text-[9px]">(@ambition_news)</span>
             </a>
 
             {/* WhatsApp Link - Always accessible on both Mobile & Desktop */}
