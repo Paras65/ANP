@@ -4,7 +4,7 @@ import { recordSecurityIncident } from '../services/securityAudit.service.js';
 
 function createRateLimitHandler(limiterName: string) {
   return (req: any, res: any, _next: any, options: any) => {
-    const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+    const clientIp = req.ip || (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
     const userAgent = String(req.headers['user-agent'] || 'unknown').slice(0, 120);
 
     logger.warn(

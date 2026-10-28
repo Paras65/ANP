@@ -15,7 +15,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
     const duration = Date.now() - start;
     const statusCode = res.statusCode;
     const sanitizedUrl = redactSecretKeys(originalUrl);
-    const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'local';
+    const clientIp = req.ip || (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'local';
 
     const logLine = `${method} ${sanitizedUrl} - ${statusCode} (${duration}ms) [IP: ${clientIp}]`;
 
