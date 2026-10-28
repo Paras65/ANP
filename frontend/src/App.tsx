@@ -14,12 +14,12 @@ import {
   Clock,
   Eye,
   ChevronDown,
-  ChevronUp,
   MapPinOff
 } from 'lucide-react';
 import { formatRelativeHindiTime, estimateReadingTime, formatHindiViews } from './utils/dateUtils';
 
 import { Header } from './components/Header';
+import { BackToTop } from './components/BackToTop';
 import { BreakingTicker } from './components/BreakingTicker';
 import { MandiWidget } from './components/MandiWidget';
 import { VideoSection } from './components/VideoSection';
@@ -84,25 +84,6 @@ export const App: React.FC = () => {
   const [showDistrictModal, setShowDistrictModal] = useState(false);
   const [showReporterModal, setShowReporterModal] = useState(false);
   const [visibleCount, setVisibleCount] = useState<number>(7);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  // Scroll listener for Back to Top floating button & reading progress ring
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      setShowBackToTop(scrollY > 300);
-
-      const winHeight = window.innerHeight;
-      const docHeight = document.documentElement.scrollHeight;
-      const totalScroll = docHeight - winHeight;
-      if (totalScroll > 0) {
-        setScrollProgress(Math.min(100, Math.round((scrollY / totalScroll) * 100)));
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Voice Search Hook for Public Portal
   const {
@@ -1388,7 +1369,7 @@ export const App: React.FC = () => {
                     {heroArticle && (
                       <div 
                         onClick={() => openArticleModal(heroArticle)}
-                        className={`rounded-3xl border overflow-hidden cursor-pointer group shadow-xl transition-colors duration-150 active:scale-[0.99] ${
+                        className={`rounded-3xl border overflow-hidden cursor-pointer group shadow-xl transition-colors duration-150 ${
                           isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/70' : 'bg-white border-slate-200'
                         }`}
                       >
@@ -1484,7 +1465,7 @@ export const App: React.FC = () => {
                         <React.Fragment key={art._id}>
                           <div 
                             onClick={() => openArticleModal(art)}
-                            className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer group transition-colors duration-150 active:scale-[0.99] ${
+                            className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer group transition-colors duration-150 ${
                               isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/60' : 'bg-white border-slate-200 shadow-sm'
                             }`}
                           >
@@ -1908,42 +1889,7 @@ export const App: React.FC = () => {
         />
 
         {/* FLOATING BACK TO TOP BUTTON WITH CIRCULAR READING PROGRESS RING */}
-        {showBackToTop && (
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="fixed bottom-20 sm:bottom-6 right-3.5 sm:right-6 z-40 group w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white shadow-2xl shadow-red-950/80 border border-white/20 transition-all duration-300 active:scale-90 flex items-center justify-center cursor-pointer animate-in fade-in zoom-in-75 duration-200"
-            title={`पेज के सबसे ऊपर जाएं (${scrollProgress}% पढ़ा)`}
-            aria-label="Back to Top"
-          >
-            {/* SVG Circular Progress Ring */}
-            <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none p-0.5" viewBox="0 0 36 36">
-              <path
-                className="text-black/30"
-                strokeWidth="2.5"
-                stroke="currentColor"
-                fill="none"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-              <path
-                className="text-white transition-all duration-150"
-                strokeDasharray={`${scrollProgress}, 100`}
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                stroke="currentColor"
-                fill="none"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-            </svg>
-
-            {/* Inner Arrow Icon & Progress Percentage on Hover */}
-            <div className="relative z-10 flex flex-col items-center justify-center">
-              <ChevronUp size={18} className="transition-transform group-hover:-translate-y-0.5" />
-              <span className="text-[8px] font-black leading-none hidden group-hover:block transition-all">
-                {scrollProgress}%
-              </span>
-            </div>
-          </button>
-        )}
+        <BackToTop />
 
         {/* PWA INSTALL PROMPT (SHORT & SWEET IF NOT INSTALLED) */}
         <PwaInstallPrompt onShareWhatsApp={handleShareAppWhatsApp} />
