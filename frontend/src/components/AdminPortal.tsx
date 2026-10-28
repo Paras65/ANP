@@ -45,7 +45,9 @@ import {
   Phone,
   Printer,
   BadgeCheck,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter } from '../types';
 import { parseYouTubeUrl, extractYouTubeChannelId, syncYouTubeChannelVideos, parseReelMedia } from '../utils/mediaUtils';
@@ -67,6 +69,7 @@ interface AdminPortalProps {
   onDeleteArticle: (id: string) => void;
   onBackToPublic: () => void;
   isDark: boolean;
+  toggleTheme?: () => void;
   videos?: VideoBulletin[];
   onAddVideo?: (video: VideoBulletin) => void;
   onDeleteVideo?: (id: string) => void;
@@ -99,6 +102,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onDeleteArticle,
   onBackToPublic,
   isDark,
+  toggleTheme,
   videos = [],
   onAddVideo,
   onDeleteVideo,
@@ -731,9 +735,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // SECURITY GATE: Render login screen if unauthenticated (Strict ENV validation)
   if (!isAuthenticated) {
     return (
-      <div className={`min-h-screen font-devanagari flex flex-col items-center justify-center p-4 transition-colors ${
+      <div className={`min-h-screen font-devanagari flex flex-col items-center justify-center p-4 transition-colors relative ${
         isDark ? 'bg-[#060911] text-slate-100' : 'bg-slate-100 text-slate-900'
       }`}>
+        {/* Top Right Theme Toggle & Back Button */}
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          {toggleTheme && (
+            <button
+              onClick={toggleTheme}
+              className={`p-2.5 rounded-2xl border transition active:scale-95 flex items-center gap-1.5 text-xs font-semibold shadow-sm ${
+                isDark 
+                  ? 'bg-slate-900/90 hover:bg-slate-800 text-amber-400 border-slate-700' 
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+              }`}
+              title={isDark ? 'लाइट मोड में बदलें' : 'डार्क मोड में बदलें'}
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+          )}
+        </div>
+
         <div className={`w-full max-w-md p-6 sm:p-8 rounded-3xl border shadow-2xl space-y-6 text-center ${
           isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-white border-slate-200'
         }`}>
@@ -754,14 +775,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <span className="bg-red-600 text-white font-black text-xl px-2.5 py-0.5 rounded-lg shadow">
                   एम्बिशन न्यूज़
                 </span>
-                <span className="text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded">
+                <span className="text-xs font-bold bg-amber-500/20 text-amber-500 border border-amber-500/40 px-2 py-0.5 rounded">
                   संपादकीय डेस्क
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-2">
+              <p className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 🔒 अधिकृत संपादकीय नियंत्रण कक्ष (Restricted Access)
               </p>
-              <p className="text-[11px] text-amber-400/90 bg-amber-950/40 border border-amber-800/40 px-3 py-1 rounded-xl mt-2 inline-block">
+              <p className={`text-[11px] px-3 py-1 rounded-xl mt-2 inline-block border ${
+                isDark 
+                  ? 'text-amber-400/90 bg-amber-950/40 border-amber-800/40' 
+                  : 'text-amber-800 bg-amber-50 border-amber-300'
+              }`}>
                 🔐 प्रमाणीकरण केवल सर्वर एनवायरनमेंट (ADMIN_PIN) से मान्य है
               </p>
             </div>
@@ -776,7 +801,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             className="space-y-4 text-left"
           >
             <div>
-              <label className="text-xs font-bold text-slate-400 block mb-1.5">
+              <label className={`text-xs font-bold block mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                 एडमिन पासवर्ड (Admin Password / Master Passkey)
               </label>
               <div className="relative">
@@ -788,14 +813,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     if (passwordError) setPasswordError(null);
                   }}
                   placeholder="अपना गुप्त एडमिन पासवर्ड दर्ज करें"
-                  className="w-full bg-[#05070e] border border-white/20 focus:border-red-500 rounded-2xl py-3.5 pl-4 pr-11 text-white text-sm font-mono tracking-wider outline-none shadow-inner transition"
+                  className={`w-full rounded-2xl py-3.5 pl-4 pr-11 text-sm font-mono tracking-wider outline-none shadow-inner transition border ${
+                    isDark 
+                      ? 'bg-[#05070e] border-white/20 text-white focus:border-red-500' 
+                      : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+                  }`}
                   autoFocus
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition"
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
+                    isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
+                  }`}
                   title={showPassword ? 'पासवर्ड छुपाएं' : 'पासवर्ड देखें'}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -803,7 +834,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
               {passwordError && (
-                <div className="mt-2 text-xs font-bold text-rose-400 bg-rose-950/50 border border-rose-800/60 p-2.5 rounded-xl animate-in fade-in flex items-center gap-1.5">
+                <div className={`mt-2 text-xs font-bold p-2.5 rounded-xl animate-in fade-in flex items-center gap-1.5 border ${
+                  isDark 
+                    ? 'text-rose-400 bg-rose-950/50 border-rose-800/60' 
+                    : 'text-rose-700 bg-rose-50 border-rose-200'
+                }`}>
                   <span>⚠️</span>
                   <span>{passwordError}</span>
                 </div>
@@ -811,7 +846,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
 
             {/* Remember Me Toggle */}
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+            <div className={`flex items-center justify-between text-xs pt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input 
                   type="checkbox"
@@ -835,10 +870,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </form>
 
           {/* Bottom Back Button & Hint */}
-          <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-500">
+          <div className={`pt-2 border-t flex items-center justify-between text-xs ${
+            isDark ? 'border-slate-800/60 text-slate-500' : 'border-slate-200 text-slate-500'
+          }`}>
             <button
               onClick={onBackToPublic}
-              className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition py-1"
+              className={`text-xs flex items-center gap-1.5 transition py-1 ${
+                isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
               <ArrowLeft size={13} />
               <span>पाठक पोर्टल</span>
@@ -879,21 +918,42 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </span>
             </div>
             <span className="hidden md:inline text-slate-500">|</span>
-            <span className="hidden md:inline text-xs text-slate-400">
+            <span className={`hidden md:inline text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               कवर्धा (कबीरधाम) मुख्य डेस्क
             </span>
           </div>
 
           {/* Actions: Compact on mobile, detailed on desktop */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="hidden xl:flex items-center gap-1.5 bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 text-[11px] font-bold px-2 py-1 rounded-xl">
+            <span className={`hidden xl:flex items-center gap-1.5 border text-[11px] font-bold px-2 py-1 rounded-xl ${
+              isDark ? 'bg-emerald-950/60 border-emerald-800/60 text-emerald-300' : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+            }`}>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>सत्र सक्रिय</span>
             </span>
 
+            {toggleTheme && (
+              <button
+                onClick={toggleTheme}
+                className={`flex items-center gap-1 text-xs font-semibold p-2 sm:px-2.5 sm:py-1.5 rounded-xl border transition active:scale-95 ${
+                  isDark 
+                    ? 'bg-slate-800/80 hover:bg-slate-800 text-amber-400 border-slate-700' 
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                }`}
+                title={isDark ? 'लाइट मोड में बदलें' : 'डार्क मोड में बदलें'}
+              >
+                {isDark ? <Sun size={13} /> : <Moon size={13} />}
+                <span className="hidden sm:inline">{isDark ? 'लाइट' : 'डार्क'}</span>
+              </button>
+            )}
+
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-rose-800/60 transition active:scale-95"
+              className={`flex items-center gap-1 text-xs font-semibold p-2 sm:px-2.5 sm:py-1.5 rounded-xl border transition active:scale-95 ${
+                isDark 
+                  ? 'bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border-rose-800/60' 
+                  : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+              }`}
               title="सुरक्षित लॉगआउट"
             >
               <LogOut size={13} />
@@ -1027,7 +1087,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             className={`pb-2.5 px-3 flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
               activeTab === 'create'
                 ? 'border-red-600 text-red-500'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : isDark ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-slate-600 hover:text-slate-950'
             }`}
           >
             <Send size={14} />
@@ -1039,7 +1099,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             className={`pb-2.5 px-3 flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
               activeTab === 'articles'
                 ? 'border-red-600 text-red-500'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : isDark ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-slate-600 hover:text-slate-950'
             }`}
           >
             <FileText size={14} />
@@ -1056,7 +1116,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             className={`pb-2.5 px-3 flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
               activeTab === 'breaking'
                 ? 'border-red-600 text-red-500'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : isDark ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-slate-600 hover:text-slate-950'
             }`}
           >
             <Radio size={14} />
@@ -1068,7 +1128,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             className={`pb-2.5 px-3 flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
               activeTab === 'reporters'
                 ? 'border-red-600 text-red-500'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : isDark ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-slate-600 hover:text-slate-950'
             }`}
           >
             <Users size={14} />
@@ -1080,7 +1140,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             className={`pb-2.5 px-3 flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
               activeTab === 'media'
                 ? 'border-red-600 text-red-500'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : isDark ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-slate-600 hover:text-slate-950'
             }`}
           >
             <Tv size={14} className="text-red-500" />
@@ -1092,7 +1152,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             className={`pb-2.5 px-3 flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
               activeTab === 'mandi'
                 ? 'border-emerald-600 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : isDark ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-slate-600 hover:text-slate-950'
             }`}
           >
             <Wheat size={14} className="text-emerald-500" />
@@ -1124,14 +1184,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         {activeTab === 'create' && (
           <div>
             {/* Mobile Form vs Preview Switcher */}
-            <div className="flex lg:hidden bg-slate-800/40 p-1 rounded-2xl mb-4 border border-white/10 text-xs font-bold">
+            <div className={`flex lg:hidden p-1 rounded-2xl mb-4 border text-xs font-bold ${
+              isDark ? 'bg-slate-800/40 border-white/10' : 'bg-slate-100 border-slate-300'
+            }`}>
               <button
                 type="button"
                 onClick={() => setTab1MobileView('form')}
                 className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${
                   tab1MobileView === 'form'
                     ? 'bg-red-600 text-white shadow'
-                    : 'text-slate-400 hover:text-white'
+                    : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
                 }`}
               >
                 <Edit3 size={13} />
@@ -1143,7 +1205,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${
                   tab1MobileView === 'preview'
                     ? 'bg-red-600 text-white shadow'
-                    : 'text-slate-400 hover:text-white'
+                    : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
                 }`}
               >
                 <Eye size={13} />
@@ -1190,15 +1252,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 {/* District & Category */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-400 mb-1 font-semibold flex items-center gap-1">
+                    <label className={`block mb-1 font-semibold flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                       <MapPin size={13} className="text-red-500" /> जिला चुनें *
                     </label>
                     <select
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
                       className={`w-full rounded-xl p-2.5 text-xs font-semibold outline-none transition ${
-    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
-  }`}
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+                      }`}
                     >
                       <option value="कबीरधाम (कवर्धा)">कबीरधाम (कवर्धा) 👑 (मुख्यालय)</option>
                       {districts
@@ -1212,13 +1274,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 font-semibold flex items-center gap-1">
+                    <label className={`block mb-1 font-semibold flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                       <Tag size={13} className="text-orange-500" /> श्रेणी (Category) *
                     </label>
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-red-500 font-medium"
+                      className={`w-full rounded-xl p-2.5 text-xs font-medium outline-none transition ${
+                        isDark ? 'bg-slate-800 border border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+                      }`}
                     >
                       <option value="🔴 कवर्धा स्पेशल">🔴 कवर्धा स्पेशल</option>
                       <option value="🏛️ राजनीति व किसान">🏛️ राजनीति व किसान</option>
@@ -1242,7 +1306,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     <div className="flex items-center gap-1.5">
                       <Sparkles size={13} className="text-amber-400" />
                       <span>स्मार्ट AI न्यूज़ असिस्टेंट</span>
-                      <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">(हेडलाइन्स, सारांश, प्रूफरीडिंग)</span>
+                      <span className={`text-[10px] font-normal hidden sm:inline ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>(हेडलाइन्स, सारांश, प्रूफरीडिंग)</span>
                     </div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-mono">
                       {showAiTools ? '▲ छुपाएं' : '▼ खोलें'}
@@ -1265,7 +1329,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         <button
                           type="button"
                           onClick={handleAutoSummarize}
-                          className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1 active:scale-95 border border-slate-700"
+                          className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 active:scale-95 border ${
+                            isDark 
+                              ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' 
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                          }`}
                         >
                           <span>📝 1-क्लिक सारांश</span>
                         </button>
@@ -1273,7 +1341,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         <button
                           type="button"
                           onClick={handlePolishArticle}
-                          className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1 active:scale-95 border border-slate-700"
+                          className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 active:scale-95 border ${
+                            isDark 
+                              ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' 
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                          }`}
                         >
                           <span>✍️ प्रेस फॉर्मेट में पॉलिश करें</span>
                         </button>
@@ -1286,8 +1358,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       )}
 
                       {aiHeadlineSuggestions.length > 0 && (
-                        <div className="space-y-1 pt-1 border-t border-white/10 animate-in fade-in">
-                          <div className="text-[10px] text-slate-400 font-bold">हेडलाइन चुनने के लिए क्लिक करें:</div>
+                        <div className={`space-y-1 pt-1 border-t animate-in fade-in ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                          <div className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>हेडलाइन चुनने के लिए क्लिक करें:</div>
                           {aiHeadlineSuggestions.map((s, idx) => (
                             <div
                               key={idx}
@@ -1297,7 +1369,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                                 setAiFeedback('✓ हेडलाइन लागू कर दी गई!');
                                 setTimeout(() => setAiFeedback(null), 2500);
                               }}
-                              className="p-2 rounded-xl bg-black/40 hover:bg-red-600/20 border border-slate-700 hover:border-red-500/50 text-xs font-bold text-slate-200 hover:text-white cursor-pointer transition flex items-center justify-between"
+                              className={`p-2 rounded-xl text-xs font-bold cursor-pointer transition flex items-center justify-between border ${
+                                isDark 
+                                  ? 'bg-black/40 hover:bg-red-600/20 border-slate-700 hover:border-red-500/50 text-slate-200 hover:text-white' 
+                                  : 'bg-slate-50 hover:bg-red-50 border-slate-200 hover:border-red-300 text-slate-800 hover:text-red-700 shadow-sm'
+                              }`}
                             >
                               <span>{s.headline}</span>
                               <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-600/30 text-red-300 font-mono">
@@ -1313,7 +1389,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                 {/* Headline Input with Inline Integrated Mic */}
                 <div>
-                  <label className="block text-slate-400 mb-1 font-semibold text-xs">
+                  <label className={`block mb-1 font-semibold text-xs ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                     समाचार शीर्षक (Headline) *
                   </label>
                   <div className="relative">
@@ -1354,7 +1430,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 {/* Author Byline */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-400 font-semibold flex items-center gap-1">
+                    <label className={`font-semibold flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                       <User size={13} className="text-blue-500" /> रिपोर्टर / संवाददाता का नाम *
                     </label>
                     {reporters.length > 0 && (
@@ -1533,7 +1609,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         className={`text-[10px] px-2.5 py-1 rounded-lg border font-medium transition ${
                           coverImage === p.url
                             ? 'bg-red-600 text-white border-red-500 shadow'
-                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                            : isDark ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
                         }`}
                       >
                         {p.label}
@@ -1546,14 +1622,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     onChange={(e) => setCoverImage(e.target.value)}
                     placeholder="https://..."
                     className={`w-full rounded-xl p-2 text-xs font-mono outline-none transition ${
-    isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
-  }`}
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+                    }`}
                   />
                 </div>
 
                 {/* Compact Publishing Options Row (Toggle Chips) */}
                 <div className="pt-1">
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5">प्रकाशन विकल्प (टैप करके चुनें):</label>
+                  <label className={`block text-[11px] font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>प्रकाशन विकल्प (टैप करके चुनें):</label>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -1648,7 +1724,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <span>लाइव कार्ड पूर्वावलोकन (Preview)</span>
                 </div>
 
-                <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-950">
+                <div className={`rounded-2xl border overflow-hidden ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50'}`}>
                   <div className="relative aspect-video w-full bg-slate-900">
                     <img
                       src={coverImage}
@@ -1671,13 +1747,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     <span className="text-orange-400 text-[10px] font-black uppercase">
                       {category}
                     </span>
-                    <h3 className="text-xs font-bold text-white line-clamp-2 leading-snug">
+                    <h3 className={`text-xs font-bold line-clamp-2 leading-snug ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {title || 'समाचार की हेडलाइन यहां दिखेगी...'}
                     </h3>
-                    <p className="text-[10px] text-slate-400 line-clamp-2">
+                    <p className={`text-[10px] line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       {excerpt || 'समाचार का संक्षिप्त विवरण यहां दिखेगा...'}
                     </p>
-                    <div className="pt-2 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between">
+                    <div className={`pt-2 border-t text-[10px] flex justify-between ${
+                      isDark ? 'border-slate-800 text-slate-500' : 'border-slate-200 text-slate-600'
+                    }`}>
                       <span>✍️ {author}</span>
                       <span>अब प्रकाशित</span>
                     </div>
@@ -1686,12 +1764,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
               {/* Quick Help Callout */}
-              <div className="p-4 rounded-3xl border border-blue-900/40 bg-blue-950/20 text-xs space-y-2 text-slate-300">
-                <div className="font-bold text-blue-400 flex items-center gap-1.5">
+              <div className={`p-4 rounded-3xl border text-xs space-y-2 ${
+                isDark ? 'border-blue-900/40 bg-blue-950/20 text-slate-300' : 'border-blue-200 bg-blue-50/70 text-slate-700'
+              }`}>
+                <div className="font-bold text-blue-500 flex items-center gap-1.5">
                   <Sparkles size={14} />
                   <span>संपादकीय दिशानिर्देश:</span>
                 </div>
-                <ul className="space-y-1 text-[11px] text-slate-400">
+                <ul className={`space-y-1 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   <li>• कवर्धा व स्थानीय खबरों को प्राथमिकता दें।</li>
                   <li>• संवेदनशीलता व IT Rules 2021 का पालन सुनिश्चित करें।</li>
                   <li>• प्रकाशित खबर तुरंत पब्लिक साइट पर दिखाई देगी।</li>
@@ -1725,13 +1805,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <div className={`p-5 rounded-3xl border ${
               isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
             }`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b ${
+                isDark ? 'border-slate-800' : 'border-slate-200'
+              }`}>
                 <div>
                   <h2 className={`text-base font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     <ShieldCheck size={18} className="text-emerald-500" />
                     <span>पोर्टल पर प्रकाशित कुल खबरें ({articles.length})</span>
                   </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">सभी 88 जिलों की प्रकाशित खबरों की खोज, समीक्षा व नियंत्रण</p>
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>सभी 88 जिलों की प्रकाशित खबरों की खोज, समीक्षा व नियंत्रण</p>
                 </div>
                 <button
                   onClick={() => setActiveTab('create')}
@@ -1746,23 +1828,27 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               {pendingScoops.length > 0 && (
                 <div 
                   onClick={() => setArticleStatusFilter('REVIEW')}
-                  className="mb-4 p-3 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-950/60 transition group shadow-md"
+                  className={`mb-4 p-3 rounded-2xl border flex items-center justify-between gap-3 cursor-pointer transition group shadow-md ${
+                    isDark 
+                      ? 'bg-amber-950/40 border-amber-500/40 hover:bg-amber-950/60' 
+                      : 'bg-amber-50 border-amber-300 hover:bg-amber-100/80'
+                  }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0 border border-amber-500/30">
                       <Send size={15} />
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-amber-300 flex items-center gap-2">
+                      <div className={`text-xs font-bold flex items-center gap-2 ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>
                         <span>नागरिक पत्रकारिता डेस्क: {pendingScoops.length} नए स्कूप समीक्षा के लिए लंबित हैं</span>
                         <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full">ACTION REQUIRED</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
+                      <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                         क्षेत्रीय नागरिकों व फ़ील्ड रिपोर्टर्स द्वारा भेजी गई खबरों को जांचकर तुरंत लाइव प्रकाशित करें।
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-amber-400 group-hover:underline whitespace-nowrap shrink-0">
+                  <span className={`text-xs font-bold group-hover:underline whitespace-nowrap shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
                     समीक्षा करें →
                   </span>
                 </div>
@@ -1773,39 +1859,39 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <button
                   type="button"
                   onClick={() => setArticleStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 border ${
                     articleStatusFilter === 'all'
-                      ? 'bg-slate-700 text-white shadow'
-                      : 'bg-slate-950/60 text-slate-400 hover:text-white border border-slate-800'
+                      ? 'bg-slate-700 text-white border-transparent shadow'
+                      : isDark ? 'bg-slate-950/60 text-slate-400 hover:text-white border-slate-800' : 'bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-300'
                   }`}
                 >
                   <span>सभी खबरें</span>
-                  <span className="text-[10px] bg-slate-800 px-1.5 py-0.2 rounded-md font-mono">{articles.length}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>{articles.length}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setArticleStatusFilter('PUBLISHED')}
-                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 border ${
                     articleStatusFilter === 'PUBLISHED'
-                      ? 'bg-emerald-600 text-white shadow'
-                      : 'bg-slate-950/60 text-slate-400 hover:text-white border border-slate-800'
+                      ? 'bg-emerald-600 text-white border-transparent shadow'
+                      : isDark ? 'bg-slate-950/60 text-slate-400 hover:text-white border-slate-800' : 'bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-300'
                   }`}
                 >
                   <ShieldCheck size={12} />
                   <span>प्रकाशित (Live)</span>
-                  <span className="text-[10px] bg-slate-800 px-1.5 py-0.2 rounded-md font-mono">{publishedCount}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>{publishedCount}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setArticleStatusFilter('REVIEW')}
-                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 border ${
                     articleStatusFilter === 'REVIEW'
-                      ? 'bg-amber-600 text-white shadow'
+                      ? 'bg-amber-600 text-white border-transparent shadow'
                       : pendingScoops.length > 0
-                        ? 'bg-amber-950/50 text-amber-400 border border-amber-600/40 hover:bg-amber-900/60 animate-pulse'
-                        : 'bg-slate-950/60 text-slate-400 hover:text-white border border-slate-800'
+                        ? isDark ? 'bg-amber-950/50 text-amber-400 border-amber-600/40 hover:bg-amber-900/60 animate-pulse' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 animate-pulse'
+                        : isDark ? 'bg-slate-950/60 text-slate-400 hover:text-white border-slate-800' : 'bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-300'
                   }`}
                 >
                   <Send size={12} />
@@ -1826,15 +1912,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     onChange={(e) => setArticleSearchQuery(e.target.value)}
                     placeholder="खबर के शीर्षक या रिपोर्टर के नाम से खोजें..."
                     className={`w-full rounded-xl pl-9 pr-9 py-2 text-xs outline-none transition ${
-    isDark ? 'bg-[#05070e] border border-white/15 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
-  }`}
+                      isDark ? 'bg-[#05070e] border border-white/15 text-white focus:border-red-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white placeholder:text-slate-400'
+                    }`}
                   />
                   {isVoiceSupported && (
                     <button
                       type="button"
                       onClick={toggleVoiceArticleSearch}
                       className={`absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center transition ${
-                        isListeningArticleSearch ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-white'
+                        isListeningArticleSearch ? 'text-red-500 animate-pulse' : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
                       }`}
                       title="बोलकर खबर खोजें"
                     >
@@ -1848,8 +1934,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     value={articleDistrictFilter}
                     onChange={(e) => setArticleDistrictFilter(e.target.value)}
                     className={`w-full rounded-xl px-3 py-2 text-xs outline-none transition ${
-    isDark ? 'bg-[#05070e] border border-white/15 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
-  }`}
+                      isDark ? 'bg-[#05070e] border border-white/15 text-white focus:border-red-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+                    }`}
                   >
                     <option value="सभी">सभी जिले ({articles.length})</option>
                     <option value="कवर्धा">कवर्धा (कबीरधाम)</option>
@@ -1870,15 +1956,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
               <div className="space-y-3">
                 {filteredManagedArticles.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-white/10 rounded-2xl">
+                  <div className={`p-8 text-center text-xs border rounded-2xl ${
+                    isDark ? 'text-slate-400 border-dashed border-white/10' : 'text-slate-600 border-dashed border-slate-300'
+                  }`}>
                     कोई खबर नहीं मिली। कृपया अलग कीवर्ड या जिला चुनें।
                   </div>
                 ) : filteredManagedArticles.map((art) => (
                   <div
                     key={art._id}
                     className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition ${
-    isDark ? 'border-slate-800/80 bg-slate-950/60 hover:border-slate-700' : 'border-slate-200 bg-slate-50/70 hover:border-slate-300 shadow-sm'
-  }`}
+                      isDark ? 'border-slate-800/80 bg-slate-950/60 hover:border-slate-700' : 'border-slate-200 bg-slate-50/70 hover:border-slate-300 shadow-sm'
+                    }`}
                   >
                     <div className="flex items-start gap-3">
                       {art.coverImage && (
@@ -1890,11 +1978,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       )}
                       <div>
                         <div className="flex items-center gap-2 text-[10px] font-bold mb-0.5">
-                          <span className="text-red-400">{art.category}</span>
+                          <span className="text-red-500">{art.category}</span>
                           <span className="text-slate-500">•</span>
-                          <span className="text-slate-300">📍 {art.district}</span>
+                          <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>📍 {art.district}</span>
                           {art.status === 'REVIEW' ? (
-                            <span className="bg-amber-950 text-amber-300 border border-amber-800 px-1.5 py-0.2 rounded text-[9px] font-bold">
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                              isDark ? 'bg-amber-950 text-amber-300 border-amber-800' : 'bg-amber-100 text-amber-800 border-amber-300'
+                            }`}>
                               ⏳ नागरिक स्कूप (समीक्षा लंबित)
                             </span>
                           ) : (
@@ -1943,7 +2033,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <button
                         onClick={() => setWhatsAppArticle(art)}
-                        className="p-1.5 rounded-xl text-emerald-400 hover:bg-emerald-950/60 border border-emerald-800/40 hover:border-emerald-600 transition"
+                        className={`p-1.5 rounded-xl transition border ${
+                          isDark ? 'text-emerald-400 hover:bg-emerald-950/60 border-emerald-800/40 hover:border-emerald-600' : 'text-emerald-700 hover:bg-emerald-50 border-emerald-300 hover:border-emerald-400'
+                        }`}
                         title="1-क्लिक WhatsApp बुलेटिन"
                       >
                         <MessageCircle size={14} />
@@ -1951,7 +2043,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <button
                         onClick={() => setCardArticle(art)}
-                        className="p-1.5 rounded-xl text-rose-400 hover:bg-rose-950/60 border border-rose-800/40 hover:border-rose-600 transition"
+                        className={`p-1.5 rounded-xl transition border ${
+                          isDark ? 'text-rose-400 hover:bg-rose-950/60 border-rose-800/40 hover:border-rose-600' : 'text-rose-700 hover:bg-rose-50 border-rose-300 hover:border-rose-400'
+                        }`}
                         title="सोशल मीडिया फोटो कार्ड बनाएं"
                       >
                         <ImageIcon size={14} />
@@ -1959,7 +2053,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <button
                         onClick={() => handleDeleteArticleConfirmed(art._id, art.title)}
-                        className="p-1.5 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-950/40 border border-transparent hover:border-red-900/40 transition"
+                        className={`p-1.5 rounded-xl transition border ${
+                          isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-950/40 border-transparent hover:border-red-900/40' : 'text-slate-400 hover:text-red-600 hover:bg-red-50 border-transparent hover:border-red-200'
+                        }`}
                         title="खबर हटाएं (Delete)"
                       >
                         <Trash2 size={14} />
@@ -2035,7 +2131,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <div className={`p-5 rounded-3xl border ${
               isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
             }`}>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+              <h3 className={`text-xs font-bold uppercase tracking-wider mb-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 वर्तमान में सक्रिय ब्रेकिंग न्यूज़ ({breakingCount})
               </h3>
 
@@ -2044,19 +2140,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <div
                     key={b._id}
                     className={`p-3 rounded-xl border flex items-center justify-between text-xs transition ${
-    isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
-  }`}
+                      isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                      <span className="bg-red-950 text-red-300 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                      <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${
+                        isDark ? 'bg-red-950 text-red-300' : 'bg-red-100 text-red-700'
+                      }`}>
                         {b.district}
                       </span>
                       <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{b.title}</span>
                     </div>
                     <button
                       onClick={() => onDeleteArticle(b._id)}
-                      className="text-red-400 hover:text-white p-1"
+                      className={`p-1 transition ${isDark ? 'text-red-400 hover:text-white' : 'text-red-500 hover:text-red-700'}`}
                       title="Remove"
                     >
                       <Trash2 size={13} />
@@ -2091,15 +2189,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
             }`}>
               {/* Header & Add Reporter Action */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b ${
+                isDark ? 'border-slate-800' : 'border-slate-200'
+              }`}>
                 <div>
                   <div className="flex items-center gap-2">
                     <Users size={20} className="text-blue-500" />
-                    <h2 className="text-base font-black text-white">
+                    <h2 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       क्षेत्रीय ब्यूरो व संवाददाता नेटवर्क (CG & MP)
                     </h2>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     सभी 88 जिलों के ब्यूरो प्रमुखों, फील्ड रिपोर्टर्स, लाइव खबरों व डिजिटल प्रेस कार्ड का नियंत्रण
                   </p>
                 </div>
@@ -2116,43 +2216,51 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
               {/* Stats Bar */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
-                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                <div className={`p-3 rounded-2xl flex items-center gap-3 border ${
+                  isDark ? 'bg-slate-950/70 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'
+                }`}>
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
                     <Users size={18} />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-medium">कुल संवाददाता</span>
-                    <span className="text-sm font-black text-white font-mono">{reporters.length}</span>
+                    <span className={`text-[10px] block font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>कुल संवाददाता</span>
+                    <span className={`text-sm font-black font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{reporters.length}</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <div className={`p-3 rounded-2xl flex items-center gap-3 border ${
+                  isDark ? 'bg-slate-950/70 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'
+                }`}>
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
                     <CheckCircle2 size={18} />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-medium">सक्रिय ब्यूरो</span>
-                    <span className="text-sm font-black text-emerald-400 font-mono">{activeCount}</span>
+                    <span className={`text-[10px] block font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>सक्रिय ब्यूरो</span>
+                    <span className="text-sm font-black text-emerald-500 font-mono">{activeCount}</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+                <div className={`p-3 rounded-2xl flex items-center gap-3 border ${
+                  isDark ? 'bg-slate-950/70 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'
+                }`}>
+                  <div className="w-9 h-9 rounded-xl bg-red-500/20 text-red-500 flex items-center justify-center shrink-0">
                     <FileText size={18} />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-medium">कवर की गई खबरें</span>
-                    <span className="text-sm font-black text-red-400 font-mono">{totalPublishedNews}</span>
+                    <span className={`text-[10px] block font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>कवर की गई खबरें</span>
+                    <span className="text-sm font-black text-red-500 font-mono">{totalPublishedNews}</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <div className={`p-3 rounded-2xl flex items-center gap-3 border ${
+                  isDark ? 'bg-slate-950/70 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'
+                }`}>
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-medium">जिले कवर</span>
-                    <span className="text-sm font-black text-amber-400 font-mono">{distinctDistricts}</span>
+                    <span className={`text-[10px] block font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>जिले कवर</span>
+                    <span className="text-sm font-black text-amber-500 font-mono">{distinctDistricts}</span>
                   </div>
                 </div>
               </div>
@@ -2166,7 +2274,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     value={reporterSearch}
                     onChange={(e) => setReporterSearch(e.target.value)}
                     placeholder="संवाददाता का नाम, फोन, प्रेस कोड या ब्यूरो से खोजें..."
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 outline-none transition"
+                    className={`w-full rounded-xl pl-9 pr-3 py-2 text-xs outline-none transition ${
+                      isDark ? 'bg-[#05070e] border border-white/15 text-white focus:border-blue-500 placeholder:text-slate-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-blue-600 focus:bg-white placeholder:text-slate-400'
+                    }`}
                   />
                 </div>
 
@@ -2174,7 +2284,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <select
                     value={reporterDistrictFilter}
                     onChange={(e) => setReporterDistrictFilter(e.target.value)}
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                    className={`w-full rounded-xl px-3 py-2 text-xs outline-none transition ${
+                      isDark ? 'bg-[#05070e] border border-white/15 text-white focus:border-blue-500' : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-blue-600 focus:bg-white'
+                    }`}
                   >
                     <option value="सभी">सभी जिले ({reporters.length})</option>
                     <option value="कवर्धा">कवर्धा (कबीरधाम)</option>
@@ -2196,14 +2308,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               {/* Grid of Reporters */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filteredReporters.length === 0 ? (
-                  <div className="col-span-full p-8 text-center text-xs text-slate-400 border border-dashed border-white/10 rounded-2xl">
+                  <div className={`col-span-full p-8 text-center text-xs border rounded-2xl ${
+                    isDark ? 'text-slate-400 border-dashed border-white/10' : 'text-slate-600 border-dashed border-slate-300'
+                  }`}>
                     कोई संवाददाता नहीं मिला। कृपया अलग खोज शब्द दर्ज करें या नया जोड़ें।
                   </div>
                 ) : (
                   filteredReporters.map((rep) => (
                     <div 
                       key={rep._id} 
-                      className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 hover:border-blue-500/40 transition-colors flex flex-col justify-between space-y-3 shadow-md"
+                      className={`p-4 rounded-2xl border transition-colors flex flex-col justify-between space-y-3 ${
+                        isDark 
+                          ? 'bg-slate-950 border-slate-800/80 hover:border-blue-500/40 shadow-md' 
+                          : 'bg-slate-50 border-slate-200 hover:border-blue-400 shadow-sm'
+                      }`}
                     >
                       <div>
                         {/* Top: Avatar, Name, Status Badge */}
@@ -2213,52 +2331,58 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                               <img 
                                 src={rep.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'} 
                                 alt={rep.name}
-                                className="w-11 h-11 rounded-xl object-cover bg-slate-900 border border-white/10"
+                                className={`w-11 h-11 rounded-xl object-cover border ${
+                                  isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-200 border-slate-300'
+                                }`}
                               />
                               <span 
-                                className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-slate-950 ${
-                                  rep.isActive ? 'bg-emerald-500' : 'bg-slate-500'
-                                }`} 
+                                className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 ${
+                                  isDark ? 'border-slate-950' : 'border-white'
+                                } ${rep.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} 
                                 title={rep.isActive ? 'सक्रिय' : 'निष्क्रिय'}
                               />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-white font-bold text-xs truncate">
+                              <div className={`font-bold text-xs truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 {rep.nameHindi || rep.name}
                               </div>
-                              <div className="text-[11px] text-red-400 font-semibold truncate mt-0.5">
+                              <div className="text-[11px] text-red-500 font-semibold truncate mt-0.5">
                                 {rep.bureau}
                               </div>
                             </div>
                           </div>
 
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase shrink-0 ${
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase shrink-0 border ${
                             rep.isActive 
-                              ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800' 
-                              : 'bg-slate-800 text-slate-400'
+                              ? isDark ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-200 text-slate-600 border-slate-300'
                           }`}>
                             {rep.isActive ? 'सक्रिय' : 'बंद'}
                           </span>
                         </div>
 
                         {/* Mid Meta: District & Press Code */}
-                        <div className="flex items-center justify-between gap-1 mt-3 pt-2.5 border-t border-slate-800/80 text-[10px]">
-                          <span className="text-slate-300 font-medium">📍 {rep.district}</span>
-                          <span className="font-mono bg-amber-950/60 text-amber-300 border border-amber-800/50 px-1.5 py-0.5 rounded font-bold">
+                        <div className={`flex items-center justify-between gap-1 mt-3 pt-2.5 border-t text-[10px] ${
+                          isDark ? 'border-slate-800/80' : 'border-slate-200'
+                        }`}>
+                          <span className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>📍 {rep.district}</span>
+                          <span className={`font-mono border px-1.5 py-0.5 rounded font-bold ${
+                            isDark ? 'bg-amber-950/60 text-amber-300 border-amber-800/50' : 'bg-amber-50 text-amber-800 border-amber-200'
+                          }`}>
                             🪪 {rep.reporterIdCode}
                           </span>
                         </div>
 
                         {/* Live Article Count & Contact */}
-                        <div className="flex items-center justify-between gap-1 mt-2 text-[10px] text-slate-400">
-                          <span className="font-bold text-slate-200">
+                        <div className="flex items-center justify-between gap-1 mt-2 text-[10px]">
+                          <span className={`font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                             📰 {rep.articlesCount || 0} खबरें
                           </span>
                           <a 
                             href={`https://wa.me/91${rep.phone}?text=नमस्ते ${encodeURIComponent(rep.nameHindi || rep.name)} जी, एम्बिशन न्यूज़ डेस्क से...`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-emerald-400 hover:underline font-mono font-medium flex items-center gap-1"
+                            className="text-emerald-500 hover:underline font-mono font-medium flex items-center gap-1"
                             title="सीधे WhatsApp करें"
                           >
                             <Phone size={10} />
@@ -2268,11 +2392,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       </div>
 
                       {/* Action Buttons Toolbar */}
-                      <div className="pt-2.5 border-t border-slate-800 flex items-center justify-between gap-1.5 text-xs">
+                      <div className={`pt-2.5 border-t flex items-center justify-between gap-1.5 text-xs ${
+                        isDark ? 'border-slate-800' : 'border-slate-200'
+                      }`}>
                         <button
                           type="button"
                           onClick={() => setIdCardReporter(rep)}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition active:scale-95"
+                          className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition active:scale-95 ${
+                            isDark 
+                              ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30' 
+                              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
+                          }`}
                           title="डिजिटल प्रेस कार्ड देखें व प्रिंट करें"
                         >
                           <Printer size={12} />
@@ -2283,7 +2413,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleOpenEditReporter(rep)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                            className={`p-1.5 rounded-lg transition ${
+                              isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                            }`}
                             title="संपादित करें"
                           >
                             <Edit3 size={13} />
@@ -2297,7 +2429,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                               }
                             }}
                             className={`p-1.5 rounded-lg transition ${
-                              rep.isActive ? 'text-emerald-400 hover:text-emerald-300' : 'text-slate-500 hover:text-slate-400'
+                              rep.isActive 
+                                ? 'text-emerald-500 hover:text-emerald-400' 
+                                : 'text-slate-400 hover:text-slate-600'
                             }`}
                             title={rep.isActive ? 'डिएक्टिवेट करें' : 'एक्टिवेट करें'}
                           >
@@ -2311,7 +2445,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                                 if (onDeleteReporter) onDeleteReporter(rep._id);
                               }
                             }}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 transition"
+                            className={`p-1.5 rounded-lg transition ${
+                              isDark ? 'text-slate-500 hover:text-rose-400' : 'text-slate-400 hover:text-rose-600'
+                            }`}
                             title="हटाएं"
                           >
                             <Trash2 size={13} />
@@ -2324,14 +2460,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
               {/* Citizen Journalism / Scoop Inbox */}
-              <div className="mt-6 pt-5 border-t border-slate-800">
+              <div className={`mt-6 pt-5 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center border border-amber-500/30">
                       <Send size={14} />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <h3 className={`text-sm font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         <span>नागरिक पत्रकारिता व फ़ील्ड स्कूप डेस्क</span>
                         {articles.filter(a => a.status === 'REVIEW').length > 0 && (
                           <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full">
@@ -2339,7 +2475,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           </span>
                         )}
                       </h3>
-                      <p className="text-[11px] text-slate-400">पोर्टल के "📢 खबर भेजें" डेस्क से नागरिकों एवं संवाददाताओं द्वारा भेजी गई खबरें</p>
+                      <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>पोर्टल के "📢 खबर भेजें" डेस्क से नागरिकों एवं संवाददाताओं द्वारा भेजी गई खबरें</p>
                     </div>
                   </div>
                   {articles.filter(a => a.status === 'REVIEW').length > 0 && (
@@ -2348,7 +2484,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         setActiveTab('articles');
                         setArticleStatusFilter('REVIEW');
                       }}
-                      className="text-xs text-amber-400 hover:text-amber-300 font-bold underline self-start sm:self-auto"
+                      className="text-xs text-amber-500 hover:text-amber-600 font-bold underline self-start sm:self-auto"
                     >
                       सभी समीक्षा करें →
                     </button>
@@ -2356,21 +2492,27 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
 
                 {articles.filter(a => a.status === 'REVIEW').length === 0 ? (
-                  <div className="p-4 rounded-2xl bg-slate-950/40 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+                  <div className={`p-4 rounded-2xl border border-dashed text-center text-xs ${
+                    isDark ? 'bg-slate-950/40 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-600'
+                  }`}>
                     फिलहाल कोई लंबित नागरिक स्कूप नहीं है। सभी खबरें स्वीकृत व प्रकाशित हैं।
                   </div>
                 ) : (
                   <div className="space-y-2.5">
                     {articles.filter(a => a.status === 'REVIEW').slice(0, 5).map(art => (
-                      <div key={art._id} className="p-3 rounded-2xl bg-slate-950 border border-amber-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div key={art._id} className={`p-3 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                        isDark ? 'bg-slate-950 border-amber-900/40' : 'bg-slate-50 border-amber-200'
+                      }`}>
                         <div>
-                          <div className="flex items-center gap-2 text-[10px] text-amber-400 font-bold mb-0.5">
-                            <span>📍 {art.district}</span>
-                            <span>•</span>
-                            <span>✍️ {art.author}</span>
-                            <span className="bg-amber-950 text-amber-300 border border-amber-800/60 px-1.5 rounded">समीक्षा लंबित</span>
+                          <div className="flex items-center gap-2 text-[10px] font-bold mb-0.5">
+                            <span className={isDark ? 'text-amber-400' : 'text-amber-700'}>📍 {art.district}</span>
+                            <span className="text-slate-500">•</span>
+                            <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>✍️ {art.author}</span>
+                            <span className={`px-1.5 rounded border ${
+                              isDark ? 'bg-amber-950 text-amber-300 border-amber-800/60' : 'bg-amber-100 text-amber-800 border-amber-300'
+                            }`}>समीक्षा लंबित</span>
                           </div>
-                          <h4 className="text-xs font-bold text-white line-clamp-1">{art.title}</h4>
+                          <h4 className={`text-xs font-bold line-clamp-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>{art.title}</h4>
                         </div>
                         <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
                           <button
@@ -2387,7 +2529,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           </button>
                           <button
                             onClick={() => handleStartEdit(art)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center gap-1 transition active:scale-95"
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition active:scale-95 border ${
+                              isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                            }`}
                           >
                             <Edit3 size={12} />
                             <span>संपादित करें</span>
@@ -2412,22 +2556,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 ? 'bg-gradient-to-br from-red-950/40 via-[#0a0e1c] to-[#070b16] border-red-900/40 shadow-xl' 
                 : 'bg-white border-slate-200 shadow-md'
             }`}>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+              <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b ${
+                isDark ? 'border-white/10' : 'border-slate-200'
+              }`}>
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center text-white shadow-lg shadow-red-600/30 shrink-0">
                     <Zap size={22} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base sm:text-lg font-black text-white">
+                      <h2 className={`text-base sm:text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         ऑटोमैटिक यूट्यूब सिंक इंजन (Live Auto-Sync)
                       </h2>
-                      <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border ${
+                        isDark ? 'bg-emerald-950 text-emerald-400 border-emerald-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         सक्रिय
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       यूट्यूब पर वीडियो या शॉर्ट्स अपलोड होते ही यहाँ अपने-आप दिखने लगेगा — बार-बार लिंक डालने की आवश्यकता नहीं!
                     </p>
                   </div>
@@ -2448,7 +2596,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2 space-y-3">
                   <div>
-                    <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                    <label className={`text-[11px] font-bold block mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       यूट्यूब चैनल आईडी (YouTube Channel ID / Channel URL)
                     </label>
                     <div className="flex items-center gap-2">
@@ -2457,7 +2605,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         value={channelIdInput}
                         onChange={(e) => setChannelIdInput(e.target.value)}
                         placeholder="उदा. UC_x5XG1OV2P6uZZ5FSM9Ttw या https://youtube.com/channel/UC..."
-                        className="flex-1 bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3.5 py-2 text-xs text-white font-mono outline-none"
+                        className={`flex-1 rounded-xl px-3.5 py-2 text-xs font-mono outline-none transition ${
+                          isDark 
+                            ? 'bg-[#05070e] border border-white/15 text-white focus:border-red-500' 
+                            : 'bg-slate-50 border border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+                        }`}
                       />
                       <button
                         type="button"
@@ -2473,7 +2625,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             setTimeout(() => setSyncFeedback(null), 3500);
                           }
                         }}
-                        className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
+                        className={`font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer ${
+                          isDark ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'
+                        }`}
                       >
                         सेव करें
                       </button>
@@ -2481,22 +2635,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
 
                   {/* YouTube Data API v3 Status (Server Environment Variable - 100% Secure) */}
-                  <div className="pt-2 border-t border-white/10">
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-black/40 border border-white/10">
+                  <div className={`pt-2 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                    <div className={`flex items-center justify-between p-3 rounded-2xl border ${
+                      isDark ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200'
+                    }`}>
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white">Google YouTube Data API v3</span>
+                          <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Google YouTube Data API v3</span>
                           {hasApiKey ? (
-                            <span className="text-[10px] bg-emerald-950 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-800 flex items-center gap-1">
-                              <Check size={10} className="text-emerald-400" /> सर्वर पर सक्रिय (Server ENV Secured)
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+                              isDark ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}>
+                              <Check size={10} className="text-emerald-500" /> सर्वर पर सक्रिय (Server ENV Secured)
                             </span>
                           ) : (
-                            <span className="text-[10px] bg-amber-950 text-amber-300 font-medium px-2 py-0.5 rounded-full border border-amber-800 flex items-center gap-1">
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+                              isDark ? 'bg-amber-950 text-amber-300 border-amber-800' : 'bg-amber-50 text-amber-800 border-amber-200'
+                            }`}>
                               Fallback RSS मोड
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-400">
+                        <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                           {hasApiKey 
                             ? '🔒 आपकी API Key सर्वर एनवायरनमेंट में सुरक्षित है। यह ब्राउज़र या नेटवर्क टैब में कभी दिखाई नहीं देती।'
                             : 'ℹ️ Render Environment में YOUTUBE_API_KEY सेट करें। ब्राउज़र में कोई भी API Key स्टोर या ट्रांसमिट नहीं की जाती।'}
@@ -2514,7 +2674,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                   {/* Auto-sync on load toggle */}
                   <div className="flex items-center gap-3 pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 select-none">
+                    <label className={`flex items-center gap-2 cursor-pointer text-xs select-none ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <input
                         type="checkbox"
                         checked={autoSyncOnLoad}
@@ -2530,17 +2690,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
 
                 {/* Help box */}
-                <div className="p-3.5 bg-black/40 border border-white/10 rounded-2xl text-[11px] space-y-1.5 text-slate-300">
-                  <div className="font-bold text-white flex items-center gap-1">
-                    <HelpCircle size={13} className="text-amber-400" />
+                <div className={`p-3.5 rounded-2xl text-[11px] space-y-1.5 border ${
+                  isDark ? 'bg-black/40 border-white/10 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}>
+                  <div className={`font-bold flex items-center gap-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <HelpCircle size={13} className="text-amber-500" />
                     <span>चैनल आईडी (UC...) कैसे प्राप्त करें?</span>
                   </div>
-                  <ol className="list-decimal list-inside space-y-1 text-slate-400 leading-relaxed">
-                    <li><strong className="text-slate-200">YouTube Studio</strong> (studio.youtube.com) खोलें।</li>
-                    <li>बाईं ओर <strong className="text-slate-200">Customization</strong> पर क्लिक करें।</li>
-                    <li><strong className="text-slate-200">Basic Info</strong> में नीचे <strong className="text-red-400">Channel ID</strong> (UC से शुरू) कॉपी करके यहाँ पेस्ट करें।</li>
+                  <ol className={`list-decimal list-inside space-y-1 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <li><strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>YouTube Studio</strong> (studio.youtube.com) खोलें।</li>
+                    <li>बाईं ओर <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>Customization</strong> पर क्लिक करें।</li>
+                    <li><strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>Basic Info</strong> में नीचे <strong className="text-red-500">Channel ID</strong> (UC से शुरू) कॉपी करके यहाँ पेस्ट करें।</li>
                   </ol>
-                  <div className="text-[10px] text-amber-300/80 pt-1 border-t border-white/5">
+                  <div className={`text-[10px] pt-1 border-t ${
+                    isDark ? 'text-amber-300/80 border-white/5' : 'text-amber-800 border-slate-200'
+                  }`}>
                     💡 <strong>शॉर्ट्स (#shorts)</strong> स्वतः रील्स सेक्शन में और <strong>लंबे वीडियो</strong> बुलेटिन में लोड हो जाएंगे!
                   </div>
                 </div>
@@ -2553,22 +2717,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 ? 'bg-gradient-to-br from-emerald-950/40 via-[#0a1411] to-[#07110e] border-emerald-900/40 shadow-xl' 
                 : 'bg-emerald-50/70 border-emerald-200 shadow-md'
             }`}>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+              <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b ${
+                isDark ? 'border-white/10' : 'border-emerald-200'
+              }`}>
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-600/30 shrink-0">
                     <WhatsAppIcon size={24} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base sm:text-lg font-black text-white">
+                      <h2 className={`text-base sm:text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         व्हाट्सएप ग्रुप व चैनल लिंक प्रबंधन (Official WhatsApp Group)
                       </h2>
-                      <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border ${
+                        isDark ? 'bg-emerald-950 text-emerald-400 border-emerald-800' : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      }`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         लाइव लिंक
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       यहाँ अपने व्हाट्सएप ग्रुप (Invite Link) या चैनल का लिंक डालें। यह तुरंत पोर्टल के हेडर, साइडबार व फुटर में अपडेट हो जाएगा।
                     </p>
                   </div>
@@ -2579,7 +2747,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     href={whatsappInput}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center gap-1.5 transition active:scale-95"
+                    className={`font-bold text-xs px-3.5 py-2.5 rounded-xl border flex items-center gap-1.5 transition active:scale-95 ${
+                      isDark 
+                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' 
+                        : 'bg-white hover:bg-slate-50 text-slate-700 border-emerald-200 shadow-sm'
+                    }`}
                   >
                     <span>टेस्ट लिंक</span>
                     <ExternalLink size={13} />
@@ -2602,7 +2774,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
               <div className="mt-4">
-                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                <label className={`text-[11px] font-bold block mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   व्हाट्सएप ग्रुप / चैनल इनवाइट लिंक (WhatsApp Group URL)
                 </label>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -2611,7 +2783,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     value={whatsappInput}
                     onChange={(e) => setWhatsappInput(e.target.value)}
                     placeholder="https://chat.whatsapp.com/..."
-                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-emerald-500 font-mono"
+                    className={`flex-1 rounded-xl px-3.5 py-2 text-xs font-mono outline-none focus:border-emerald-500 transition border ${
+                      isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-emerald-300 text-slate-900 focus:bg-white'
+                    }`}
                   />
                   <button
                     type="button"
@@ -2628,31 +2802,35 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </button>
                 </div>
                 {whatsappFeedback && (
-                  <p className="text-xs text-emerald-400 font-bold mt-2 animate-in fade-in">
+                  <p className="text-xs text-emerald-500 font-bold mt-2 animate-in fade-in">
                     {whatsappFeedback}
                   </p>
                 )}
-                <p className="text-[10px] text-slate-400 mt-2">
-                  उदाहरण: <code className="text-emerald-400">https://chat.whatsapp.com/InviteCode</code> या <code className="text-emerald-400">https://whatsapp.com/channel/ChannelId</code>
+                <p className={`text-[10px] mt-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  उदाहरण: <code className="text-emerald-500 font-semibold">https://chat.whatsapp.com/InviteCode</code> या <code className="text-emerald-500 font-semibold">https://whatsapp.com/channel/ChannelId</code>
                 </p>
               </div>
             </div>
 
             {/* 1. YOUTUBE BULLETINS SECTION */}
             <div className={`p-5 rounded-3xl border ${
-              isDark ? 'bg-[#090d18]/95 border-red-950/40' : 'bg-white border-slate-200'
+              isDark ? 'bg-[#090d18]/95 border-red-950/40' : 'bg-white border-slate-200 shadow-sm'
             }`}>
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
+              <div className={`flex items-center justify-between pb-3 mb-4 border-b ${
+                isDark ? 'border-white/10' : 'border-slate-200'
+              }`}>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white">
                     <Tv size={17} />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-white">यूट्यूब वीडियो बुलेटिन प्रबंधन</h2>
-                    <p className="text-xs text-slate-400">पोर्टल पर लाइव दिखने वाले यूट्यूब वीडियो जोड़ें व हटाएं</p>
+                    <h2 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>यूट्यूब वीडियो बुलेटिन प्रबंधन</h2>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>पोर्टल पर लाइव दिखने वाले यूट्यूब वीडियो जोड़ें व हटाएं</p>
                   </div>
                 </div>
-                <span className="text-xs bg-red-950 text-red-300 font-bold px-2 py-0.5 rounded border border-red-800">
+                <span className={`text-xs font-bold px-2 py-0.5 rounded border ${
+                  isDark ? 'bg-red-950 text-red-300 border-red-800' : 'bg-red-50 text-red-700 border-red-200'
+                }`}>
                   {videos.length} वीडियो सक्रिय
                 </span>
               </div>
@@ -2679,16 +2857,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   setYtTitle('');
                   setParsedYt(null);
                 }}
-                className="bg-black/30 p-4 rounded-2xl border border-white/10 space-y-3 mb-6"
+                className={`p-4 rounded-2xl border space-y-3 mb-6 ${
+                  isDark ? 'bg-black/30 border-white/10' : 'bg-slate-50 border-slate-200'
+                }`}
               >
-                <div className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                <div className="text-xs font-bold text-red-500 uppercase tracking-wider flex items-center gap-1.5">
                   <Plus size={14} />
                   <span>नया यूट्यूब वीडियो लिंक जोड़ें</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    <label className={`text-[11px] font-semibold block mb-1 ${
+                      isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}>
                       YouTube URL (watch?v=, youtu.be, या ID)
                     </label>
                     <input 
@@ -2699,14 +2881,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         setParsedYt(parseYouTubeUrl(e.target.value));
                       }}
                       placeholder="उदा. https://www.youtube.com/watch?v=..."
-                      className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      className={`w-full border focus:border-red-500 rounded-xl px-3 py-2 text-xs outline-none ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900 focus:bg-white'
+                      }`}
                       required
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-semibold text-slate-300">
+                      <label className={`text-[11px] font-semibold ${
+                        isDark ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
                         वीडियो शीर्षक (Headline)
                       </label>
                       {isVoiceSupported && (
@@ -2728,12 +2914,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         value={ytTitle}
                         onChange={(e) => setYtTitle(e.target.value)}
                         placeholder="उदा. कवर्धा में किसानों की बड़ी रैली..."
-                        className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                        className={`w-full border focus:border-red-500 rounded-xl px-3 py-2 text-xs outline-none ${
+                          isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900 focus:bg-white'
+                        }`}
                         required
                       />
                     </div>
                     {isListeningYtTitle && (
-                      <div className="mt-1 flex items-center gap-1.5 text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded">
+                      <div className="mt-1 flex items-center gap-1.5 text-[10px] text-red-500 bg-red-500/10 px-2 py-0.5 rounded">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                         <span>🎙️ सुन रहा हूँ: {ytTitleInterim || 'बोलिए...'}</span>
                       </div>
@@ -2742,9 +2930,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
 
                 {parsedYt && (
-                  <div className="flex items-center gap-3 p-2.5 bg-emerald-950/30 border border-emerald-500/40 rounded-xl">
+                  <div className={`flex items-center gap-3 p-2.5 rounded-xl border ${
+                    isDark ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-400' : 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  }`}>
                     <img src={parsedYt.thumbnailUrl} alt="Thumb" className="w-16 aspect-video rounded object-cover" />
-                    <span className="text-xs text-emerald-400 font-bold">वैध वीडियो मिला! ID: {parsedYt.id}</span>
+                    <span className="text-xs font-bold">वैध वीडियो मिला! ID: {parsedYt.id}</span>
                   </div>
                 )}
 
@@ -2753,7 +2943,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     <select
                       value={ytCategory}
                       onChange={(e) => setYtCategory(e.target.value)}
-                      className="bg-[#05070e] border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white outline-none"
+                      className={`border rounded-xl px-3 py-1.5 text-xs outline-none ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
+                      }`}
                     >
                       <option value="कवर्धा स्पेशल">कवर्धा स्पेशल</option>
                       <option value="राज्य बुलेटिन">राज्य बुलेटिन</option>
@@ -2767,7 +2959,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       value={ytDuration}
                       onChange={(e) => setYtDuration(e.target.value)}
                       placeholder="12:30"
-                      className="w-20 bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                      className={`w-20 border rounded-xl px-2.5 py-1.5 text-xs outline-none ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
+                      }`}
                     />
                   </div>
 
@@ -2783,12 +2977,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
               {/* Existing Videos List */}
               <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <div className={`text-xs font-bold uppercase tracking-wider ${
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                }`}>
                   लाइव वीडियो सूची ({videos.length})
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {videos.map((vid) => (
-                    <div key={vid.id} className="p-3 bg-black/40 rounded-2xl border border-white/10 flex items-center gap-3">
+                    <div key={vid.id} className={`p-3 rounded-2xl border flex items-center gap-3 ${
+                      isDark ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200 shadow-sm'
+                    }`}>
                       <div className="w-20 aspect-video rounded-lg overflow-hidden relative shrink-0 bg-slate-900">
                         <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover" />
                         <span className="absolute bottom-1 right-1 bg-black/80 text-[9px] px-1 rounded text-white font-mono">
@@ -2796,9 +2994,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         </span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold text-white truncate">{vid.title}</div>
-                        <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
-                          <span className="text-red-400 font-medium">{vid.category}</span>
+                        <div className={`text-xs font-bold truncate ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}>{vid.title}</div>
+                        <div className={`text-[10px] flex items-center gap-2 mt-0.5 ${
+                          isDark ? 'text-slate-400' : 'text-slate-600'
+                        }`}>
+                          <span className="text-red-500 font-semibold">{vid.category}</span>
                           <span>•</span>
                           <span>{vid.timeAgo}</span>
                         </div>
@@ -2808,7 +3010,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           href={vid.youtubeUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-1.5 text-slate-400 hover:text-white"
+                          className={`p-1.5 transition ${
+                            isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                          }`}
                           title="Open on YouTube"
                         >
                           <ExternalLink size={14} />
@@ -2816,7 +3020,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         {onDeleteVideo && (
                           <button
                             onClick={() => onDeleteVideo(vid.id)}
-                            className="p-1.5 text-red-400 hover:text-red-300"
+                            className="p-1.5 text-red-500 hover:text-red-600 transition"
                             title="हटाएं"
                           >
                             <Trash2 size={14} />
@@ -2832,19 +3036,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
             {/* 2. REELS & SHORTS SECTION */}
             <div className={`p-5 rounded-3xl border ${
-              isDark ? 'bg-[#090d18]/95 border-pink-950/40' : 'bg-white border-slate-200'
+              isDark ? 'bg-[#090d18]/95 border-pink-950/40' : 'bg-white border-slate-200 shadow-sm'
             }`}>
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
+              <div className={`flex items-center justify-between pb-3 mb-4 border-b ${
+                isDark ? 'border-white/10' : 'border-slate-200'
+              }`}>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-pink-600 via-purple-600 to-indigo-600 flex items-center justify-center text-white">
                     <Film size={17} />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-white">इंस्टाग्राम रील्स व यूट्यूब शॉर्ट्स प्रबंधन</h2>
-                    <p className="text-xs text-slate-400">पोर्टल पर लाइव दिखने वाली रील्स जोड़ें व हटाएं</p>
+                    <h2 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>इंस्टाग्राम रील्स व यूट्यूब शॉर्ट्स प्रबंधन</h2>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>पोर्टल पर लाइव दिखने वाली रील्स जोड़ें व हटाएं</p>
                   </div>
                 </div>
-                <span className="text-xs bg-pink-950 text-pink-300 font-bold px-2 py-0.5 rounded border border-pink-800">
+                <span className={`text-xs font-bold px-2 py-0.5 rounded border ${
+                  isDark ? 'bg-pink-950 text-pink-300 border-pink-800' : 'bg-pink-50 text-pink-700 border-pink-200'
+                }`}>
                   {reels.length} रील्स सक्रिय
                 </span>
               </div>
@@ -2875,7 +3083,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   setReelCaption('');
                   setParsedReel(null);
                 }}
-                className="bg-black/30 p-4 rounded-2xl border border-white/10 space-y-3 mb-6"
+                className={`p-4 rounded-2xl border space-y-3 mb-6 ${
+                  isDark ? 'bg-black/30 border-white/10' : 'bg-slate-50 border-slate-200'
+                }`}
               >
                 <div className="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Plus size={14} />
@@ -2884,7 +3094,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    <label className={`text-[11px] font-semibold block mb-1 ${
+                      isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}>
                       Instagram Reel, YouTube Short या Direct MP4 URL
                     </label>
                     <input 
@@ -2896,14 +3108,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         setParsedReel(parseReelMedia(val));
                       }}
                       placeholder="उदा. https://www.instagram.com/reel/..., shorts/... या https://.../video.mp4"
-                      className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      className={`w-full border focus:border-pink-500 rounded-xl px-3 py-2 text-xs outline-none ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900 focus:bg-white'
+                      }`}
                       required
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-semibold text-slate-300">
+                      <label className={`text-[11px] font-semibold ${
+                        isDark ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
                         कैप्शन (Caption)
                       </label>
                       {isVoiceSupported && (
@@ -2925,7 +3141,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         value={reelCaption}
                         onChange={(e) => setReelCaption(e.target.value)}
                         placeholder="उदा. कवर्धा भोरमदेव मंदिर की भव्य आरती..."
-                        className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                        className={`w-full border focus:border-pink-500 rounded-xl px-3 py-2 text-xs outline-none ${
+                          isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900 focus:bg-white'
+                        }`}
                         required
                       />
                     </div>
@@ -2939,8 +3157,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
 
                 {parsedReel && (
-                  <div className="flex items-center gap-3 p-2.5 bg-emerald-950/30 border border-emerald-500/40 rounded-xl">
-                    <span className="text-xs text-emerald-400 font-bold">
+                  <div className={`flex items-center gap-3 p-2.5 rounded-xl border ${
+                    isDark ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-400' : 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  }`}>
+                    <span className="text-xs font-bold">
                       मान्य {parsedReel.type === 'instagram' ? 'इंस्टाग्राम रील' : (parsedReel.type === 'youtube_short' ? 'यूट्यूब शॉर्ट' : 'डायरेक्ट MP4 वीडियो')} लिंक मिला!
                     </span>
                   </div>
@@ -2953,14 +3173,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       value={reelDistrict}
                       onChange={(e) => setReelDistrict(e.target.value)}
                       placeholder="जिला (कवर्धा)"
-                      className="w-28 bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                      className={`w-28 border rounded-xl px-2.5 py-1.5 text-xs outline-none ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
+                      }`}
                     />
                     <input 
                       type="text"
                       value={reelAudio}
                       onChange={(e) => setReelAudio(e.target.value)}
                       placeholder="ऑडियो ट्रैक"
-                      className="w-40 bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                      className={`w-40 border rounded-xl px-2.5 py-1.5 text-xs outline-none ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
+                      }`}
                     />
                   </div>
 
@@ -2976,25 +3200,33 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
               {/* Existing Reels List */}
               <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <div className={`text-xs font-bold uppercase tracking-wider ${
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                }`}>
                   लाइव रील्स सूची ({reels.length})
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {reels.map((reel) => (
-                    <div key={reel.id} className="p-2.5 bg-black/40 rounded-2xl border border-white/10 flex flex-col justify-between">
+                    <div key={reel.id} className={`p-2.5 rounded-2xl border flex flex-col justify-between ${
+                      isDark ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200 shadow-sm'
+                    }`}>
                       <div className="aspect-[9/14] rounded-xl overflow-hidden relative bg-slate-900 mb-2">
                         <img src={reel.imageUrl} alt={reel.caption} className="w-full h-full object-cover" />
                         <span className="absolute top-1 left-1 bg-black/80 text-[9px] px-1.5 py-0.5 rounded text-pink-400 font-bold">
                           {reel.district}
                         </span>
                       </div>
-                      <p className="text-[10px] text-white font-medium line-clamp-2 leading-snug">{reel.caption}</p>
-                      <div className="flex items-center justify-between pt-2 mt-1 border-t border-white/10">
+                      <p className={`text-[10px] font-medium line-clamp-2 leading-snug ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>{reel.caption}</p>
+                      <div className={`flex items-center justify-between pt-2 mt-1 border-t ${
+                        isDark ? 'border-white/10' : 'border-slate-200'
+                      }`}>
                         <a 
                           href={reel.postUrl} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="text-[10px] text-pink-400 hover:underline flex items-center gap-0.5"
+                          className="text-[10px] text-pink-500 hover:underline flex items-center gap-0.5"
                         >
                           <span>लिंक</span>
                           <ExternalLink size={10} />
@@ -3003,7 +3235,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleStartEditReel(reel)}
-                            className="text-amber-400 hover:text-amber-300 p-1 rounded hover:bg-amber-500/10 transition"
+                            className="text-amber-500 hover:text-amber-600 p-1 rounded hover:bg-amber-500/10 transition"
                             title="संपादित करें (Edit Reel)"
                           >
                             <Edit3 size={13} />
@@ -3012,7 +3244,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             <button
                               type="button"
                               onClick={() => onDeleteReel(reel.id)}
-                              className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/10 transition"
+                              className="text-red-500 hover:text-red-600 p-1 rounded hover:bg-red-500/10 transition"
                               title="हटाएं"
                             >
                               <Trash2 size={13} />
@@ -3028,18 +3260,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               {/* Edit Reel Modal Popup */}
               {editingReel && (
                 <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-                  <div className="w-full max-w-lg bg-[#0c101c] border border-pink-500/40 rounded-3xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className={`w-full max-w-lg rounded-3xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 border ${
+                    isDark ? 'bg-[#0c101c] border-pink-500/40 text-white' : 'bg-white border-pink-400 text-slate-900'
+                  }`}>
+                    <div className={`flex items-center justify-between border-b pb-3 ${
+                      isDark ? 'border-white/10' : 'border-slate-200'
+                    }`}>
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-lg bg-pink-600 flex items-center justify-center text-white">
                           <Edit3 size={15} />
                         </div>
-                        <h3 className="text-sm font-black text-white">रील विवरण संपादित करें (Edit Reel)</h3>
+                        <h3 className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>रील विवरण संपादित करें (Edit Reel)</h3>
                       </div>
                       <button
                         type="button"
                         onClick={() => setEditingReel(null)}
-                        className="text-slate-400 hover:text-white p-1 rounded-full"
+                        className={`p-1 rounded-full ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
                       >
                         ✕
                       </button>
@@ -3047,7 +3283,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                     <form onSubmit={handleSaveEditReel} className="space-y-3">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        <label className={`text-[11px] font-semibold block mb-1 ${
+                          isDark ? 'text-slate-300' : 'text-slate-700'
+                        }`}>
                           Reel URL (Instagram / YouTube Shorts / Direct MP4)
                         </label>
                         <input
@@ -3058,14 +3296,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             setEditReelUrl(val);
                             setEditParsedReel(parseReelMedia(val));
                           }}
-                          className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                          className={`w-full border focus:border-pink-500 rounded-xl px-3 py-2 text-xs outline-none ${
+                            isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                          }`}
                           required
                         />
                       </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-semibold text-slate-300">
+                          <label className={`text-[11px] font-semibold ${
+                            isDark ? 'text-slate-300' : 'text-slate-700'
+                          }`}>
                             कैप्शन (Caption)
                           </label>
                           {isVoiceSupported && (
@@ -3085,11 +3327,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           rows={3}
                           value={editReelCaption}
                           onChange={(e) => setEditReelCaption(e.target.value)}
-                          className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none resize-none"
+                          className={`w-full border focus:border-pink-500 rounded-xl px-3 py-2 text-xs outline-none resize-none ${
+                            isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                          }`}
                           required
                         />
                         {isListeningEditReelCaption && (
-                          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded">
+                          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-pink-500 bg-pink-500/10 px-2 py-0.5 rounded">
                             <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping" />
                             <span>🎙️ सुन रहा हूँ: {editReelCaptionInterim || 'बोलिए...'}</span>
                           </div>
@@ -3098,34 +3342,46 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                          <label className={`text-[11px] font-semibold block mb-1 ${
+                            isDark ? 'text-slate-300' : 'text-slate-700'
+                          }`}>
                             जिला
                           </label>
                           <input
                             type="text"
                             value={editReelDistrict}
                             onChange={(e) => setEditReelDistrict(e.target.value)}
-                            className="w-full bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                            className={`w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none ${
+                              isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                            }`}
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                          <label className={`text-[11px] font-semibold block mb-1 ${
+                            isDark ? 'text-slate-300' : 'text-slate-700'
+                          }`}>
                             ऑडियो ट्रैक
                           </label>
                           <input
                             type="text"
                             value={editReelAudio}
                             onChange={(e) => setEditReelAudio(e.target.value)}
-                            className="w-full bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                            className={`w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none ${
+                              isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                            }`}
                           />
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                      <div className={`flex items-center justify-end gap-2 pt-3 border-t ${
+                        isDark ? 'border-white/10' : 'border-slate-200'
+                      }`}>
                         <button
                           type="button"
                           onClick={() => setEditingReel(null)}
-                          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/10 transition"
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                            isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'
+                          }`}
                         >
                           रद्द करें
                         </button>
@@ -3174,41 +3430,47 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
             {showAddCropModal && (
               <div className={`p-5 rounded-2xl border ${
-                isDark ? 'bg-slate-900 border-emerald-500/50' : 'bg-emerald-50/50 border-emerald-300'
+                isDark ? 'bg-slate-900 border-emerald-500/50' : 'bg-white border-emerald-300 shadow-sm'
               } animate-in fade-in duration-200`}>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3 flex items-center gap-1.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-3 flex items-center gap-1.5">
                   <PlusCircle size={14} />
                   <span>नया मंडी भाव दर्ज करें</span>
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">फसल का नाम *</label>
+                    <label className={`text-[11px] block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>फसल का नाम *</label>
                     <input 
                       type="text" 
                       value={newCropName}
                       onChange={(e) => setNewCropName(e.target.value)}
                       placeholder="उदा. गुड़ (देसी/सुपर)"
-                      className="w-full bg-[#05070e] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500"
+                      className={`w-full border rounded-xl px-3 py-2 text-xs outline-none focus:border-emerald-500 ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900 focus:bg-white'
+                      }`}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">मंडी / जिला *</label>
+                    <label className={`text-[11px] block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>मंडी / जिला *</label>
                     <input 
                       type="text" 
                       value={newCropMandi}
                       onChange={(e) => setNewCropMandi(e.target.value)}
                       placeholder="उदा. कवर्धा"
-                      className="w-full bg-[#05070e] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500"
+                      className={`w-full border rounded-xl px-3 py-2 text-xs outline-none focus:border-emerald-500 ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900 focus:bg-white'
+                      }`}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">राज्य</label>
+                    <label className={`text-[11px] block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>राज्य</label>
                     <select
                       value={newCropState}
                       onChange={(e) => setNewCropState(e.target.value)}
-                      className="w-full bg-[#05070e] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500"
+                      className={`w-full border rounded-xl px-3 py-2 text-xs outline-none focus:border-emerald-500 ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
+                      }`}
                     >
                       <option value="CG">छत्तीसगढ़ (CG)</option>
                       <option value="MP">मध्य प्रदेश (MP)</option>
@@ -3216,34 +3478,40 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">भाव (₹ में) *</label>
+                    <label className={`text-[11px] block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>भाव (₹ में) *</label>
                     <input 
                       type="number" 
                       value={newCropRate}
                       onChange={(e) => setNewCropRate(Number(e.target.value))}
                       placeholder="3500"
-                      className="w-full bg-[#05070e] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500 font-bold"
+                      className={`w-full border rounded-xl px-3 py-2 text-xs outline-none focus:border-emerald-500 font-bold ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900 focus:bg-white'
+                      }`}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">इकाई (Unit)</label>
+                    <label className={`text-[11px] block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>इकाई (Unit)</label>
                     <input 
                       type="text" 
                       value={newCropUnit}
                       onChange={(e) => setNewCropUnit(e.target.value)}
                       placeholder="₹/क्विंटल"
-                      className="w-full bg-[#05070e] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500"
+                      className={`w-full border rounded-xl px-3 py-2 text-xs outline-none focus:border-emerald-500 ${
+                        isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900 focus:bg-white'
+                      }`}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">बाज़ार का रुख (Trend) व अंतर (Diff)</label>
+                    <label className={`text-[11px] block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>बाज़ार का रुख (Trend) व अंतर (Diff)</label>
                     <div className="flex gap-2">
                       <select
                         value={newCropChange}
                         onChange={(e) => setNewCropChange(e.target.value as 'up' | 'down' | 'steady')}
-                        className="bg-[#05070e] border border-white/15 rounded-xl px-2 py-2 text-xs text-white outline-none"
+                        className={`border rounded-xl px-2 py-2 text-xs outline-none ${
+                          isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
+                        }`}
                       >
                         <option value="up">🔼 तेजी</option>
                         <option value="down">🔽 मंदी</option>
@@ -3254,16 +3522,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         value={newCropDiff}
                         onChange={(e) => setNewCropDiff(Number(e.target.value))}
                         placeholder="± अंतर"
-                        className="w-full bg-[#05070e] border border-white/15 rounded-xl px-2 py-2 text-xs text-white outline-none"
+                        className={`w-full border rounded-xl px-2 py-2 text-xs outline-none ${
+                          isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900 focus:bg-white'
+                        }`}
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-white/10">
+                <div className={`flex justify-end gap-2 mt-4 pt-3 border-t ${
+                  isDark ? 'border-white/10' : 'border-slate-200'
+                }`}>
                   <button
                     onClick={() => setShowAddCropModal(false)}
-                    className="px-3.5 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white"
+                    className={`px-3.5 py-1.5 rounded-xl text-xs transition ${
+                      isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                   >
                     रद्द करें
                   </button>
@@ -3308,30 +3582,36 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   >
                     {isEditing ? (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                          <span className="text-xs font-black text-emerald-400 flex items-center gap-1">
+                        <div className={`flex items-center justify-between border-b pb-2 ${
+                          isDark ? 'border-white/10' : 'border-slate-200'
+                        }`}>
+                          <span className="text-xs font-black text-emerald-500 flex items-center gap-1">
                             <Edit3 size={13} /> {item.crop}
                           </span>
-                          <span className="text-[10px] text-slate-400">{item.mandi} ({item.state})</span>
+                          <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{item.mandi} ({item.state})</span>
                         </div>
 
                         <div>
-                          <label className="text-[10px] text-slate-400 block mb-0.5">नया भाव (₹)</label>
+                          <label className={`text-[10px] block mb-0.5 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>नया भाव (₹)</label>
                           <input 
                             type="number"
                             value={editRateVal}
                             onChange={(e) => setEditRateVal(Number(e.target.value))}
-                            className="w-full bg-[#05070e] border border-emerald-500/50 rounded-xl px-2.5 py-1.5 text-sm font-bold text-white outline-none"
+                            className={`w-full border rounded-xl px-2.5 py-1.5 text-sm font-bold outline-none ${
+                              isDark ? 'bg-[#05070e] border-emerald-500/50 text-white' : 'bg-white border-emerald-500 text-slate-900'
+                            }`}
                           />
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] text-slate-400 block mb-0.5">रुख (Trend)</label>
+                            <label className={`text-[10px] block mb-0.5 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>रुख (Trend)</label>
                             <select
                               value={editChangeVal}
                               onChange={(e) => setEditChangeVal(e.target.value as 'up' | 'down' | 'steady')}
-                              className="w-full bg-[#05070e] border border-white/15 rounded-xl px-2 py-1.5 text-xs text-white outline-none"
+                              className={`w-full border rounded-xl px-2 py-1.5 text-xs outline-none ${
+                                isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
+                              }`}
                             >
                               <option value="up">🔼 तेजी</option>
                               <option value="down">🔽 मंदी</option>
@@ -3339,20 +3619,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             </select>
                           </div>
                           <div>
-                            <label className="text-[10px] text-slate-400 block mb-0.5">अंतर (± Diff)</label>
+                            <label className={`text-[10px] block mb-0.5 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>अंतर (± Diff)</label>
                             <input 
                               type="number"
                               value={editDiffVal}
                               onChange={(e) => setEditDiffVal(Number(e.target.value))}
-                              className="w-full bg-[#05070e] border border-white/15 rounded-xl px-2 py-1.5 text-xs text-white outline-none"
+                              className={`w-full border rounded-xl px-2 py-1.5 text-xs outline-none ${
+                                isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
+                              }`}
                             />
                           </div>
                         </div>
 
-                        <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+                        <div className={`flex justify-end gap-2 pt-2 border-t ${
+                          isDark ? 'border-white/10' : 'border-slate-200'
+                        }`}>
                           <button
                             onClick={() => setEditingMandiId(null)}
-                            className="px-2.5 py-1 text-xs text-slate-400 hover:text-white"
+                            className={`px-2.5 py-1 text-xs transition ${
+                              isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                            }`}
                           >
                             रद्द करें
                           </button>
@@ -3379,7 +3665,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       <div>
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-md">
+                            <span className={`text-[10px] font-bold border px-2 py-0.5 rounded-md ${
+                              isDark ? 'text-emerald-400 bg-emerald-950/60 border-emerald-800/60' : 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                            }`}>
                               📍 {item.mandi} ({item.state})
                             </span>
                             <h4 className={`text-sm font-black mt-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -3389,10 +3677,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                           <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 ${
                             item.change === 'up' 
-                              ? 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/50' 
+                              ? isDark ? 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/50' : 'text-emerald-700 bg-emerald-50 border border-emerald-200'
                               : item.change === 'down' 
-                              ? 'text-rose-400 bg-rose-950/60 border border-rose-800/50' 
-                              : 'text-slate-400 bg-slate-800/60 border border-slate-700/50'
+                              ? isDark ? 'text-rose-400 bg-rose-950/60 border border-rose-800/50' : 'text-rose-700 bg-rose-50 border border-rose-200'
+                              : isDark ? 'text-slate-400 bg-slate-800/60 border border-slate-700/50' : 'text-slate-700 bg-slate-100 border border-slate-200'
                           }`}>
                             {item.change === 'up' && (
                               <>
@@ -3415,10 +3703,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           </div>
                         </div>
 
-                        <div className="mt-3 flex items-baseline justify-between pt-2 border-t border-white/5">
+                        <div className={`mt-3 flex items-baseline justify-between pt-2 border-t ${
+                          isDark ? 'border-white/5' : 'border-slate-100'
+                        }`}>
                           <div className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                             ₹{item.rate.toLocaleString('en-IN')}{' '}
-                            <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span>
+                            <span className={`text-[10px] font-normal ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{item.unit}</span>
                           </div>
 
                           <div className="flex items-center gap-1">
@@ -3429,7 +3719,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                                 setEditChangeVal(item.change);
                                 setEditDiffVal(item.diff);
                               }}
-                              className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/50 px-2.5 py-1 rounded-lg border border-emerald-800/50 transition active:scale-95 cursor-pointer"
+                              className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition active:scale-95 cursor-pointer ${
+                                isDark 
+                                  ? 'text-emerald-400 hover:text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-800/50'
+                                  : 'text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                              }`}
                               title="भाव बदलें"
                             >
                               <Edit3 size={11} />
@@ -3439,7 +3733,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             {onDeleteMandiRate && (
                               <button
                                 onClick={() => { if (window.confirm(`क्या आप ${item.crop} का मंडी भाव हटाना चाहते हैं?`)) onDeleteMandiRate(item.id); }}
-                                className="text-slate-500 hover:text-red-400 p-1 rounded transition"
+                                className="text-slate-400 hover:text-red-500 p-1 rounded transition"
                                 title="हटाएं"
                               >
                                 <Trash2 size={13} />
@@ -3598,13 +3892,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             {/* Drag Handle */}
             <div className="w-10 h-1.5 bg-slate-500/40 rounded-full mx-auto mb-3" />
 
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+            <div className={`flex items-center justify-between pb-3 border-b mb-3 ${
+              isDark ? 'border-white/10' : 'border-slate-200'
+            }`}>
               <div className="text-xs font-black tracking-wide flex items-center gap-2">
                 <span>📂</span> अन्य प्रशासनिक डेस्क व विकल्प
               </div>
               <button 
                 onClick={() => setShowMobileMoreDrawer(false)}
-                className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg bg-slate-800/40 font-bold"
+                className={`text-xs px-2 py-1 rounded-lg font-bold transition ${
+                  isDark ? 'text-slate-400 hover:text-white bg-slate-800/40' : 'text-slate-600 hover:text-slate-900 bg-slate-100'
+                }`}
               >
                 ✕ बंद करें
               </button>
@@ -3679,7 +3977,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 setShowMobileMoreDrawer(false);
                 handleLogout();
               }}
-              className="w-full mt-3 py-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 text-rose-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow"
+              className={`w-full mt-3 py-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow ${
+                isDark 
+                  ? 'bg-rose-950/60 hover:bg-rose-900 border-rose-800/80 text-rose-300' 
+                  : 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700'
+              }`}
             >
               <LogOut size={14} />
               <span>सुरक्षित लॉगआउट करें (सत्र समाप्त)</span>
@@ -3713,18 +4015,24 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* ADD / EDIT REPORTER MODAL */}
       {showReporterModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0b0f19] border border-blue-500/30 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="p-4 bg-[#070a12] flex items-center justify-between border-b border-white/10">
-              <div className="flex items-center gap-2 text-blue-400 font-bold text-sm">
+          <div className={`border w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 ${
+            isDark ? 'bg-[#0b0f19] border-blue-500/30 text-white' : 'bg-white border-blue-200 text-slate-900'
+          }`}>
+            <div className={`p-4 flex items-center justify-between border-b ${
+              isDark ? 'bg-[#070a12] border-white/10' : 'bg-blue-50/60 border-blue-100'
+            }`}>
+              <div className="flex items-center gap-2 text-blue-500 font-bold text-sm">
                 <Users size={18} />
-                <span className="text-white">
+                <span className={isDark ? 'text-white' : 'text-slate-900'}>
                   {editingReporter ? 'संवाददाता विवरण संपादित करें' : 'नया क्षेत्रीय संवाददाता / ब्यूरो प्रमुख जोड़ें'}
                 </span>
               </div>
               <button 
                 type="button"
                 onClick={() => setShowReporterModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+                className={`p-1 rounded-lg transition ${
+                  isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                }`}
               >
                 <X size={20} />
               </button>
@@ -3733,7 +4041,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <form onSubmit={handleSaveReporter} className="p-5 space-y-3.5 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-300 font-bold">नाम (हिंदी में) *</label>
+                  <label className={`font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>नाम (हिंदी में) *</label>
                   <input 
                     type="text"
                     value={repNameHindi}
@@ -3742,18 +4050,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       if (!repName) setRepName(e.target.value);
                     }}
                     placeholder="उदा. अमित चंद्रवंशी"
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                    className={`w-full border focus:border-blue-500 rounded-xl px-3 py-2 outline-none ${
+                      isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                    }`}
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-slate-300 font-bold">नाम (अंग्रेजी / ID में) *</label>
+                  <label className={`font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>नाम (अंग्रेजी / ID में) *</label>
                   <input 
                     type="text"
                     value={repName}
                     onChange={(e) => setRepName(e.target.value)}
                     placeholder="Amit Chandrawanshi"
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                    className={`w-full border focus:border-blue-500 rounded-xl px-3 py-2 outline-none ${
+                      isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                    }`}
                     required
                   />
                 </div>
@@ -3761,25 +4073,29 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-300 font-bold">मोबाइल नंबर (WhatsApp) *</label>
+                  <label className={`font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>मोबाइल नंबर (WhatsApp) *</label>
                   <input 
                     type="tel"
                     value={repPhone}
                     onChange={(e) => setRepPhone(e.target.value)}
                     placeholder="98260XXXXX"
                     maxLength={10}
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none font-mono"
+                    className={`w-full border focus:border-blue-500 rounded-xl px-3 py-2 outline-none font-mono ${
+                      isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                    }`}
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-slate-300 font-bold">पद / ब्यूरो (Designation) *</label>
+                  <label className={`font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>पद / ब्यूरो (Designation) *</label>
                   <input 
                     type="text"
                     value={repBureau}
                     onChange={(e) => setRepBureau(e.target.value)}
                     placeholder="उदा. कवर्धा ब्यूरो चीफ / ग्राउंड रिपोर्टर"
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                    className={`w-full border focus:border-blue-500 rounded-xl px-3 py-2 outline-none ${
+                      isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                    }`}
                     required
                   />
                 </div>
@@ -3787,11 +4103,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-300 font-bold">जिला (District) *</label>
+                  <label className={`font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>जिला (District) *</label>
                   <select
                     value={repDistrict}
                     onChange={(e) => setRepDistrict(e.target.value)}
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                    className={`w-full border focus:border-blue-500 rounded-xl px-3 py-2 outline-none ${
+                      isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                    }`}
                   >
                     <option value="कवर्धा">कवर्धा (कबीरधाम)</option>
                     <option value="रायपुर">रायपुर</option>
@@ -3810,11 +4128,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-slate-300 font-bold">प्रेस आईडी कोड (Press ID)</label>
+                    <label className={`font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>प्रेस आईडी कोड (Press ID)</label>
                     <button
                       type="button"
                       onClick={() => setRepCode(`ANP-CG-${Math.floor(100 + Math.random() * 900)}`)}
-                      className="text-[10px] text-blue-400 hover:underline"
+                      className="text-[10px] text-blue-500 hover:underline"
                     >
                       नया कोड
                     </button>
@@ -3824,27 +4142,35 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     value={repCode}
                     onChange={(e) => setRepCode(e.target.value)}
                     placeholder="ANP-CG-KBR-01"
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none font-mono font-bold"
+                    className={`w-full border focus:border-blue-500 rounded-xl px-3 py-2 outline-none font-mono font-bold ${
+                      isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                    }`}
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-slate-300 font-bold">फोटो लिंक (Photo URL)</label>
+                <label className={`font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>फोटो लिंक (Photo URL)</label>
                 <input 
                   type="url"
                   value={repPhoto}
                   onChange={(e) => setRepPhoto(e.target.value)}
                   placeholder="https://..."
-                  className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                  className={`w-full border focus:border-blue-500 rounded-xl px-3 py-2 outline-none ${
+                    isDark ? 'bg-[#05070e] border-white/15 text-white' : 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white'
+                  }`}
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+              <div className={`flex items-center justify-end gap-2.5 pt-3 border-t ${
+                isDark ? 'border-white/10' : 'border-slate-200'
+              }`}>
                 <button
                   type="button"
                   onClick={() => setShowReporterModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition"
+                  className={`px-4 py-2 rounded-xl transition ${
+                    isDark ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
                 >
                   रद्द करें
                 </button>
@@ -3988,7 +4314,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <button
                 type="button"
                 onClick={() => setIdCardReporter(null)}
-                className="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition active:scale-95 cursor-pointer"
+                className={`px-4 py-2.5 rounded-2xl font-bold text-xs transition active:scale-95 cursor-pointer ${
+                  isDark ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                }`}
               >
                 बंद करें
               </button>

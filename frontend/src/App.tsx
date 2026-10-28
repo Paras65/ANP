@@ -1037,6 +1037,7 @@ export const App: React.FC = () => {
         onDeleteArticle={handleDeleteArticle}
         onBackToPublic={handleBackToPublic}
         isDark={isDark}
+        toggleTheme={toggleTheme}
         videos={videoBulletins}
         onAddVideo={handleAddVideo}
         onDeleteVideo={handleDeleteVideo}

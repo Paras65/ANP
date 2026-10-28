@@ -113,15 +113,17 @@ ${groupInviteUrl}
 
         {/* Formatted Text Preview Area */}
         <div className="p-4 overflow-y-auto flex-1 space-y-3">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+          <div className={`flex items-center justify-between text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             <span>व्हाट्सएप संदेश प्रिव्यू:</span>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
+            <span className={`text-[10px] px-2 py-0.5 rounded ${
+              isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            }`}>
               ✓ लिंक व इमोजी शामिल
             </span>
           </div>
 
           <div className={`p-3.5 rounded-2xl border font-sans text-xs leading-relaxed whitespace-pre-wrap select-all font-medium ${
-            isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'
+            isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'
           }`}>
             {bulletinText}
           </div>
@@ -136,7 +138,9 @@ ${groupInviteUrl}
             className={`flex-1 w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition shadow active:scale-95 ${
               copied 
                 ? 'bg-emerald-600 text-white shadow-emerald-600/30'
-                : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
+                : isDark
+                ? 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
+                : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-300'
             }`}
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}

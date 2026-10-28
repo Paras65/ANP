@@ -273,15 +273,19 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
         </div>
 
         {/* Format Selector */}
-        <div className="px-4 pt-3 flex items-center justify-between border-b border-white/10 pb-2">
-          <span className="text-xs font-bold text-slate-400">फॉर्मेट चुनें:</span>
+        <div className={`px-4 pt-3 flex items-center justify-between border-b pb-2 ${
+          isDark ? 'border-white/10' : 'border-slate-200'
+        }`}>
+          <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>फॉर्मेट चुनें:</span>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setFormat('square')}
               className={`px-3 py-1 rounded-xl text-xs font-bold transition ${
                 format === 'square'
                   ? 'bg-red-600 text-white shadow'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                  : isDark
+                  ? 'bg-slate-800 text-slate-400 hover:text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900'
               }`}
             >
               1:1 चौकोर (Status/Insta)
@@ -291,7 +295,9 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
               className={`px-3 py-1 rounded-xl text-xs font-bold transition ${
                 format === 'banner'
                   ? 'bg-red-600 text-white shadow'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                  : isDark
+                  ? 'bg-slate-800 text-slate-400 hover:text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900'
               }`}
             >
               16:9 बैनर (FB/X)
@@ -300,7 +306,9 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
         </div>
 
         {/* Canvas Display Area */}
-        <div className="p-4 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-black/40">
+        <div className={`p-4 overflow-y-auto flex-1 flex flex-col items-center justify-center ${
+          isDark ? 'bg-black/40' : 'bg-slate-100'
+        }`}>
           <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 max-h-[380px] max-w-full flex items-center justify-center">
             <canvas 
               ref={canvasRef} 
@@ -333,7 +341,11 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
 
           <button
             onClick={handleShare}
-            className="p-2.5 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 transition active:scale-95 flex items-center justify-center"
+            className={`p-2.5 rounded-xl font-bold text-xs border transition active:scale-95 flex items-center justify-center ${
+              isDark 
+                ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700' 
+                : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+            }`}
             title="सीधे शेयर करें"
           >
             <Share2 size={16} />
