@@ -23,7 +23,9 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
       logger.error(logLine);
     } else if (statusCode >= 400) {
       logger.warn(logLine);
-    } else {
+    } else if (process.env.NODE_ENV !== 'production' || process.env.VERBOSE_LOGS === 'true') {
+      // In production, silence routine 200/304 GET requests to keep Render console clean
+      // Actual errors and warnings remain prominent, while detailed logs are in MongoDB Atlas
       logger.info(logLine);
     }
   });

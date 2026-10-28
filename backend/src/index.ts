@@ -12,16 +12,31 @@ import { notFoundHandler } from './middleware/notFound.middleware.js';
 import { sanitizeInputs } from './middleware/sanitizeInput.middleware.js';
 import { antiBloatGuard } from './middleware/antiBloat.middleware.js';
 import { apiLimiter } from './middleware/rateLimiter.middleware.js';
+import { recordSecurityIncident } from './services/securityAudit.service.js';
 
 dotenv.config();
 
 // Process-level unhandled exception & rejection safety (Anti-Crash & Anti-Leak)
-process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled Promise Rejection:', reason);
+process.on('unhandledRejection', (reason: any) => {
+  const errMsg = reason?.stack || reason?.message || String(reason);
+  logger.error('Unhandled Promise Rejection:', errMsg);
+  recordSecurityIncident({
+    eventType: 'UNHANDLED_PROMISE_REJECTION',
+    severity: 'CRITICAL',
+    ip: '127.0.0.1',
+    message: String(errMsg).slice(0, 500)
+  });
 });
 
-process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception:', err);
+process.on('uncaughtException', (err: any) => {
+  const errMsg = err?.stack || err?.message || String(err);
+  logger.error('Uncaught Exception:', errMsg);
+  recordSecurityIncident({
+    eventType: 'UNCAUGHT_EXCEPTION',
+    severity: 'CRITICAL',
+    ip: '127.0.0.1',
+    message: String(errMsg).slice(0, 500)
+  });
 });
 
 const app = express();

@@ -20,6 +20,7 @@ import {
   getSecurityDashboardStats, 
   clearSecurityLogs 
 } from '../services/securityAudit.service.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 let activeYouTubeChannelId = process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg';
@@ -458,7 +459,7 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
     // 1. Try Official Google YouTube Data API v3 if API key is configured
     if (apiKey) {
       try {
-        console.log(`[YouTube Sync] Executing official YouTube Data API v3 for channel ${channelId}`);
+        logger.debug(`[YouTube Sync] Executing official YouTube Data API v3 for channel ${channelId}`);
         const apiData = await syncFromYouTubeDataAPI(channelId, apiKey);
         syncEngine = 'youtube_data_api_v3';
         totalFetched = apiData.videos.length + apiData.reels.length;
