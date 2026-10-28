@@ -1106,19 +1106,27 @@ export const App: React.FC = () => {
                     <Bookmark size={16} />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-white">सेव की गई खबरें (बुकमार्क)</h2>
-                    <p className="text-xs text-slate-400">ऑफलाइन व बाद में पढ़ने के लिए सुरक्षित</p>
+                    <h2 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      सेव की गई खबरें (बुकमार्क)
+                    </h2>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      ऑफलाइन व बाद में पढ़ने के लिए सुरक्षित
+                    </p>
                   </div>
                 </div>
-                <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-xs bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full font-bold">
                   {savedArticles.length} खबरें
                 </span>
               </div>
 
               {savedArticles.length === 0 ? (
-                <div className="p-8 text-center space-y-2 rounded-2xl border border-dashed border-slate-800">
-                  <Bookmark size={32} className="mx-auto text-slate-600" />
-                  <p className="text-xs text-slate-400">आपने अभी तक कोई खबर सेव नहीं की है।</p>
+                <div className={`p-8 text-center space-y-2 rounded-2xl border border-dashed ${
+                  isDark ? 'border-slate-800' : 'border-slate-300'
+                }`}>
+                  <Bookmark size={32} className="mx-auto text-slate-400" />
+                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    आपने अभी तक कोई खबर सेव नहीं की है।
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1127,19 +1135,23 @@ export const App: React.FC = () => {
                       key={art._id}
                       onClick={() => openArticleModal(art)}
                       className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer ${
-                        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+                        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
                       }`}
                     >
                       <div>
-                        <div className="flex justify-between items-center text-[10px] text-red-400 font-bold mb-1.5">
+                        <div className="flex justify-between items-center text-[10px] text-red-500 font-bold mb-1.5">
                           <span>{art.category}</span>
                           <span>📍 {art.district}</span>
                         </div>
-                        <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-2">
+                        <h3 className={`text-xs sm:text-sm font-bold line-clamp-2 ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}>
                           {art.title}
                         </h3>
                       </div>
-                      <div className="mt-3 pt-2 border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
+                      <div className={`mt-3 pt-2 border-t flex justify-between items-center text-[11px] ${
+                        isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-600'
+                      }`}>
                         <span>✍️ {art.author}</span>
                         <button 
                           onClick={(e) => {
@@ -1188,18 +1200,20 @@ export const App: React.FC = () => {
             <div className="space-y-4 animate-in fade-in duration-300">
               <div className="flex items-center gap-2 pb-2">
                 <span className="text-emerald-500 font-black text-lg">🌾</span>
-                <h2 className="text-base font-black text-white">कवर्धा व क्षेत्रीय कृषि मंडी भाव</h2>
+                <h2 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  कवर्धा व क्षेत्रीय कृषि मंडी भाव
+                </h2>
               </div>
               <MandiWidget rates={mandiRates} isDark={isDark} />
               
               <div className={`p-4 rounded-2xl border space-y-3 ${
-                isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'
+                isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
               }`}>
-                <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                <h3 className="text-xs font-bold text-emerald-500 flex items-center gap-1.5">
                   <TrendingUp size={14} />
                   <span>कवर्धा गुड़ मंडी विशेष रिपोर्ट</span>
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   कबीरधाम (कवर्धा) जिले की कृषि उपज मंडी में इस सप्ताह गन्ने के रस से तैयार नए देसी गुड़ की आवक में 30% की बढ़ोतरी दर्ज की गई। स्थानीय मिलों व बाहर से आए व्यापारियों ने ₹3,450 से ₹3,550/क्विंटल की औसत दर पर खरीद की। किसानों को समय पर भुगतान हेतु मंडी प्रशासन ने डिजिटल पर्ची प्रणाली अनिवार्य की है।
                 </p>
               </div>
@@ -1228,12 +1242,14 @@ export const App: React.FC = () => {
                       <div>
                         <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                           <span>जिला अनुसार ({selectedState === 'chhattisgarh' ? 'छ.ग.' : 'म.प्र.'})</span>
-                          <span className="text-red-400 underline text-[9px]">बदलें</span>
+                          <span className="text-red-500 underline text-[9px]">बदलें</span>
                         </div>
-                        <div className="text-xs sm:text-sm font-black text-white flex items-center gap-1">
+                        <div className={`text-xs sm:text-sm font-black flex items-center gap-1 ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}>
                           <span>{currentDistrict === 'सभी' ? 'सभी 88 जिले' : currentDistrict}</span>
                           {currentDistrict.includes('कवर्धा') && (
-                            <span className="bg-amber-500/20 text-amber-400 text-[9px] font-black px-1.5 rounded border border-amber-500/30">
+                            <span className="bg-amber-500/20 text-amber-500 text-[9px] font-black px-1.5 rounded border border-amber-500/30">
                               मुख्यालय
                             </span>
                           )}
@@ -1245,7 +1261,9 @@ export const App: React.FC = () => {
                     <button 
                       onClick={() => setIsSearching(!isSearching)}
                       className={`p-2 rounded-xl text-xs font-bold border transition ${
-                        isSearching ? 'bg-red-600 text-white border-red-500' : 'bg-slate-800 text-slate-300 border-slate-700'
+                        isSearching 
+                          ? 'bg-red-600 text-white border-red-500' 
+                          : isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-300'
                       }`}
                       title="Search articles"
                     >
@@ -1261,7 +1279,11 @@ export const App: React.FC = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="खबरें खोजें (जैसे: कवर्धा, बोनस)..."
-                        className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-3 pr-8 py-1.5 text-xs text-white outline-none focus:border-red-500 font-medium placeholder:text-slate-500"
+                        className={`w-full border rounded-xl pl-3 pr-8 py-1.5 text-xs outline-none focus:border-red-500 font-medium ${
+                          isDark 
+                            ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500' 
+                            : 'bg-slate-100 border-slate-300 text-slate-900 placeholder:text-slate-400'
+                        }`}
                         autoFocus
                       />
                       {isVoiceSupported && (
@@ -1269,7 +1291,9 @@ export const App: React.FC = () => {
                           type="button"
                           onClick={toggleVoiceSearch}
                           className={`absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center transition ${
-                            isListeningSearch ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-white'
+                            isListeningSearch 
+                              ? 'text-red-500 animate-pulse' 
+                              : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
                           }`}
                           title="बोलकर खबर खोजें (Voice Search)"
                         >
@@ -1332,17 +1356,23 @@ export const App: React.FC = () => {
               <div id="news-feed-section" className="flex items-center justify-between pt-1 scroll-mt-28">
                 <div className="flex items-center gap-2">
                   <span className="text-red-500 text-lg">⚡</span>
-                  <h2 className="text-sm sm:text-base font-black text-white tracking-wide">
+                  <h2 className={`text-sm sm:text-base font-black tracking-wide ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}>
                     {currentDistrict === 'सभी' ? 'मुख्य समाचार फ़ीड' : `${currentDistrict} की खबरें`}
                   </h2>
-                  <span className="text-[10px] bg-slate-800 text-slate-300 font-bold px-2 py-0.5 rounded-full border border-slate-700">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-200 text-slate-700 border-slate-300'
+                  }`}>
                     {displayArticles.length}
                   </span>
                 </div>
 
                 <button 
                   onClick={() => loadArticles()} 
-                  className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl transition cursor-pointer active:scale-95"
+                  className={`text-[11px] flex items-center gap-1 border px-2.5 py-1 rounded-xl transition cursor-pointer active:scale-95 ${
+                    isDark ? 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white' : 'bg-white border-slate-300 text-slate-600 hover:text-slate-900 shadow-sm'
+                  }`}
                   title="ताज़ा खबरें रीफ्रेश करें"
                 >
                   <RefreshCw size={11} className={isLoading ? 'animate-spin text-red-500' : ''} />
@@ -1359,7 +1389,9 @@ export const App: React.FC = () => {
                     <MapPinOff size={32} />
                   </div>
                   <div className="space-y-1.5 max-w-md mx-auto">
-                    <h3 className="text-base sm:text-lg font-black text-white">
+                    <h3 className={`text-base sm:text-lg font-black ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>
                       {searchQuery 
                         ? 'खोज परिणाम नहीं मिले' 
                         : currentDistrict === 'सभी' 
@@ -1642,10 +1674,14 @@ export const App: React.FC = () => {
                                     </span>
                                     <span className="text-xs font-bold text-amber-400">कवर्धा व CG-MP 88 जिला नेटवर्क</span>
                                   </div>
-                                  <h4 className="text-xs sm:text-sm font-bold text-white mt-1 leading-snug">
+                                  <h4 className={`text-xs sm:text-sm font-bold mt-1 leading-snug ${
+                                    isDark ? 'text-white' : 'text-slate-900'
+                                  }`}>
                                     क्या आप अपने व्यापार, दुकान, हॉस्पिटल या स्कूल का प्रचार लाखों पाठकों तक पहुंचाना चाहते हैं?
                                   </h4>
-                                  <p className="text-[11px] text-slate-400 mt-0.5">
+                                  <p className={`text-[11px] mt-0.5 ${
+                                    isDark ? 'text-slate-400' : 'text-slate-600'
+                                  }`}>
                                     कवर्धा के सबसे लोकप्रिय डिजिटल न्यूज़ पोर्टल पर बैनर विज्ञापन व कवरेज के लिए संपादकीय डेस्क से संपर्क करें।
                                   </p>
                                 </div>
@@ -1670,9 +1706,13 @@ export const App: React.FC = () => {
                       <div className="pt-2 text-center">
                         <button
                           onClick={() => setVisibleCount(prev => prev + 6)}
-                          className="bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 hover:text-white font-bold text-xs px-5 py-2.5 rounded-2xl shadow-lg transition active:scale-95 flex items-center gap-2 mx-auto cursor-pointer"
+                          className={`border font-bold text-xs px-5 py-2.5 rounded-2xl shadow-md transition active:scale-95 flex items-center gap-2 mx-auto cursor-pointer ${
+                            isDark 
+                              ? 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200 hover:text-white' 
+                              : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-800 hover:text-slate-950'
+                          }`}
                         >
-                          <ChevronDown size={14} className="text-red-400 animate-bounce" />
+                          <ChevronDown size={14} className="text-red-500 animate-bounce" />
                           <span>और खबरें देखें ({remainingCount} और उपलब्ध)</span>
                         </button>
                       </div>
@@ -1694,12 +1734,16 @@ export const App: React.FC = () => {
                     <div className={`p-3.5 rounded-2xl border ${
                       isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
                     }`}>
-                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-                        <div className="flex items-center gap-1.5 text-xs font-black text-white">
+                      <div className={`flex items-center justify-between mb-3 pb-2 border-b ${
+                        isDark ? 'border-slate-800' : 'border-slate-200'
+                      }`}>
+                        <div className={`flex items-center gap-1.5 text-xs font-black ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}>
                           <Flame size={14} className="text-amber-400 animate-pulse" />
                           <span>🔥 ट्रेंडिंग खबरें (टॉप 5)</span>
                         </div>
-                        <span className="text-[10px] bg-red-950 text-red-300 font-bold px-1.5 py-0.5 rounded border border-red-800">
+                        <span className="text-[10px] bg-red-950/60 text-red-400 font-bold px-1.5 py-0.5 rounded border border-red-800/60">
                           सबसे ज्यादा पढ़ी गई
                         </span>
                       </div>
@@ -1717,18 +1761,22 @@ export const App: React.FC = () => {
                             <div
                               key={tArt._id}
                               onClick={() => openArticleModal(tArt)}
-                              className="flex items-start gap-2.5 cursor-pointer group pb-2.5 border-b border-slate-800/40 last:border-b-0 last:pb-0"
+                              className={`flex items-start gap-2.5 cursor-pointer group pb-2.5 border-b last:border-b-0 last:pb-0 ${
+                                isDark ? 'border-slate-800/40' : 'border-slate-100'
+                              }`}
                             >
                               <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm mt-0.5 ${badgeColors[idx] || badgeColors[3]}`}>
                                 {idx + 1}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-0.5">
-                                  <span className="font-bold text-red-400">{tArt.district}</span>
+                                  <span className="font-bold text-red-500">{tArt.district}</span>
                                   <span>•</span>
                                   <span>{formatRelativeHindiTime(tArt.publishedAt)}</span>
                                 </div>
-                                <h4 className="text-xs font-bold text-slate-200 group-hover:text-red-400 transition-colors line-clamp-2 leading-snug">
+                                <h4 className={`text-xs font-bold transition-colors line-clamp-2 leading-snug ${
+                                  isDark ? 'text-slate-200 group-hover:text-red-400' : 'text-slate-800 group-hover:text-red-600'
+                                }`}>
                                   {tArt.title}
                                 </h4>
                               </div>
@@ -1749,19 +1797,23 @@ export const App: React.FC = () => {
                           <WhatsAppIcon size={18} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                          <div className={`text-xs font-black flex items-center gap-1.5 ${
+                            isDark ? 'text-white' : 'text-slate-900'
+                          }`}>
                             <span>व्हाट्सएप न्यूज़ ग्रुप</span>
-                            <span className="bg-emerald-500/20 text-emerald-400 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-emerald-500/40">
+                            <span className="bg-emerald-500/20 text-emerald-500 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-emerald-500/40">
                               लाइव
                             </span>
                           </div>
-                          <div className="text-[10px] text-emerald-400 font-medium truncate">
+                          <div className="text-[10px] text-emerald-500 font-medium truncate">
                             कवर्धा व CG-MP 88 जिला बुलेटिन
                           </div>
                         </div>
                       </div>
 
-                      <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
+                      <p className={`text-[11px] mb-3 leading-relaxed ${
+                        isDark ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
                         कवर्धा, मंडी भाव, सरकारी योजनाएं और प्रदेश की बड़ी खबरें तुरंत अपने फोन पर पाने के लिए ग्रुप में शामिल हों।
                       </p>
 
@@ -1785,7 +1837,9 @@ export const App: React.FC = () => {
                         <div className="p-1 rounded bg-red-600 text-white">
                           <YoutubeIcon size={13} />
                         </div>
-                        <span className="text-xs font-bold text-white">
+                        <span className={`text-xs font-bold ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}>
                           Ambition TV (यूट्यूब)
                         </span>
                       </div>
@@ -1837,9 +1891,11 @@ export const App: React.FC = () => {
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-white flex items-center gap-1">
+                        <div className={`text-xs font-bold flex items-center gap-1 ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}>
                           <span>Ambition news</span>
-                          <span className="text-[9px] bg-pink-950 text-pink-300 px-1 rounded border border-pink-800">कवर्धा</span>
+                          <span className="text-[9px] bg-pink-950/60 text-pink-400 px-1 rounded border border-pink-800/60">कवर्धा</span>
                         </div>
                         <div className="text-[10px] text-pink-400 font-mono font-medium">
                           {SOCIAL_LINKS.instagramHandle}
@@ -1847,7 +1903,9 @@ export const App: React.FC = () => {
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-slate-400 mb-2.5 leading-relaxed">
+                    <p className={`text-[11px] mb-2.5 leading-relaxed ${
+                      isDark ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
                       कवर्धा की ताज़ा तस्वीरें, रील्स व त्वरित अपडेट सीधे इंस्टाग्राम पर देखें।
                     </p>
 
@@ -1873,55 +1931,29 @@ export const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* WhatsApp News Group & Community Join Card */}
-                  <div className={`p-3.5 rounded-2xl border transition-all ${
-                    isDark 
-                      ? 'bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-900 border-emerald-800/60 shadow-lg shadow-emerald-950/20' 
-                      : 'bg-emerald-50/80 border-emerald-200 shadow-sm'
-                  }`}>
-                    <div className="flex items-center gap-2.5 mb-2.5">
-                      <div className="w-9 h-9 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-600/30 shrink-0">
-                        <WhatsAppIcon size={18} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-black text-white flex items-center gap-1.5">
-                          <span>व्हाट्सएप न्यूज़ ग्रुप</span>
-                          <span className="bg-emerald-500/20 text-emerald-400 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-emerald-500/40">
-                            लाइव
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-emerald-400 font-medium truncate">
-                          कवर्धा व CG-MP 88 जिला बुलेटिन
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
-                      कवर्धा, मंडी भाव, सरकारी योजनाएं और प्रदेश की बड़ी खबरें तुरंत अपने फोन पर पाने के लिए ग्रुप में शामिल हों।
-                    </p>
-
-                    <a 
-                      href={whatsappLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-950/40 transition active:scale-95 cursor-pointer"
-                    >
-                      <WhatsAppIcon size={14} />
-                      <span>ग्रुप से जुड़ें (Join Group)</span>
-                    </a>
-                  </div>
-
                   {/* PWA App Install Banner */}
-                  <div className="p-3.5 rounded-2xl border border-red-800/60 bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-900 text-center space-y-2">
-                    <Download size={18} className="mx-auto text-red-400" />
-                    <div className="text-xs font-bold text-white">Ambition PWA ऐप लगाएं</div>
-                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                  <div className={`p-3.5 rounded-2xl border text-center space-y-2 ${
+                    isDark 
+                      ? 'border-red-800/60 bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-900' 
+                      : 'border-red-200 bg-gradient-to-br from-red-50 via-white to-rose-50 shadow-sm'
+                  }`}>
+                    <Download size={18} className="mx-auto text-red-500" />
+                    <div className={`text-xs font-bold ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>Ambition PWA ऐप लगाएं</div>
+                    <p className={`text-[10px] leading-relaxed ${
+                      isDark ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
                       बिना प्ले स्टोर के सीधे फोन में लगाएं। 2G पर भी चलेगा।
                     </p>
                     <div className="flex flex-col gap-1.5 pt-1">
                       <button 
                         onClick={() => showToast('📲 PWA इंस्टॉलेशन प्रॉम्प्ट सक्रिय हुआ (डेमो)')}
-                        className="w-full bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs py-1.5 rounded-xl shadow transition"
+                        className={`w-full font-bold text-xs py-1.5 rounded-xl shadow transition ${
+                          isDark 
+                            ? 'bg-white text-slate-900 hover:bg-slate-100' 
+                            : 'bg-red-600 text-white hover:bg-red-700'
+                        }`}
                       >
                         + Home Screen पर जोड़ें
                       </button>

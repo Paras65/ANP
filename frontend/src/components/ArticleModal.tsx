@@ -212,7 +212,9 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             {/* Close Button */}
             <button 
               onClick={handleClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition ml-1"
+              className={`p-1 rounded-lg transition ml-1 ${
+                isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+              }`}
             >
               <X size={20} />
             </button>
@@ -248,9 +250,13 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           </h1>
 
           {/* Byline & Metadata */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800 text-xs text-slate-400">
+          <div className={`flex flex-wrap items-center justify-between gap-2 pb-3 border-b text-xs ${
+            isDark ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-600'
+          }`}>
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 font-semibold text-slate-200">
+              <span className={`flex items-center gap-1 font-semibold ${
+                isDark ? 'text-slate-200' : 'text-slate-800'
+              }`}>
                 <UserCheck size={13} className="text-red-500" />
                 {article.author}
               </span>
@@ -273,7 +279,9 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 
           {/* Cover Image */}
           {article.coverImage && (
-            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow">
+            <div className={`relative aspect-video w-full rounded-2xl overflow-hidden border shadow ${
+              isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
+            }`}>
               <img 
                 src={article.coverImage} 
                 alt={article.title}
@@ -286,12 +294,16 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           )}
 
           {/* Article Excerpt Callout */}
-          <div className="p-3.5 bg-red-950/20 border-l-4 border-red-600 rounded-r-xl font-semibold text-xs sm:text-sm text-slate-300 italic leading-relaxed">
+          <div className={`p-3.5 border-l-4 border-red-600 rounded-r-xl font-semibold text-xs sm:text-sm italic leading-relaxed ${
+            isDark ? 'bg-red-950/20 text-slate-300' : 'bg-red-50/80 text-slate-800 border-red-500'
+          }`}>
             {article.excerpt}
           </div>
 
           {/* Full Content */}
-          <div className={`space-y-3 font-normal whitespace-pre-line text-slate-200 ${getFontSizeClass()}`}>
+          <div className={`space-y-3 font-normal whitespace-pre-line leading-relaxed ${
+            isDark ? 'text-slate-200' : 'text-slate-800'
+          } ${getFontSizeClass()}`}>
             {article.content || article.excerpt}
           </div>
 
@@ -343,7 +355,9 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 
             <button 
               onClick={onClose}
-              className="hidden sm:inline-block bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-2 rounded-xl font-medium"
+              className={`hidden sm:inline-block text-xs px-3.5 py-2 rounded-xl font-medium transition ${
+                isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+              }`}
             >
               बंद करें
             </button>

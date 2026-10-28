@@ -117,15 +117,21 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
             <div>
               <div className="flex justify-between items-center text-[10px] text-slate-400 font-medium">
                 <span>{item.mandi}</span>
-                <span className="bg-slate-800 text-slate-300 px-1 rounded text-[9px]">{item.state}</span>
+                <span className={`px-1 rounded text-[9px] font-bold ${
+                  isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
+                }`}>{item.state}</span>
               </div>
-              <div className="text-xs font-bold text-white mt-0.5 truncate">
+              <div className={`text-xs font-bold mt-0.5 truncate ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}>
                 {item.crop}
               </div>
             </div>
 
             <div className="mt-1.5 flex items-baseline justify-between">
-              <span className="text-xs font-black text-emerald-400">
+              <span className={`text-xs font-black ${
+                isDark ? 'text-emerald-400' : 'text-emerald-700'
+              }`}>
                 ₹{item.rate.toLocaleString('en-IN')}
               </span>
               <span className={`text-[10px] flex items-center gap-0.5 font-bold ${

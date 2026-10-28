@@ -56,7 +56,9 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Col 2: Social Links Hub */}
           <div className="space-y-2.5">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+            <h4 className={`text-xs font-bold uppercase tracking-wider ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
               सोशल मीडिया नेटवर्क
             </h4>
             <div className="space-y-2 text-[11px]">
@@ -65,7 +67,9 @@ export const Footer: React.FC<FooterProps> = ({
                 href={SOCIAL_LINKS.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 rounded-lg bg-red-950/40 border border-red-900/60 hover:border-red-600 text-red-300 hover:text-white transition group"
+                className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
+                  isDark ? 'bg-red-950/40 border-red-900/60 hover:border-red-600 text-red-300 hover:text-white' : 'bg-white border-red-200 hover:border-red-400 text-slate-800 shadow-sm'
+                }`}
               >
                 <div className="p-1 rounded bg-red-600 text-white group-hover:scale-110 transition">
                   <YoutubeIcon size={14} />
@@ -80,7 +84,9 @@ export const Footer: React.FC<FooterProps> = ({
                 href={SOCIAL_LINKS.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 rounded-lg bg-pink-950/40 border border-pink-900/60 hover:border-pink-500 text-pink-300 hover:text-white transition group"
+                className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
+                  isDark ? 'bg-pink-950/40 border-pink-900/60 hover:border-pink-500 text-pink-300 hover:text-white' : 'bg-white border-pink-200 hover:border-pink-400 text-slate-800 shadow-sm'
+                }`}
               >
                 <div className="p-1 rounded bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600 text-white group-hover:scale-110 transition">
                   <InstagramIcon size={14} />
@@ -95,7 +101,9 @@ export const Footer: React.FC<FooterProps> = ({
                 href={whatsappLink || SOCIAL_LINKS.whatsappChannel}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 rounded-lg bg-emerald-950/40 border border-emerald-900/60 hover:border-emerald-500 text-emerald-300 hover:text-white transition group"
+                className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
+                  isDark ? 'bg-emerald-950/40 border-emerald-900/60 hover:border-emerald-500 text-emerald-300 hover:text-white' : 'bg-white border-emerald-200 hover:border-emerald-400 text-slate-800 shadow-sm'
+                }`}
               >
                 <div className="p-1 rounded bg-emerald-600 text-white group-hover:scale-110 transition">
                   <WhatsAppIcon size={13} />
@@ -110,7 +118,9 @@ export const Footer: React.FC<FooterProps> = ({
                 href={SOCIAL_LINKS.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 rounded-lg bg-blue-950/40 border border-blue-900/60 hover:border-blue-500 text-blue-300 hover:text-white transition group"
+                className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
+                  isDark ? 'bg-blue-950/40 border-blue-900/60 hover:border-blue-500 text-blue-300 hover:text-white' : 'bg-white border-blue-200 hover:border-blue-400 text-slate-800 shadow-sm'
+                }`}
               >
                 <div className="p-1 rounded bg-blue-600 text-white group-hover:scale-110 transition">
                   <FacebookIcon size={14} />
@@ -126,29 +136,37 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Col 3: Regional Bureaus */}
           <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+            <h4 className={`text-xs font-bold uppercase tracking-wider ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
               प्रमुख ब्यूरो कार्यालय
             </h4>
-            <ul className="space-y-1.5 text-[11px] text-slate-400">
-              <li>• <b className="text-slate-200">कवर्धा (मुख्यालय):</b> राजमहल रोड, कबीरधाम</li>
+            <ul className={`space-y-1.5 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              <li>• <b className={isDark ? 'text-slate-200' : 'text-slate-900'}>कवर्धा (मुख्यालय):</b> राजमहल रोड, कबीरधाम</li>
             </ul>
           </div>
 
           {/* Col 4: IT Rules 2021 Redressal */}
           <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1">
+            <h4 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
               <ShieldCheck size={14} className="text-emerald-500" />
               <span>IT Rules 2021 अनुपालन</span>
             </h4>
             <div className={`p-3 rounded-xl border text-[11px] space-y-1.5 ${
-              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-300'
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-300 shadow-sm'
             }`}>
-              <div className="text-slate-300 font-semibold">शिकायत निवारण अधिकारी (Grievance Officer):</div>
-              <div className="text-white font-bold">श्री आर. के. वर्मा</div>
-              <div className="text-slate-400 flex items-center gap-1">
+              <div className={isDark ? 'text-slate-300 font-semibold' : 'text-slate-700 font-semibold'}>
+                शिकायत निवारण अधिकारी (Grievance Officer):
+              </div>
+              <div className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                श्री आर. के. वर्मा
+              </div>
+              <div className={`flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 <Mail size={11} /> grievance@ambition.news
               </div>
-              <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-800">
+              <div className={`text-[10px] pt-1 border-t ${isDark ? 'text-slate-500 border-slate-800' : 'text-slate-400 border-slate-200'}`}>
                 24 घंटे में acknowledgment और 15 दिन में समाधान अनिवार्य।
               </div>
             </div>

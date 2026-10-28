@@ -149,7 +149,9 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-slate-500">•</span>
 
             {/* Date: Compact on Mobile, Full on Desktop */}
-            <span className="capitalize text-slate-300 font-medium whitespace-nowrap">
+            <span className={`capitalize font-medium whitespace-nowrap ${
+              isDark ? 'text-slate-300' : 'text-slate-700'
+            }`}>
               <span className="sm:hidden">{shortHindiDate}</span>
               <span className="hidden sm:inline">{todayHindiDate}</span>
             </span>
@@ -303,7 +305,9 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={() => setSelectedState('chhattisgarh')}
               className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
-                selectedState === 'chhattisgarh' ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' : 'text-slate-400 hover:text-white'
+                selectedState === 'chhattisgarh' 
+                  ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
+                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
               }`}
             >
               <span className="sm:hidden">छ.ग.</span>
@@ -312,7 +316,9 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={() => setSelectedState('madhya-pradesh')}
               className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
-                selectedState === 'madhya-pradesh' ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' : 'text-slate-400 hover:text-white'
+                selectedState === 'madhya-pradesh' 
+                  ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
+                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
               }`}
             >
               <span className="sm:hidden">म.प्र.</span>
@@ -335,7 +341,9 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Admin Desk Button */}
           <button 
             onClick={onOpenAdminPortal}
-            className="flex bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-700/80 items-center gap-1 transition active:scale-95 shadow shrink-0"
+            className={`flex text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border items-center gap-1 transition active:scale-95 shadow shrink-0 ${
+              isDark ? 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700/80' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+            }`}
             title="Open Editorial & Admin Desk"
           >
             <ShieldCheck size={14} className="text-amber-400 shrink-0" />
@@ -358,7 +366,9 @@ export const Header: React.FC<HeaderProps> = ({
           {onToggleSearch && (
             <button
               onClick={onToggleSearch}
-              className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-slate-700 bg-slate-800/90 text-slate-300 hover:text-white transition active:scale-95 shrink-0"
+              className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 ${
+                isDark ? 'border-slate-700 bg-slate-800/90 text-slate-300 hover:text-white' : 'border-slate-300 bg-slate-100 text-slate-700 hover:text-slate-950'
+              }`}
               title="खबरें खोजें (Search)"
             >
               <Search size={14} />
