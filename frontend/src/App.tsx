@@ -49,6 +49,7 @@ import {
   POPULAR_DISTRICTS_MP, 
   SOCIAL_LINKS 
 } from './data/mockData';
+import { generateStoriesList } from './components/StoriesTray';
 import type { StoryItem } from './components/StoriesTray';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter } from './types';
 import api from './api/client';
@@ -875,15 +876,45 @@ export const App: React.FC = () => {
     showToast('📲 व्हाट्सएप पर ऐप शेयर लिंक खोला गया');
   };
 
-  // Open full article from Story viewer
-  const handleOpenFromStory = (storyTitle: string) => {
+  // Open full article or target feature from Story viewer
+  const handleOpenFromStory = (story: StoryItem) => {
     setActiveStory(null);
-    const found = articles.find(a => a.title.includes(storyTitle.slice(0, 15)) || storyTitle.includes(a.title.slice(0, 15)));
+    if (story.id === 's-mandi') {
+      setActiveTab('mandi');
+      const el = document.getElementById('mandi-section') || document.getElementById('mandi-rates-table');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (story.id === 's-live') {
+      setActiveTab('videos');
+      const el = document.getElementById('video-bulletins-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (story.articleId) {
+      const art = articles.find(a => a._id === story.articleId);
+      if (art) {
+        openArticleModal(art);
+        return;
+      }
+    }
+    // Fallback: title search
+    const found = articles.find(a => a.title.includes(story.title.slice(0, 15)) || story.title.includes(a.title.slice(0, 15)));
     if (found) {
       openArticleModal(found);
-    } else {
+    } else if (articles.length > 0) {
       openArticleModal(articles[0]);
     }
+  };
+
+  // WhatsApp Share Helper for Web Stories
+  const handleShareStoryWhatsApp = (story: StoryItem) => {
+    const storyLink = story.articleId 
+      ? `${window.location.origin}/?article=${encodeURIComponent(story.articleId)}`
+      : window.location.origin;
+    const text = `⚡ *Ambition News Web Story*:\n*${story.title}*\n📍 ${story.district} | ${story.category}\n\n👉 *पूरी स्टोरी यहाँ देखें:* \n${storyLink}\n\n_कवर्धा की सच्ची व निष्पक्ष आवाज़ — Ambition News_`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    showToast('📲 व्हाट्सएप पर वेब स्टोरी शेयर लिंक खोला गया');
   };
 
   // Filtered Articles
@@ -911,12 +942,17 @@ export const App: React.FC = () => {
     setVisibleCount(7);
   }, [currentDistrict, selectedCategory, selectedState, searchQuery]);
 
-  // Top 5 Trending stories for Sidebar
+  // Top 5 Trending stories for Sidebar & Mobile Quick Strip
   const trendingArticles = useMemo(() => {
     return [...articles]
       .sort((a, b) => (b.views || 0) - (a.views || 0))
       .slice(0, 5);
   }, [articles]);
+
+  // Dynamic Web Stories synthesized from live portal articles, video bulletins & mandi rates
+  const currentStoriesList = useMemo(() => {
+    return generateStoriesList(articles, videoBulletins[0], mandiRates[0]);
+  }, [articles, videoBulletins, mandiRates]);
 
   const popularDistricts = selectedState === 'chhattisgarh' ? POPULAR_DISTRICTS_CG : POPULAR_DISTRICTS_MP;
 
@@ -1028,9 +1064,10 @@ export const App: React.FC = () => {
           whatsappLink={whatsappLink}
         />
 
-        {/* 2. BREAKING NEWS TICKER */}
+        {/* 2. BREAKING NEWS & SURKHIYAN TICKER (NEVER DISAPPEARS) */}
         <BreakingTicker 
-          breakingArticles={breakingList.length > 0 ? breakingList : INITIAL_ARTICLES.slice(0, 3)}
+          breakingArticles={breakingList}
+          topArticles={displayArticles}
           onSelectArticle={(art) => openArticleModal(art)}
         />
 
@@ -1046,7 +1083,14 @@ export const App: React.FC = () => {
               </span>
               <span className="text-[10px] text-red-500 font-bold">24h लाइव</span>
             </div>
-            <StoriesTray onSelectStory={(s) => openStoryModal(s)} isDark={isDark} articles={articles} latestVideo={videoBulletins[0]} topMandiRate={mandiRates[0]} />
+            <StoriesTray 
+              onSelectStory={(s) => openStoryModal(s)} 
+              isDark={isDark} 
+              stories={currentStoriesList}
+              articles={articles} 
+              latestVideo={videoBulletins[0]} 
+              topMandiRate={mandiRates[0]} 
+            />
           </div>
         </div>
 
@@ -1455,6 +1499,56 @@ export const App: React.FC = () => {
                             </div>
 
                           </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* MOBILE-ONLY QUICK TOP 5 SURKHIYAN HORIZONTAL SWIPEABLE STRIP */}
+                    {trendingArticles.length > 0 && (
+                      <div className={`lg:hidden p-3 rounded-2xl border transition-colors ${
+                        isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5 text-xs font-black">
+                            <Flame size={13} className="text-amber-400 animate-pulse" />
+                            <span className={isDark ? 'text-white' : 'text-slate-900'}>🔥 आज की 5 बड़ी सुर्खियां</span>
+                          </div>
+                          <span className="text-[10px] text-red-500 font-bold bg-red-950/40 border border-red-900/40 px-1.5 py-0.5 rounded">
+                            ट्रेंडिंग
+                          </span>
+                        </div>
+                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1">
+                          {trendingArticles.map((tArt, idx) => (
+                            <div
+                              key={tArt._id}
+                              onClick={() => openArticleModal(tArt)}
+                              className={`shrink-0 w-64 p-2.5 rounded-xl border flex items-start gap-2 cursor-pointer transition active:scale-95 ${
+                                isDark ? 'bg-slate-950/90 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'
+                              }`}
+                            >
+                              <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                idx === 0 
+                                  ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950' 
+                                  : idx === 1 
+                                  ? 'bg-gradient-to-r from-slate-300 to-slate-400 text-slate-950' 
+                                  : idx === 2 
+                                  ? 'bg-gradient-to-r from-amber-700 to-amber-600 text-white' 
+                                  : 'bg-slate-800 text-slate-300'
+                              }`}>
+                                #{idx + 1}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[9px] text-red-500 font-bold block truncate">
+                                  {tArt.district}
+                                </span>
+                                <h4 className={`text-[11px] font-bold line-clamp-2 leading-tight mt-0.5 ${
+                                  isDark ? 'text-white' : 'text-slate-900'
+                                }`}>
+                                  {tArt.title}
+                                </h4>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -1910,9 +2004,20 @@ export const App: React.FC = () => {
         {activeStory && (
           <StoryViewerModal 
             initialStory={activeStory}
+            stories={currentStoriesList}
             onClose={closeStoryModal}
             onReadFullArticle={handleOpenFromStory}
-            onShareWhatsApp={shareWhatsApp}
+            onShareWhatsApp={handleShareStoryWhatsApp}
+            onOpenVideo={() => {
+              setActiveTab('videos');
+              const el = document.getElementById('video-bulletins-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            onOpenMandi={() => {
+              setActiveTab('mandi');
+              const el = document.getElementById('mandi-section') || document.getElementById('mandi-rates-table');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
           />
         )}
 
