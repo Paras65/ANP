@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   MapPin, 
   RefreshCw, 
@@ -10,8 +10,13 @@ import {
   Sparkles,
   Search,
   TrendingUp,
-  Mic
+  Mic,
+  Clock,
+  Eye,
+  ChevronDown,
+  MapPinOff
 } from 'lucide-react';
+import { formatRelativeHindiTime, estimateReadingTime, formatHindiViews } from './utils/dateUtils';
 
 import { Header } from './components/Header';
 import { BreakingTicker } from './components/BreakingTicker';
@@ -77,6 +82,7 @@ export const App: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showDistrictModal, setShowDistrictModal] = useState(false);
   const [showReporterModal, setShowReporterModal] = useState(false);
+  const [visibleCount, setVisibleCount] = useState<number>(7);
 
   // Voice Search Hook for Public Portal
   const {
@@ -889,10 +895,27 @@ export const App: React.FC = () => {
     return matchesState && matchesDistrict && matchesCategory && matchesSearch;
   });
 
-  const displayArticles = filteredArticles.length > 0 ? filteredArticles : articles.filter(a => a.state === selectedState);
-  const heroArticle = displayArticles.length > 0 ? displayArticles[0] : INITIAL_ARTICLES[0];
-  const gridArticles = displayArticles.slice(1);
+  const displayArticles = filteredArticles;
+  const heroArticle = displayArticles.length > 0 ? displayArticles[0] : null;
+  const gridArticles = displayArticles.length > 1 ? displayArticles.slice(1) : [];
   const breakingList = articles.filter(a => a.isBreaking);
+
+  // Progressive Disclosure: visible count
+  const visibleGridArticles = gridArticles.slice(0, visibleCount - 1);
+  const hasMoreArticles = gridArticles.length > visibleGridArticles.length;
+  const remainingCount = gridArticles.length - visibleGridArticles.length;
+
+  // Reset visibleCount when filters change
+  useEffect(() => {
+    setVisibleCount(7);
+  }, [currentDistrict, selectedCategory, selectedState, searchQuery]);
+
+  // Top 5 Trending stories for Sidebar
+  const trendingArticles = useMemo(() => {
+    return [...articles]
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
+      .slice(0, 5);
+  }, [articles]);
 
   const popularDistricts = selectedState === 'chhattisgarh' ? POPULAR_DISTRICTS_CG : POPULAR_DISTRICTS_MP;
 
@@ -1252,8 +1275,13 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* MANDI BHAV COMPACT BAR */}
-              <MandiWidget rates={mandiRates} isDark={isDark} />
+              {/* MANDI BHAV COMPACT BAR (Streamlined for immediate Above-the-Fold news consumption) */}
+              <MandiWidget 
+                rates={mandiRates} 
+                isDark={isDark} 
+                compact 
+                onViewFull={() => setActiveTab('mandi')} 
+              />
 
               {/* FEED HEADER */}
               <div id="news-feed-section" className="flex items-center justify-between pt-1 scroll-mt-28">
@@ -1269,158 +1297,389 @@ export const App: React.FC = () => {
 
                 <button 
                   onClick={() => loadArticles()} 
-                  className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl transition"
+                  className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl transition cursor-pointer active:scale-95"
+                  title="ताज़ा खबरें रीफ्रेश करें"
                 >
                   <RefreshCw size={11} className={isLoading ? 'animate-spin text-red-500' : ''} />
                   <span>अपडेट</span>
                 </button>
               </div>
 
-              {/* HERO LEAD ARTICLE & NATIVE FEED CARDS */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                
-                {/* Main Feed Column */}
-                <div className="lg:col-span-2 space-y-4">
-                  
-                  {/* HERO ARTICLE (EDGE-TO-EDGE ON MOBILE) */}
-                  {heroArticle && (
-                    <div 
-                      onClick={() => openArticleModal(heroArticle)}
-                      className={`rounded-3xl border overflow-hidden cursor-pointer group shadow-xl transition-colors duration-150 active:scale-[0.99] ${
-                        isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/70' : 'bg-white border-slate-200'
-                      }`}
-                    >
-                      <div className="relative h-64 sm:h-96 w-full overflow-hidden bg-slate-950">
-                        <img 
-                          src={heroArticle.coverImage || "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80"} 
-                          alt={heroArticle.title} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
-                        />
-                        
-                        {/* Top Badges */}
-                        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                          <span className="bg-red-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-lg shadow-lg flex items-center gap-1">
-                            <Flame size={12} /> मुख्य समाचार
-                          </span>
-                          <span className="bg-black/75 backdrop-blur-md text-white text-[11px] font-bold px-2 py-0.5 rounded-lg border border-white/20">
-                            📍 {heroArticle.district}
-                          </span>
-                        </div>
-
-                        {/* Bookmark Button on Hero */}
+              {/* ZERO ARTICLES EMPTY STATE (Edge Case: District or search has 0 results) */}
+              {displayArticles.length === 0 ? (
+                <div className={`p-8 sm:p-12 rounded-3xl border text-center space-y-4 my-2 animate-in fade-in duration-300 ${
+                  isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div className="w-16 h-16 rounded-3xl bg-red-600/10 text-red-500 mx-auto flex items-center justify-center shadow-inner">
+                    <MapPinOff size={32} />
+                  </div>
+                  <div className="space-y-1.5 max-w-md mx-auto">
+                    <h3 className="text-base sm:text-lg font-black text-white">
+                      {searchQuery 
+                        ? 'खोज परिणाम नहीं मिले' 
+                        : currentDistrict === 'सभी' 
+                          ? 'कोई खबर उपलब्ध नहीं है' 
+                          : `${currentDistrict} में अभी कोई खबर प्रकाशित नहीं हुई`}
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {searchQuery 
+                        ? `"${searchQuery}" से संबंधित कोई समाचार नहीं मिला। कृपया अन्य कीवर्ड लिखकर पुनः खोजें।`
+                        : `हमारा क्षेत्रीय संवाददाता नेटवर्क ${currentDistrict === 'सभी' ? 'क्षेत्र' : currentDistrict} की ताज़ा खबरों को एकत्र कर रहा है। क्या आपके पास इस क्षेत्र की कोई सूचना, वीडियो या खबर है?`}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                    {searchQuery ? (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer"
+                      >
+                        खोज रीसेट करें
+                      </button>
+                    ) : (
+                      <>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleBookmark(heroArticle);
-                          }}
-                          className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur text-white hover:text-amber-400 transition"
+                          onClick={() => setShowReporterModal(true)}
+                          className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
                         >
-                          <Bookmark size={15} className={savedArticles.some(a => a._id === heroArticle._id) ? 'fill-amber-400 text-amber-400' : ''} />
+                          <span>📢</span>
+                          <span>{currentDistrict === 'सभी' ? 'खबर भेजें' : `${currentDistrict} से खबर भेजें`}</span>
                         </button>
+                        <button
+                          onClick={() => {
+                            setCurrentDistrict('सभी');
+                            setSelectedCategory('सभी खबरें');
+                          }}
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl border border-slate-700 transition cursor-pointer"
+                        >
+                          सभी 88 जिलों की खबरें देखें
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* HERO LEAD ARTICLE & NATIVE FEED CARDS WITH STICKY SIDEBAR */
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                  
+                  {/* Main Feed Column */}
+                  <div className="lg:col-span-2 space-y-4">
+                    
+                    {/* HERO ARTICLE (EDGE-TO-EDGE ON MOBILE) */}
+                    {heroArticle && (
+                      <div 
+                        onClick={() => openArticleModal(heroArticle)}
+                        className={`rounded-3xl border overflow-hidden cursor-pointer group shadow-xl transition-colors duration-150 active:scale-[0.99] ${
+                          isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/70' : 'bg-white border-slate-200'
+                        }`}
+                      >
+                        <div className="relative h-64 sm:h-96 w-full overflow-hidden bg-slate-950">
+                          <img 
+                            src={heroArticle.coverImage || "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80"} 
+                            alt={heroArticle.title} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+                          />
+                          
+                          {/* Top Badges */}
+                          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                            <span className="bg-red-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-lg shadow-lg flex items-center gap-1">
+                              <Flame size={12} /> मुख्य समाचार
+                            </span>
+                            <span className="bg-black/75 backdrop-blur-md text-white text-[11px] font-bold px-2 py-0.5 rounded-lg border border-white/20">
+                              📍 {heroArticle.district}
+                            </span>
+                          </div>
 
-                        {/* Bottom Gradient with Headline */}
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent p-4 sm:p-6">
-                          <span className="text-orange-400 text-[10px] sm:text-xs font-black uppercase tracking-wider">
-                            {heroArticle.category}
-                          </span>
-                          <h1 className="text-base sm:text-xl font-black text-white mt-1 leading-snug group-hover:text-red-400 transition-colors">
-                            {heroArticle.title}
-                          </h1>
-                          <p className="text-xs text-slate-300 mt-1.5 line-clamp-2 leading-relaxed hidden sm:block">
-                            {heroArticle.excerpt}
-                          </p>
+                          {/* Bookmark Button on Hero */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBookmark(heroArticle);
+                            }}
+                            className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur text-white hover:text-amber-400 transition"
+                            title="खबर सेव करें"
+                          >
+                            <Bookmark size={15} className={savedArticles.some(a => a._id === heroArticle._id) ? 'fill-amber-400 text-amber-400' : ''} />
+                          </button>
 
-                          {/* Action row */}
-                          <div className="mt-3 pt-2.5 flex items-center justify-between text-xs text-slate-300 border-t border-slate-800/80">
-                            <span className="text-[11px] font-medium text-slate-300">✍️ {heroArticle.author}</span>
-                            <div className="flex items-center gap-2">
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  shareWhatsApp(heroArticle.title, heroArticle._id);
-                                }}
-                                className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 text-[11px]"
-                              >
-                                <WhatsAppIcon size={12} />
-                                <span>शेयर</span>
-                              </button>
-                              <span className="text-red-400 font-bold flex items-center gap-0.5 text-xs">
-                                <span>पढ़ें</span>
-                                <ChevronRight size={13} />
+                          {/* Bottom Gradient with Headline */}
+                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent p-4 sm:p-6">
+                            <div className="flex items-center gap-2 mb-1.5 text-[10px] sm:text-xs">
+                              <span className="text-orange-400 font-black uppercase tracking-wider">
+                                {heroArticle.category}
                               </span>
+                              <span className="text-slate-400 flex items-center gap-1">
+                                <Clock size={11} className="text-red-400" />
+                                <span>{formatRelativeHindiTime(heroArticle.publishedAt)}</span>
+                              </span>
+                              <span className="text-slate-400 hidden sm:inline">
+                                • {estimateReadingTime(heroArticle.content || heroArticle.excerpt)}
+                              </span>
+                            </div>
+
+                            <h1 className="text-base sm:text-2xl font-black text-white leading-snug group-hover:text-red-400 transition-colors">
+                              {heroArticle.title}
+                            </h1>
+                            <p className="text-xs sm:text-sm text-slate-300 mt-1.5 line-clamp-2 leading-relaxed hidden sm:block">
+                              {heroArticle.excerpt}
+                            </p>
+
+                            {/* Action row */}
+                            <div className="mt-3 pt-2.5 flex items-center justify-between text-xs text-slate-300 border-t border-slate-800/80">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-medium text-slate-300">✍️ {heroArticle.author}</span>
+                                {heroArticle.views && (
+                                  <span className="text-[10px] text-slate-400 hidden sm:flex items-center gap-0.5">
+                                    <Eye size={10} />
+                                    <span>{formatHindiViews(heroArticle.views)}</span>
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    shareWhatsApp(heroArticle.title, heroArticle._id);
+                                  }}
+                                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 text-[11px] transition active:scale-95 cursor-pointer"
+                                  title="व्हाट्सएप पर शेयर करें"
+                                >
+                                  <WhatsAppIcon size={12} />
+                                  <span>शेयर</span>
+                                </button>
+                                <span className="text-red-400 font-bold flex items-center gap-0.5 text-xs">
+                                  <span>पढ़ें</span>
+                                  <ChevronRight size={13} />
+                                </span>
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* REST OF FEED CARDS */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {visibleGridArticles.map((art, idx) => (
+                        <React.Fragment key={art._id}>
+                          <div 
+                            onClick={() => openArticleModal(art)}
+                            className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer group transition-colors duration-150 active:scale-[0.99] ${
+                              isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/60' : 'bg-white border-slate-200 shadow-sm'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex justify-between items-center text-xs text-red-400 font-bold mb-1.5">
+                                <span className="bg-red-950/40 border border-red-900/60 px-2 py-0.5 rounded text-[10px]">
+                                  {art.category}
+                                </span>
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
+                                  <span className="flex items-center gap-0.5 text-slate-400">
+                                    <Clock size={10} className="text-red-400" />
+                                    <span>{formatRelativeHindiTime(art.publishedAt)}</span>
+                                  </span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-0.5">
+                                    <MapPin size={10} className="text-red-500" /> {art.district}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <h3 className={`text-xs sm:text-sm font-bold leading-snug line-clamp-2 transition-colors ${
+                                isDark ? 'text-slate-100 group-hover:text-red-400' : 'text-slate-900 group-hover:text-red-600'
+                              }`}>
+                                {art.title}
+                              </h3>
+
+                              <p className="text-[11px] text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+                                {art.excerpt}
+                              </p>
+                            </div>
+
+                            <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+                              <span className="text-[10px] truncate max-w-[120px]">
+                                ✍️ {art.author}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] text-slate-500 hidden sm:inline">
+                                  {estimateReadingTime(art.content || art.excerpt)}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleBookmark(art);
+                                  }}
+                                  className="text-slate-400 hover:text-amber-400 transition cursor-pointer"
+                                  title="सेव करें"
+                                >
+                                  <Bookmark size={13} className={savedArticles.some(a => a._id === art._id) ? 'fill-amber-400 text-amber-400' : ''} />
+                                </button>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    shareWhatsApp(art.title, art._id);
+                                  }}
+                                  className="text-emerald-400 font-bold flex items-center gap-0.5 text-[11px] transition active:scale-95 cursor-pointer"
+                                  title="व्हाट्सएप पर शेयर करें"
+                                >
+                                  <WhatsAppIcon size={11} />
+                                  <span>शेयर</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
 
-                        </div>
-                      </div>
+                          {/* SPONSORED LOCAL BUSINESS / COMMUNITY NOTICE CARD AFTER 4TH ARTICLE */}
+                          {idx === 3 && (
+                            <div className={`col-span-1 sm:col-span-2 p-4 rounded-2xl border ${
+                              isDark 
+                                ? 'bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-900 border-amber-500/40' 
+                                : 'bg-gradient-to-r from-amber-50 via-white to-amber-50/50 border-amber-300'
+                            } flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md my-1`}>
+                              <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-slate-950 flex items-center justify-center font-black text-lg shrink-0 shadow">
+                                  📢
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded font-mono">
+                                      प्रायोजित • स्थानीय व्यापार
+                                    </span>
+                                    <span className="text-xs font-bold text-amber-400">कवर्धा व CG-MP 88 जिला नेटवर्क</span>
+                                  </div>
+                                  <h4 className="text-xs sm:text-sm font-bold text-white mt-1 leading-snug">
+                                    क्या आप अपने व्यापार, दुकान, हॉस्पिटल या स्कूल का प्रचार लाखों पाठकों तक पहुंचाना चाहते हैं?
+                                  </h4>
+                                  <p className="text-[11px] text-slate-400 mt-0.5">
+                                    कवर्धा के सबसे लोकप्रिय डिजिटल न्यूज़ पोर्टल पर बैनर विज्ञापन व कवरेज के लिए संपादकीय डेस्क से संपर्क करें।
+                                  </p>
+                                </div>
+                              </div>
+                              <a 
+                                href={`https://api.whatsapp.com/send?phone=919827100000&text=${encodeURIComponent('नमस्ते Ambition News, मुझे अपने प्रतिष्ठान / व्यवसाय का विज्ञापन व कवरेज पोर्टल पर प्रकाशित करवाना है।')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer whitespace-nowrap"
+                              >
+                                <WhatsAppIcon size={13} />
+                                <span>विज्ञापन दें (WhatsApp)</span>
+                              </a>
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ))}
                     </div>
-                  )}
 
-                  {/* REST OF FEED CARDS */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {gridArticles.map((art) => (
-                      <div 
-                        key={art._id}
-                        onClick={() => openArticleModal(art)}
-                        className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer group transition-colors duration-150 active:scale-[0.99] ${
-                          isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/60' : 'bg-white border-slate-200 shadow-sm'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex justify-between items-center text-xs text-red-400 font-bold mb-1.5">
-                            <span className="bg-red-950/40 border border-red-900/60 px-2 py-0.5 rounded text-[10px]">
-                              {art.category}
-                            </span>
-                            <span className="text-slate-400 font-medium text-[10px] flex items-center gap-1">
-                              <MapPin size={10} className="text-red-500" /> {art.district}
-                            </span>
-                          </div>
-
-                          <h3 className={`text-xs sm:text-sm font-bold leading-snug line-clamp-2 transition-colors ${
-                            isDark ? 'text-slate-100 group-hover:text-red-400' : 'text-slate-900 group-hover:text-red-600'
-                          }`}>
-                            {art.title}
-                          </h3>
-
-                          <p className="text-[11px] text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
-                            {art.excerpt}
-                          </p>
-                        </div>
-
-                        <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
-                          <span className="text-[10px] truncate max-w-[130px]">
-                            ✍️ {art.author}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleBookmark(art);
-                              }}
-                              className="text-slate-400 hover:text-amber-400"
-                            >
-                              <Bookmark size={13} className={savedArticles.some(a => a._id === art._id) ? 'fill-amber-400 text-amber-400' : ''} />
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                shareWhatsApp(art.title, art._id);
-                              }}
-                              className="text-emerald-400 font-bold flex items-center gap-0.5 text-[11px]"
-                            >
-                              <WhatsAppIcon size={11} />
-                              <span>शेयर</span>
-                            </button>
-                          </div>
-                        </div>
+                    {/* PROGRESSIVE DISCLOSURE / LOAD MORE BUTTON */}
+                    {hasMoreArticles && (
+                      <div className="pt-2 text-center">
+                        <button
+                          onClick={() => setVisibleCount(prev => prev + 6)}
+                          className="bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 hover:text-white font-bold text-xs px-5 py-2.5 rounded-2xl shadow-lg transition active:scale-95 flex items-center gap-2 mx-auto cursor-pointer"
+                        >
+                          <ChevronDown size={14} className="text-red-400 animate-bounce" />
+                          <span>और खबरें देखें ({remainingCount} और उपलब्ध)</span>
+                        </button>
                       </div>
-                    ))}
+                    )}
+
+                    {!hasMoreArticles && displayArticles.length > 6 && (
+                      <div className="pt-4 text-center text-xs text-slate-500 flex items-center justify-center gap-1.5">
+                        <span>✓</span>
+                        <span>आपने {displayArticles.length} की सभी ताज़ा खबरें पढ़ ली हैं</span>
+                      </div>
+                    )}
+
                   </div>
 
-                </div>
+                  {/* Sidebar Column (Sticky on Desktop) */}
+                  <aside className="space-y-4 lg:sticky lg:top-28 lg:self-start">
+                    
+                    {/* 1. TOP 5 TRENDING STORIES WIDGET */}
+                    <div className={`p-3.5 rounded-2xl border ${
+                      isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                        <div className="flex items-center gap-1.5 text-xs font-black text-white">
+                          <Flame size={14} className="text-amber-400 animate-pulse" />
+                          <span>🔥 ट्रेंडिंग खबरें (टॉप 5)</span>
+                        </div>
+                        <span className="text-[10px] bg-red-950 text-red-300 font-bold px-1.5 py-0.5 rounded border border-red-800">
+                          सबसे ज्यादा पढ़ी गई
+                        </span>
+                      </div>
 
-                {/* Sidebar Column */}
-                <aside className="space-y-4">
+                      <div className="space-y-3">
+                        {trendingArticles.map((tArt, idx) => {
+                          const badgeColors = [
+                            'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950', // #1 Gold
+                            'bg-gradient-to-r from-slate-300 to-slate-400 text-slate-950',  // #2 Silver
+                            'bg-gradient-to-r from-amber-700 to-amber-600 text-white',      // #3 Bronze
+                            'bg-slate-800 text-slate-300 border border-slate-700',          // #4
+                            'bg-slate-800 text-slate-300 border border-slate-700'           // #5
+                          ];
+                          return (
+                            <div
+                              key={tArt._id}
+                              onClick={() => openArticleModal(tArt)}
+                              className="flex items-start gap-2.5 cursor-pointer group pb-2.5 border-b border-slate-800/40 last:border-b-0 last:pb-0"
+                            >
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm mt-0.5 ${badgeColors[idx] || badgeColors[3]}`}>
+                                {idx + 1}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-0.5">
+                                  <span className="font-bold text-red-400">{tArt.district}</span>
+                                  <span>•</span>
+                                  <span>{formatRelativeHindiTime(tArt.publishedAt)}</span>
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-200 group-hover:text-red-400 transition-colors line-clamp-2 leading-snug">
+                                  {tArt.title}
+                                </h4>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 2. WhatsApp News Group & Community Join Card (High Conversion CTA) */}
+                    <div className={`p-3.5 rounded-2xl border transition-all ${
+                      isDark 
+                        ? 'bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-900 border-emerald-800/60 shadow-lg shadow-emerald-950/20' 
+                        : 'bg-emerald-50/80 border-emerald-200 shadow-sm'
+                    }`}>
+                      <div className="flex items-center gap-2.5 mb-2.5">
+                        <div className="w-9 h-9 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-600/30 shrink-0">
+                          <WhatsAppIcon size={18} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                            <span>व्हाट्सएप न्यूज़ ग्रुप</span>
+                            <span className="bg-emerald-500/20 text-emerald-400 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-emerald-500/40">
+                              लाइव
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-emerald-400 font-medium truncate">
+                            कवर्धा व CG-MP 88 जिला बुलेटिन
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
+                        कवर्धा, मंडी भाव, सरकारी योजनाएं और प्रदेश की बड़ी खबरें तुरंत अपने फोन पर पाने के लिए ग्रुप में शामिल हों।
+                      </p>
+
+                      <a 
+                        href={whatsappLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-950/40 transition active:scale-95 cursor-pointer"
+                      >
+                        <WhatsAppIcon size={14} />
+                        <span>ग्रुप से जुड़ें (Join Group)</span>
+                      </a>
+                    </div>
                   
                   {/* YouTube Bulletin Card */}
                   <div className={`p-3.5 rounded-2xl border ${
@@ -1584,6 +1843,7 @@ export const App: React.FC = () => {
                 </aside>
 
               </div>
+            )}
 
               {/* DEDICATED YOUTUBE BULLETINS SECTION */}
               <VideoSection 

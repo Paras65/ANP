@@ -1,15 +1,96 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Minus, Wheat } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Wheat, ChevronRight } from 'lucide-react';
 import type { MandiRate } from '../types';
 
 interface MandiWidgetProps {
   rates: MandiRate[];
   isDark: boolean;
+  compact?: boolean;
+  onViewFull?: () => void;
 }
 
-export const MandiWidget: React.FC<MandiWidgetProps> = ({ rates, isDark }) => {
+export const MandiWidget: React.FC<MandiWidgetProps> = ({ 
+  rates, 
+  isDark, 
+  compact = false, 
+  onViewFull 
+}) => {
+  // 1. Compact 1-line horizontal momentum strip for Homepage
+  if (compact) {
+    return (
+      <div className={`rounded-2xl border p-2 sm:p-2.5 transition-colors ${
+        isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-emerald-50/70 border-emerald-200 shadow-sm'
+      }`}>
+        <div className="flex items-center justify-between gap-2 overflow-hidden">
+          
+          {/* Left Live Badge */}
+          <button 
+            onClick={onViewFull}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-400 text-[11px] font-black shrink-0 transition cursor-pointer"
+            title="सभी मंडी भाव देखें"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <Wheat size={12} className="shrink-0" />
+            <span>मंडी भाव</span>
+          </button>
+
+          {/* Horizontal Scrolling Rate Chips */}
+          <div className="flex-1 overflow-x-auto no-scrollbar flex items-center gap-1.5 py-0.5 text-xs">
+            {rates.map((item) => (
+              <div 
+                key={item.id}
+                onClick={onViewFull}
+                className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 shrink-0 cursor-pointer transition active:scale-95 ${
+                  isDark 
+                    ? 'bg-slate-950/80 border-slate-800 hover:border-emerald-500/50 text-white' 
+                    : 'bg-white border-slate-200 shadow-sm hover:border-emerald-300 text-slate-900'
+                }`}
+                title={`${item.mandi} - ${item.crop}: ₹${item.rate}`}
+              >
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {item.mandi}
+                </span>
+                <span className="font-bold text-[11px]">
+                  {item.crop}
+                </span>
+                <span className="font-black text-emerald-400 text-[11px]">
+                  ₹{item.rate.toLocaleString('en-IN')}
+                </span>
+                <span className={`text-[9px] font-bold flex items-center ${
+                  item.change === 'up' 
+                    ? 'text-emerald-400' 
+                    : item.change === 'down' 
+                      ? 'text-red-400' 
+                      : 'text-slate-500'
+                }`}>
+                  {item.change === 'up' && <TrendingUp size={9} />}
+                  {item.change === 'down' && <TrendingDown size={9} />}
+                  {item.change === 'steady' && <Minus size={9} />}
+                  {item.diff !== 0 && `${item.diff > 0 ? '+' : ''}${item.diff}`}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* View Full Button */}
+          {onViewFull && (
+            <button 
+              onClick={onViewFull}
+              className="text-[10px] sm:text-[11px] font-bold text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded-xl bg-emerald-950/60 border border-emerald-800/60 shrink-0 flex items-center gap-0.5 transition whitespace-nowrap cursor-pointer active:scale-95"
+            >
+              <span>पूरा देखें</span>
+              <ChevronRight size={12} />
+            </button>
+          )}
+
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Full 6-Card Grid for dedicated Mandi Tab view
   return (
-    <div className={`rounded-xl border p-3.5 transition-colors ${
+    <div className={`rounded-2xl border p-4 transition-colors ${
       isDark ? 'bg-slate-900 border-slate-800' : 'bg-emerald-50/50 border-emerald-200 shadow-sm'
     }`}>
       

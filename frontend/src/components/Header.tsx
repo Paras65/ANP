@@ -62,12 +62,22 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   // Real-time dynamic Hindi date (e.g. मंगलवार, 27 अक्टूबर 2026)
-  const todayHindiDate = new Date().toLocaleDateString('hi-IN', {
+  const now = new Date();
+  const todayHindiDate = now.toLocaleDateString('hi-IN', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric'
   });
+
+  // Dynamic seasonal weather for Kawardha HQ based on hour
+  const currentHour = now.getHours();
+  const weatherInfo = (() => {
+    if (currentHour >= 5 && currentHour < 11) return { icon: '🌅', temp: '23°C', label: 'सुबह' };
+    if (currentHour >= 11 && currentHour < 16) return { icon: '☀️', temp: '31°C', label: 'धूप' };
+    if (currentHour >= 16 && currentHour < 19) return { icon: '🌤️', temp: '27°C', label: 'शाम' };
+    return { icon: '🌙', temp: '22°C', label: 'रात' };
+  })();
 
   const handleCategoryClick = (cat: string) => {
     setSelectedCategory(cat);
@@ -107,7 +117,9 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden md:inline text-slate-500">|</span>
             <span className="hidden md:inline capitalize">{todayHindiDate}</span>
             <span className="hidden lg:inline text-slate-500">|</span>
-            <span className="hidden lg:inline text-amber-500 font-medium">🌤️ 28°C</span>
+            <span className="hidden lg:inline text-amber-400 font-medium" title="कवर्धा (कबीरधाम) मौसम">
+              {weatherInfo.icon} {weatherInfo.temp} कवर्धा
+            </span>
           </div>
 
           {/* Social Links & Device View Switcher */}
