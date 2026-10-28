@@ -175,3 +175,4 @@ export function getSmartCoverImage(coverImage?: string, category?: string, title
   const theme = getCategoryTheme(category, title, district);
   return theme.photoUrl;
 }
+

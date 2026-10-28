@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
   Play, 
   ExternalLink, 
@@ -13,6 +13,7 @@ import {
 import { YoutubeIcon, WhatsAppIcon } from './SocialIcons';
 import type { VideoBulletin } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
+import { isDirectVideoUrl } from '../utils/mediaUtils';
 
 interface VideoSectionProps {
   bulletins: VideoBulletin[];
@@ -20,12 +21,14 @@ interface VideoSectionProps {
   onShareWhatsApp?: (title: string, videoUrl?: string) => void;
 }
 
-const CATEGORIES = [
-  { id: 'all', label: 'सभी वीडियो' },
-  { id: 'ground', label: 'ग्राउंड रिपोर्टिंग', keywords: ['ग्राउंड', 'सड़क', 'पुलिया', 'बारिश', 'नेवारीगुडा', 'चंदनपुर', 'सकरी'] },
-  { id: 'kawardha', label: 'कवर्धा विशेष', keywords: ['कवर्धा', 'कबीरधाम', 'भोरमदेव'] },
-  { id: 'governance', label: 'शासन व राजनीति', keywords: ['सरकार', 'भीम आर्मी', 'पटवारी', 'कलेक्टर', 'भाजपा', 'अकबर', 'विजय शर्मा', 'साव', 'कोटवार'] },
-  { id: 'social', label: 'समाज व जनहित', keywords: ['नेत्र', 'अस्पताल', 'आयुष्मान', 'मूर्तिकार', 'दुकान', 'ऑफर', 'शोरूम', 'Ola', 'दुर्गा', 'नैला'] }
+const PRESET_CATEGORIES = [
+  { id: 'all', label: 'सभी वीडियो', icon: '📺' },
+  { id: 'kawardha', label: 'कवर्धा विशेष', icon: '🔴', keywords: ['कवर्धा', 'कबीरधाम', 'भोरमदेव', 'कवर्धा स्पेशल', 'कवर्धा विशेष'] },
+  { id: 'state', label: 'राज्य बुलेटिन', icon: '📢', keywords: ['राज्य', 'छत्तीसगढ़', 'रायपुर', 'बिलासपुर', 'महाबुलेटिन', 'राज्य बुलेटिन'] },
+  { id: 'heritage', label: 'संस्कृति व धरोहर', icon: '🛕', keywords: ['संस्कृति', 'धरोहर', 'भोरमदेव', 'महोत्सव', 'मंदिर'] },
+  { id: 'mandi', label: 'कृषि व मंडी', icon: '🌾', keywords: ['मंडी', 'गुड़', 'धान', 'किसान', 'भाव', 'मंडी भाव'] },
+  { id: 'ground', label: 'ग्राउंड रिपोर्ट', icon: '🎙️', keywords: ['ग्राउंड', 'सड़क', 'पुलिया', 'बारिश', 'मुद्दों', 'सीधी बहस'] },
+  { id: 'governance', label: 'शासन व राजनीति', keywords: ['सरकार', 'कलेक्टर', 'कैबिनेट', 'प्रशासन', 'नेता', 'बहस'], icon: '🏛️' }
 ];
 
 export const VideoSection: React.FC<VideoSectionProps> = ({ 
@@ -44,6 +47,30 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   const [countdown, setCountdown] = useState<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Helper to resolve realistic video thumbnail (Real YouTube frame instead of generic logo)
+  const getVideoThumbnail = (video: VideoBulletin): string => {
+    if (video.thumbnail && !video.thumbnail.includes('photo-1585829365295') && !video.thumbnail.includes('logo.png')) {
+      return video.thumbnail;
+    }
+    if (video.youtubeId) {
+      return `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+    }
+    return '/logo.png';
+  };
+
+  // Dynamic Categories calculation with real video counts
+  const categoriesWithCounts = useMemo(() => {
+    return PRESET_CATEGORIES.map(cat => {
+      if (cat.id === 'all') return { ...cat, count: bulletins.length };
+      const count = bulletins.filter(b => {
+        if (!cat.keywords) return false;
+        const text = `${b.title} ${b.category || ''}`.toLowerCase();
+        return cat.keywords.some(k => text.includes(k.toLowerCase()));
+      }).length;
+      return { ...cat, count };
+    }).filter(cat => cat.id === 'all' || cat.count > 0);
+  }, [bulletins]);
+
   // Lock body scroll while video modal is active to prevent background rubber-band jerks
   useEffect(() => {
     if (activeVideo) {
@@ -57,16 +84,18 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
     }
   }, [activeVideo]);
 
-  // Filter bulletins based on selected category
-  const filteredBulletins = bulletins.filter(b => {
-    if (selectedCategory === 'all') return true;
-    const cat = CATEGORIES.find(c => c.id === selectedCategory);
-    if (!cat || !cat.keywords) return true;
-    const title = (b.title + ' ' + (b.category || '')).toLowerCase();
-    return cat.keywords.some(k => title.includes(k.toLowerCase()));
-  });
+  // Filter bulletins based on selected category tag
+  const filteredBulletins = useMemo(() => {
+    if (selectedCategory === 'all') return bulletins;
+    const cat = PRESET_CATEGORIES.find(c => c.id === selectedCategory);
+    if (!cat || !cat.keywords) return bulletins;
+    return bulletins.filter(b => {
+      const text = `${b.title} ${b.category || ''}`.toLowerCase();
+      return cat.keywords.some(k => text.includes(k.toLowerCase()));
+    });
+  }, [bulletins, selectedCategory]);
 
-  const displayList = filteredBulletins.length > 0 ? filteredBulletins : bulletins;
+  const displayList = filteredBulletins;
   const featuredVideo = displayList[0] || null;
   const remainingBulletins = displayList.slice(1);
   const visibleRemaining = isExpanded ? remainingBulletins : remainingBulletins.slice(0, 8);
@@ -223,16 +252,16 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
         </div>
       </div>
 
-      {/* 2. CATEGORY FILTER PILLS */}
+      {/* 2. CATEGORY FILTER PILLS WITH LIVE COUNTS */}
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 mb-4 text-xs w-full max-w-full">
-        {CATEGORIES.map(cat => (
+        {categoriesWithCounts.map(cat => (
           <button
             key={cat.id}
             onClick={() => {
               setSelectedCategory(cat.id);
               setIsExpanded(false);
             }}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition whitespace-nowrap active:scale-95 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap active:scale-95 cursor-pointer flex items-center gap-1.5 ${
               selectedCategory === cat.id
                 ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30'
                 : isDark 
@@ -240,10 +269,33 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
             }`}
           >
-            {cat.label}
+            <span>{cat.icon}</span>
+            <span>{cat.label}</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              selectedCategory === cat.id ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            }`}>
+              {cat.count}
+            </span>
           </button>
         ))}
       </div>
+
+      {/* EMPTY CATEGORY STATE */}
+      {displayList.length === 0 && (
+        <div className={`p-8 text-center rounded-2xl border border-dashed my-4 space-y-2 ${
+          isDark ? 'border-slate-800 bg-slate-950/40 text-slate-300' : 'border-slate-300 bg-slate-50 text-slate-700'
+        }`}>
+          <Tv size={32} className="mx-auto text-red-500 opacity-60" />
+          <h4 className="text-sm font-bold">इस श्रेणी में अभी कोई वीडियो बुलेटिन नहीं है</h4>
+          <p className="text-xs text-slate-400">अन्य श्रेणी चुनें या सभी वीडियो बुलेटिन देखें</p>
+          <button 
+            onClick={() => setSelectedCategory('all')}
+            className="text-xs text-red-400 font-bold hover:underline cursor-pointer inline-flex items-center gap-1 mt-1"
+          >
+            <span>← सभी वीडियो देखें ({bulletins.length})</span>
+          </button>
+        </div>
+      )}
 
       {/* 3. HERO SPOTLIGHT BROADCAST (Lead Featured Video) */}
       {featuredVideo && (
@@ -261,7 +313,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
               className="lg:col-span-7 relative aspect-video w-full bg-slate-950 cursor-pointer overflow-hidden group select-none"
             >
               <img 
-                src={featuredVideo.thumbnail} 
+                src={getVideoThumbnail(featuredVideo)} 
                 alt={featuredVideo.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
               />
@@ -369,71 +421,116 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
       )}
 
       {/* 4. SUBSEQUENT VIDEOS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {visibleRemaining.map((video) => (
-          <div 
-            key={video.id}
-            onClick={() => {
-              setCountdown(null);
-              setActiveVideo(video);
-            }}
-            className={`group rounded-2xl border overflow-hidden cursor-pointer flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-md ${
-              isDark ? 'bg-slate-950 border-slate-800/80 hover:border-red-600/60' : 'bg-slate-50 border-slate-200 hover:border-red-500 hover:shadow-lg'
-            }`}
-          >
-            {/* Thumbnail */}
-            <div className="relative aspect-video w-full overflow-hidden bg-slate-900">
-              <img 
-                src={video.thumbnail} 
-                alt={video.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-              />
-              <div className="absolute inset-0 bg-black/35 group-hover:bg-black/15 transition-colors flex items-center justify-center">
-                <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Play size={18} className="fill-current ml-0.5" />
+      {visibleRemaining.length > 0 && (
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${
+          visibleRemaining.length >= 4 
+            ? 'lg:grid-cols-4' 
+            : visibleRemaining.length === 3 
+              ? 'lg:grid-cols-3' 
+              : 'lg:grid-cols-2'
+        } gap-4`}>
+          {visibleRemaining.map((video) => (
+            <div 
+              key={video.id}
+              onClick={() => {
+                setCountdown(null);
+                setActiveVideo(video);
+              }}
+              className={`group rounded-2xl border overflow-hidden cursor-pointer flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-md ${
+                isDark ? 'bg-slate-950 border-slate-800/80 hover:border-red-600/60' : 'bg-slate-50 border-slate-200 hover:border-red-500 hover:shadow-lg'
+              }`}
+            >
+              {/* Thumbnail */}
+              <div className="relative aspect-video w-full overflow-hidden bg-slate-900">
+                <img 
+                  src={getVideoThumbnail(video)} 
+                  alt={video.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                />
+                <div className="absolute inset-0 bg-black/35 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Play size={18} className="fill-current ml-0.5" />
+                  </div>
                 </div>
-              </div>
 
-              {/* Badges */}
-              <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[10px] text-white">
-                <span className="bg-black/75 backdrop-blur px-2 py-0.5 rounded font-medium">
-                  {video.category || 'कवर्धा विशेष'}
-                </span>
-                <span className="bg-black/85 font-mono px-1.5 py-0.5 rounded font-bold">
-                  {video.duration}
-                </span>
-              </div>
-            </div>
-
-            {/* Title & Metadata */}
-            <div className="p-3 flex-1 flex flex-col justify-between">
-              <h3 className={`text-xs font-bold leading-snug line-clamp-2 transition-colors ${
-                isDark ? 'text-slate-100 group-hover:text-red-400' : 'text-slate-900 group-hover:text-red-600'
-              }`}>
-                {video.title}
-              </h3>
-
-              <div className="mt-2.5 pt-2 border-t border-slate-800/40 flex items-center justify-between text-[11px] text-slate-400">
-                <span className="flex items-center gap-1 font-medium">
-                  <Eye size={11} className="text-red-500" /> {video.views}
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={(e) => handleShare(video, e)}
-                    className="p-1 hover:text-emerald-400 transition"
-                    title="WhatsApp शेयर"
-                  >
-                    <WhatsAppIcon size={13} className="text-emerald-500" />
-                  </button>
-                  <span className="flex items-center gap-1">
-                    <Clock size={11} /> {video.timeAgo}
+                {/* Badges */}
+                <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[10px] text-white">
+                  <span className="bg-black/75 backdrop-blur px-2 py-0.5 rounded font-medium">
+                    {video.category || 'कवर्धा विशेष'}
+                  </span>
+                  <span className="bg-black/85 font-mono px-1.5 py-0.5 rounded font-bold">
+                    {video.duration}
                   </span>
                 </div>
               </div>
+
+              {/* Title & Metadata */}
+              <div className="p-3 flex-1 flex flex-col justify-between">
+                <h3 className={`text-xs font-bold leading-snug line-clamp-2 transition-colors ${
+                  isDark ? 'text-slate-100 group-hover:text-red-400' : 'text-slate-900 group-hover:text-red-600'
+                }`}>
+                  {video.title}
+                </h3>
+
+                <div className="mt-2.5 pt-2 border-t border-slate-800/40 flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1 font-medium">
+                    <Eye size={11} className="text-red-500" /> {video.views}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => handleShare(video, e)}
+                      className="p-1 hover:text-emerald-400 transition"
+                      title="WhatsApp शेयर"
+                    >
+                      <WhatsAppIcon size={13} className="text-emerald-500" />
+                    </button>
+                    <span className="flex items-center gap-1">
+                      <Clock size={11} /> {video.timeAgo}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+
+          {/* If there are 3 videos and space for a 4th, render engaging Ambition TV YouTube Promo Card */}
+          {visibleRemaining.length === 3 && (
+            <div 
+              onClick={() => window.open(SOCIAL_LINKS.youtube, '_blank')}
+              className={`rounded-2xl border p-4 flex flex-col justify-between cursor-pointer group transition-all duration-300 hover:-translate-y-1 shadow-md ${
+                isDark 
+                  ? 'bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-950 border-red-900/40 hover:border-red-500/60' 
+                  : 'bg-gradient-to-br from-red-50 via-white to-red-50 border-red-200 hover:border-red-400'
+              }`}
+            >
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow">
+                    <YoutubeIcon size={20} />
+                  </div>
+                  <span className="text-[10px] font-bold text-red-400 bg-red-950/60 border border-red-800/60 px-2 py-0.5 rounded-full">
+                    {SOCIAL_LINKS.youtubeSubs}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">यूट्यूब चैनल</span>
+                  <h4 className={`text-xs sm:text-sm font-bold leading-snug mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    Ambition TV पर 500+ वीडियो बुलेटिन उपलब्ध
+                  </h4>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">
+                  कवर्धा व CG-MP की ताज़ा खबरें, लाइव डिबेट व ग्राउंड रिपोर्ट्स सीधे यूट्यूब पर देखें।
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-red-900/30 flex items-center justify-between text-xs font-bold text-red-500 group-hover:text-red-400">
+                <span>चैनल सब्सक्राइब करें</span>
+                <span>➔</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 5. EXPAND / COLLAPSE CONTROLS */}
       {remainingBulletins.length > 8 && (
@@ -524,21 +621,34 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
               <div className="relative aspect-video w-full bg-black overflow-hidden">
                 {activeVideo.thumbnail && (
                   <img 
-                    src={activeVideo.thumbnail} 
+                    src={getVideoThumbnail(activeVideo)} 
                     alt="" 
-                    className="absolute inset-0 w-full h-full object-cover pointer-events-none" 
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-40" 
                   />
                 )}
-                <iframe 
-                  ref={iframeRef}
-                  key={activeVideo.youtubeId}
-                  src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}&rel=0&modestbranding=1&playsinline=1`}
-                  title={activeVideo.title}
-                  onLoad={onIframeLoad}
-                  className="w-full h-full border-0 relative z-10"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
+                {isDirectVideoUrl(activeVideo.youtubeUrl || activeVideo.youtubeId) ? (
+                  <video 
+                    src={activeVideo.youtubeUrl || activeVideo.youtubeId}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-contain relative z-10 bg-black"
+                    onEnded={() => {
+                      if (isAutoPlay) setCountdown(3);
+                    }}
+                  />
+                ) : (
+                  <iframe 
+                    ref={iframeRef}
+                    key={activeVideo.youtubeId}
+                    src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
+                    title={activeVideo.title}
+                    onLoad={onIframeLoad}
+                    className="w-full h-full border-0 relative z-10"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                )}
 
                 {/* Countdown Overlay when current video ends & next is loading */}
                 {countdown !== null && nextVideo && (
@@ -621,7 +731,13 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     <span className="text-[11px] text-slate-400">क्लिक करके तुरंत चलाएं</span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 ${
+                    bulletins.filter(b => b.youtubeId !== activeVideo.youtubeId).slice(0, 4).length >= 4 
+                      ? 'lg:grid-cols-4' 
+                      : bulletins.filter(b => b.youtubeId !== activeVideo.youtubeId).slice(0, 4).length === 3 
+                        ? 'lg:grid-cols-3' 
+                        : 'lg:grid-cols-2'
+                  } gap-3`}>
                     {bulletins
                       .filter(b => b.youtubeId !== activeVideo.youtubeId)
                       .slice(0, 4)
@@ -636,7 +752,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                         >
                           <div className="relative aspect-video w-full bg-slate-950 overflow-hidden">
                             <img 
-                              src={nextVid.thumbnail} 
+                              src={getVideoThumbnail(nextVid)} 
                               alt={nextVid.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
                             />
