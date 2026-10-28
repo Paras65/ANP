@@ -178,6 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
             {toggleDeviceView && (
               <button
                 onClick={toggleDeviceView}
+                aria-label={isMobileDeviceView ? "फुल डेस्कटॉप स्क्रीन दृश्य पर स्विच करें" : "मोबाइल ऐप फ्रेम दृश्य पर स्विच करें"}
                 className="hidden lg:flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700 transition"
                 title="Toggle between Mobile App Frame and Full Screen View"
               >
@@ -200,6 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
               href={SOCIAL_LINKS.youtube} 
               target="_blank" 
               rel="noopener noreferrer"
+              aria-label="एम्बिशन न्यूज़ आधिकारिक यूट्यूब चैनल"
               className="hidden sm:flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
               title="Ambition News YouTube Channel"
             >
@@ -213,6 +215,7 @@ export const Header: React.FC<HeaderProps> = ({
               href={SOCIAL_LINKS.facebook} 
               target="_blank" 
               rel="noopener noreferrer"
+              aria-label="एम्बिशन न्यूज़ आधिकारिक फेसबुक पेज"
               className="hidden md:flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
               title="Ambition News Facebook Page"
             >
@@ -225,6 +228,7 @@ export const Header: React.FC<HeaderProps> = ({
               href={SOCIAL_LINKS.instagram} 
               target="_blank" 
               rel="noopener noreferrer"
+              aria-label="एम्बिशन न्यूज़ आधिकारिक इंस्टाग्राम पेज"
               className="hidden md:flex items-center gap-1 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-90 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
               title="Ambition News Kawardha Instagram"
             >
@@ -237,6 +241,7 @@ export const Header: React.FC<HeaderProps> = ({
               href={whatsappLink || SOCIAL_LINKS.whatsappChannel} 
               target="_blank" 
               rel="noopener noreferrer"
+              aria-label="एम्बिशन न्यूज़ आधिकारिक व्हाट्सएप ग्रुप व चैनल"
               className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold shadow-sm transition active:scale-95 shrink-0"
               title="Ambition News WhatsApp Group / Channel"
             >
@@ -255,14 +260,23 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand Logo & Headquarters Tag */}
         <div 
           onClick={handleLogoClick}
-          className="flex items-center gap-2 sm:gap-3.5 shrink-0 cursor-pointer group py-0.5"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleLogoClick(); }}
+          role="button"
+          tabIndex={0}
+          aria-label="एम्बिशन न्यूज़ मुख्य पृष्ठ पर जाएं"
+          className="flex items-center gap-2 sm:gap-3.5 shrink-0 cursor-pointer group py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded-lg"
           title="एम्बिशन न्यूज़ - होमपेज"
         >
           {/* Official 3D Round Logo - Highly Visible, Large & Sharp with Red Studio Glow */}
           <div className="relative shrink-0 flex items-center justify-center">
             <img 
               src="/logo.png" 
-              alt="एम्बिशन न्यूज़ Logo" 
+              alt="एम्बिशन न्यूज़ आधिकारिक लोगो" 
+              width="60"
+              height="60"
+              // @ts-ignore
+              fetchpriority="high"
+              decoding="async"
               className="w-10 h-10 sm:w-14 sm:h-14 md:w-15 md:h-15 object-contain rounded-full filter drop-shadow-[0_4px_16px_rgba(220,38,38,0.55)] transition-transform duration-300 group-hover:scale-105" 
             />
             <span 
@@ -306,6 +320,7 @@ export const Header: React.FC<HeaderProps> = ({
           }`}>
             <button 
               onClick={() => setSelectedState('chhattisgarh')}
+              aria-label="छत्तीसगढ़ राज्य के 33 जिलों के समाचार चुनें"
               className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
                 selectedState === 'chhattisgarh' 
                   ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
@@ -317,6 +332,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button 
               onClick={() => setSelectedState('madhya-pradesh')}
+              aria-label="मध्य प्रदेश राज्य के 55 जिलों के समाचार चुनें"
               className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
                 selectedState === 'madhya-pradesh' 
                   ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
@@ -332,6 +348,7 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenReporterModal && (
             <button 
               onClick={onOpenReporterModal}
+              aria-label="नागरिक रिपोर्टर - तुरंत खबर भेजें"
               className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl flex items-center gap-1 transition active:scale-95 shadow-md shadow-red-950/40 shrink-0"
               title="नागरिक व फ़ील्ड रिपोर्टर • तुरंत खबर भेजें"
             >
@@ -343,6 +360,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Admin Desk Button */}
           <button 
             onClick={onOpenAdminPortal}
+            aria-label="संपादकीय एवं एडमिन पोर्टल खोलें"
             className={`flex text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border items-center gap-1 transition active:scale-95 shadow shrink-0 ${
               isDark ? 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700/80' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
             }`}
@@ -356,6 +374,7 @@ export const Header: React.FC<HeaderProps> = ({
           {onShareAppWhatsApp && (
             <button 
               onClick={onShareAppWhatsApp}
+              aria-label="व्हाट्सएप पर ऐप शेयर करें"
               className="hidden sm:flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl items-center gap-1 transition active:scale-95 shadow shadow-emerald-950/40 shrink-0"
               title="व्हाट्सएप पर ऐप शेयर करें"
             >
@@ -368,6 +387,7 @@ export const Header: React.FC<HeaderProps> = ({
           {setActiveTab && (
             <button
               onClick={() => setActiveTab('saved')}
+              aria-label="सहेजी गई खबरें व रील्स देखें"
               className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 flex items-center gap-1.5 text-xs font-bold ${
                 activeTab === 'saved'
                   ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-sm'
@@ -391,6 +411,7 @@ export const Header: React.FC<HeaderProps> = ({
           {onToggleSearch && (
             <button
               onClick={onToggleSearch}
+              aria-label="समाचार खोजें"
               className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 ${
                 isDark ? 'border-slate-700 bg-slate-800/90 text-slate-300 hover:text-white' : 'border-slate-300 bg-slate-100 text-slate-700 hover:text-slate-950'
               }`}
@@ -403,6 +424,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Theme Toggle */}
           <button 
             onClick={toggleTheme}
+            aria-label={isDark ? "लाइट थीम पर स्विच करें" : "डार्क थीम पर स्विच करें"}
             className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border text-sm transition shrink-0 ${
               isDark ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
             }`}

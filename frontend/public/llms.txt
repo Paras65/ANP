@@ -1,0 +1,29 @@
+# Ambition News Portal (एम्बिशन न्यूज़)
+
+> Ambition News Portal (https://ambitionnews.init65.co.in) is the leading Hindi digital news network headquartered in Kawardha (Kabirdham), Chhattisgarh, India. It delivers real-time local, state, and national breaking news, agricultural mandi rates, investigative stories, and video bulletins across all 88 districts of Chhattisgarh and Madhya Pradesh.
+
+## Primary News Categories
+- [कवर्धा स्पेशल](https://ambitionnews.init65.co.in/?category=कवर्धा%20स्पेशल): Local grassroots reporting from Kawardha, Pandariya, Bodla, and Sahaspur Lohara.
+- [छत्तीसगढ़](https://ambitionnews.init65.co.in/?category=छत्तीसगढ़): Comprehensive coverage across all 33 districts of Chhattisgarh (Raipur, Bilaspur, Durg, Bastar, Surguja, Rajnandgaon, etc.).
+- [मध्य प्रदेश](https://ambitionnews.init65.co.in/?category=मध्य%20प्रदेश): State news from Bhopal, Indore, Jabalpur, Gwalior, Balaghat, Mandla, and all 55 MP districts.
+- [राजनीति](https://ambitionnews.init65.co.in/?category=राजनीति): Political news, legislative proceedings, assembly elections, governance policies, and ministerial statements.
+- [कृषि व किसान](https://ambitionnews.init65.co.in/?category=कृषि%20व%20किसान): Paddy procurement, MSP bonuses, irrigation projects, fertilizers, weather alerts, and Kisan Nyay Yojana updates.
+- [मंडी भाव](https://ambitionnews.init65.co.in/?tab=mandi): Daily verified market rates for paddy, wheat, soybean, gram, mustard, and vegetables from local APMC mandis.
+- [अपराध](https://ambitionnews.init65.co.in/?category=अपराध): Law enforcement news, police press releases, court verdicts, cyber security, and citizen safety updates.
+- [वीडियो टीवी](https://ambitionnews.init65.co.in/?tab=videos): Live video bulletins, investigative reports, ground interviews, and daily news wrap-ups.
+
+## Geographic Coverage
+- **Headquarters**: Rajmahal Road, Kawardha, Kabirdham, Chhattisgarh — 491995, India.
+- **Districts Covered**: 88 Districts total.
+  - Chhattisgarh (33 Districts): Kabirdham (Kawardha), Raipur, Durg, Bilaspur, Rajnandgaon, Korba, Raigarh, Jagdalpur, Ambikapur, Bemetara, Balod, Mahasamund, Dhamtari, Gariaband, Baloda Bazar, Janjgir-Champa, Mungeli, Gaurela-Pendra-Marwahi, Sakti, Sarangarh-Bilaigarh, Kanker, Kondagaon, Narayanpur, Bastar, Dantewada, Bijapur, Sukma, Surguja, Surajpur, Balrampur, Koriya, Manendragarh-Chirmiri-Bharatpur, Khairagarh-Chhuikhadan-Gandai, Mohla-Manpur-Ambagarh Chowki.
+  - Madhya Pradesh (55 Districts): Balaghat, Mandla, Dindori, Anuppur, Shahdol, Seoni, Chhindwara, Jabalpur, Bhopal, Indore, Ujjain, Gwalior, Rewa, Sagar, and all other MP administrative districts.
+
+## Editorial & Compliance
+- **Compliance**: Adheres strictly to Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
+- **Grievance Officer**: Mr. R. K. Verma (grievance@ambitionnews.in)
+- **Fact-Checking Policy**: Strict multi-source verification with on-the-ground reporter confirmation before publication.
+
+## Machine-Readable Resources
+- [Full LLM Knowledge Base](https://ambitionnews.init65.co.in/llms-full.txt): Extended documentation for AI assistants and context retrieval.
+- [Sitemap](https://ambitionnews.init65.co.in/sitemap.xml): XML sitemap of all primary pages and news URLs.
+- [RSS Feed](https://ambitionnews.init65.co.in/api/rss): RSS 2.0 syndication feed.

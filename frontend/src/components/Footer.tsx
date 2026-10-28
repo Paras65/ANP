@@ -33,6 +33,10 @@ export const Footer: React.FC<FooterProps> = ({
               <img 
                 src="/logo.png" 
                 alt="एम्बिशन न्यूज़" 
+                width="48"
+                height="48"
+                loading="lazy"
+                decoding="async"
                 className="w-12 h-12 rounded-full object-cover ring-2 ring-red-500/60 bg-white p-0.5 shadow-md shrink-0" 
               />
               <div className="flex flex-col">
@@ -57,7 +61,7 @@ export const Footer: React.FC<FooterProps> = ({
               </div>
               <div className="text-emerald-500 font-semibold flex items-center gap-1">
                 <Phone size={12} />
-                <a href={`tel:${SOCIAL_LINKS.phoneFormatted}`} className="hover:underline">
+                <a href={`tel:${SOCIAL_LINKS.phoneFormatted}`} aria-label={`कॉल करें ${SOCIAL_LINKS.phoneFormatted}`} className="hover:underline">
                   {SOCIAL_LINKS.phoneFormatted}
                 </a>
               </div>
@@ -77,6 +81,7 @@ export const Footer: React.FC<FooterProps> = ({
                 href={SOCIAL_LINKS.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="एम्बिशन न्यूज़ आधिकारिक यूट्यूब चैनल"
                 className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
                   isDark ? 'bg-red-950/40 border-red-900/60 hover:border-red-600 text-red-300 hover:text-white' : 'bg-white border-red-200 hover:border-red-400 text-slate-800 shadow-sm'
                 }`}
@@ -94,6 +99,7 @@ export const Footer: React.FC<FooterProps> = ({
                 href={SOCIAL_LINKS.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="एम्बिशन न्यूज़ आधिकारिक इंस्टाग्राम पेज"
                 className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
                   isDark ? 'bg-pink-950/40 border-pink-900/60 hover:border-pink-500 text-pink-300 hover:text-white' : 'bg-white border-pink-200 hover:border-pink-400 text-slate-800 shadow-sm'
                 }`}
@@ -111,6 +117,7 @@ export const Footer: React.FC<FooterProps> = ({
                 href={whatsappLink || SOCIAL_LINKS.whatsappChannel}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="एम्बिशन न्यूज़ आधिकारिक व्हाट्सएप ग्रुप व चैनल"
                 className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
                   isDark ? 'bg-emerald-950/40 border-emerald-900/60 hover:border-emerald-500 text-emerald-300 hover:text-white' : 'bg-white border-emerald-200 hover:border-emerald-400 text-slate-800 shadow-sm'
                 }`}
@@ -128,6 +135,7 @@ export const Footer: React.FC<FooterProps> = ({
                 href={SOCIAL_LINKS.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="एम्बिशन न्यूज़ आधिकारिक फेसबुक पेज"
                 className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
                   isDark ? 'bg-blue-950/40 border-blue-900/60 hover:border-blue-500 text-blue-300 hover:text-white' : 'bg-white border-blue-200 hover:border-blue-400 text-slate-800 shadow-sm'
                 }`}
@@ -156,7 +164,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li className="flex items-center gap-1.5 pt-1">
                 <Phone size={12} className="text-emerald-500 shrink-0" />
                 <span>हेल्पलाइन / फोन: </span>
-                <a href={`tel:${SOCIAL_LINKS.phoneFormatted}`} className="font-bold text-emerald-500 hover:underline">
+                <a href={`tel:${SOCIAL_LINKS.phoneFormatted}`} aria-label={`हेल्पलाइन फोन करें ${SOCIAL_LINKS.phoneFormatted}`} className="font-bold text-emerald-500 hover:underline">
                   {SOCIAL_LINKS.phoneFormatted}
                 </a>
               </li>
@@ -167,6 +175,7 @@ export const Footer: React.FC<FooterProps> = ({
                   href={SOCIAL_LINKS.whatsappDirect} 
                   target="_blank" 
                   rel="noopener noreferrer" 
+                  aria-label={`व्हाट्सएप पर संपर्क करें ${SOCIAL_LINKS.phoneFormatted}`}
                   className="font-bold text-emerald-500 hover:underline"
                 >
                   {SOCIAL_LINKS.phoneFormatted}

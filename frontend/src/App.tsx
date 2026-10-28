@@ -1414,6 +1414,7 @@ export const App: React.FC = () => {
                                         e.stopPropagation();
                                         shareWhatsApp(art.title, art._id);
                                       }}
+                                      aria-label="सहेजी गई खबर व्हाट्सएप पर शेयर करें"
                                       className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition"
                                       title="WhatsApp शेयर"
                                     >
@@ -1425,6 +1426,7 @@ export const App: React.FC = () => {
                                         e.stopPropagation();
                                         toggleBookmark(art);
                                       }}
+                                      aria-label="यह खबर सेव्ड सूची से हटाएं"
                                       className="inline-flex items-center gap-0.5 text-rose-500 hover:text-rose-400 font-bold text-[11px] p-1 rounded hover:bg-rose-500/10 transition"
                                       title="सेव्ड लिस्ट से हटाएं"
                                     >
@@ -1486,6 +1488,7 @@ export const App: React.FC = () => {
                                   e.stopPropagation();
                                   toggleReelBookmark(reel.id);
                                 }}
+                                aria-label="यह रील सेव्ड सूची से हटाएं"
                                 className="p-1.5 rounded-full bg-black/70 text-slate-300 hover:text-rose-400 hover:bg-black transition active:scale-90"
                                 title="रील हटाएं"
                               >
@@ -1658,6 +1661,7 @@ export const App: React.FC = () => {
                     {/* Search Bar Toggle */}
                     <button 
                       onClick={() => setIsSearching(!isSearching)}
+                      aria-label={isSearching ? "समाचार खोज बंद करें" : "समाचार खोज बार खोलें"}
                       className={`p-2 rounded-xl text-xs font-bold border transition ${
                         isSearching 
                           ? 'bg-red-600 text-white border-red-500' 
@@ -1677,6 +1681,7 @@ export const App: React.FC = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="खबरें खोजें (जैसे: कवर्धा, बोनस)..."
+                        aria-label="समाचार खोजें"
                         className={`w-full border rounded-xl pl-3 pr-8 py-1.5 text-xs outline-none focus:border-red-500 font-medium ${
                           isDark 
                             ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500' 
@@ -1688,6 +1693,7 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={toggleVoiceSearch}
+                          aria-label={isListeningSearch ? "बोलकर खोज बंद करें" : "बोलकर खबर खोजें"}
                           className={`absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center transition ${
                             isListeningSearch 
                               ? 'text-red-500 animate-pulse' 
@@ -1705,6 +1711,7 @@ export const App: React.FC = () => {
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs max-w-full">
                     <button 
                       onClick={openDistrictModal}
+                      aria-label="छत्तीसगढ़ व मध्यप्रदेश के सभी 88 जिले चुनें"
                       className="px-2.5 py-1 rounded-xl text-[11px] font-black transition whitespace-nowrap flex items-center gap-1 bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30 active:scale-95 border border-red-400/40 shrink-0"
                       title="छत्तीसगढ़ व मध्यप्रदेश के सभी 88 जिले देखें"
                     >
@@ -1873,6 +1880,7 @@ export const App: React.FC = () => {
                               e.stopPropagation();
                               toggleBookmark(heroArticle);
                             }}
+                            aria-label={savedArticles.some(a => a._id === heroArticle._id) ? "खबर सेव्ड लिस्ट से हटाएं" : "यह खबर बाद में पढ़ने के लिए सेव करें"}
                             className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur text-white hover:text-amber-400 transition"
                             title="खबर सेव करें"
                           >
@@ -1918,6 +1926,7 @@ export const App: React.FC = () => {
                                     e.stopPropagation();
                                     shareWhatsApp(heroArticle.title, heroArticle._id);
                                   }}
+                                  aria-label="यह मुख्य खबर व्हाट्सएप पर शेयर करें"
                                   className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 text-[11px] transition active:scale-95 cursor-pointer"
                                   title="व्हाट्सएप पर शेयर करें"
                                 >
@@ -2037,6 +2046,7 @@ export const App: React.FC = () => {
                                     e.stopPropagation();
                                     toggleBookmark(art);
                                   }}
+                                  aria-label={savedArticles.some(a => a._id === art._id) ? "खबर सेव्ड लिस्ट से हटाएं" : "यह खबर बाद में पढ़ने के लिए सेव करें"}
                                   className="text-slate-400 hover:text-amber-400 transition cursor-pointer"
                                   title="सेव करें"
                                 >
@@ -2047,6 +2057,7 @@ export const App: React.FC = () => {
                                     e.stopPropagation();
                                     shareWhatsApp(art.title, art._id);
                                   }}
+                                  aria-label="यह खबर व्हाट्सएप पर शेयर करें"
                                   className="text-emerald-400 font-bold flex items-center gap-0.5 text-[11px] transition active:scale-95 cursor-pointer"
                                   title="व्हाट्सएप पर शेयर करें"
                                 >

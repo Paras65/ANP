@@ -17,14 +17,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   isDark
 }) => {
   return (
-    <nav className={`fixed bottom-0 inset-x-0 z-40 border-t glass-nav transition-colors ${
-      isDark ? 'bg-slate-950/95 border-slate-800 text-slate-400' : 'bg-white/95 border-slate-200 text-slate-600 shadow-xl'
-    } pb-safe`}>
+    <nav 
+      aria-label="मुख्य मोबाइल नेविगेशन"
+      className={`fixed bottom-0 inset-x-0 z-40 border-t glass-nav transition-colors ${
+        isDark ? 'bg-slate-950/95 border-slate-800 text-slate-400' : 'bg-white/95 border-slate-200 text-slate-700 shadow-xl'
+      } pb-safe`}
+    >
       
       <div className="max-w-md mx-auto px-2 py-1.5 flex items-center justify-between">
         
         {/* 1. Home Tab */}
         <button
+          type="button"
+          aria-label="होमपेज (ताज़ा समाचार)"
+          aria-current={activeTab === 'home' ? 'page' : undefined}
           onClick={() => setActiveTab('home')}
           className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'home' 
@@ -43,6 +49,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
         {/* 2. Video Tab (YouTube Ambition TV) */}
         <button
+          type="button"
+          aria-label="वीडियो बुलेटिन और लाइव टीवी"
+          aria-current={activeTab === 'videos' ? 'page' : undefined}
           onClick={() => setActiveTab('videos')}
           className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'videos' 
@@ -61,6 +70,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
         {/* 3. Instagram / Reels Tab */}
         <button
+          type="button"
+          aria-label="शॉर्ट्स और इंस्टाग्राम रील्स"
+          aria-current={activeTab === 'insta' ? 'page' : undefined}
           onClick={() => setActiveTab('insta')}
           className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'insta' 
@@ -79,6 +91,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
         {/* 4. Mandi Tab */}
         <button
+          type="button"
+          aria-label="लाइव कृषि मंडी भाव"
+          aria-current={activeTab === 'mandi' ? 'page' : undefined}
           onClick={() => setActiveTab('mandi')}
           className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'mandi' 
@@ -97,6 +112,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
         {/* 5. Saved / Bookmarks Tab */}
         <button
+          type="button"
+          aria-label="सहेजी गई खबरें और रील्स"
+          aria-current={activeTab === 'saved' ? 'page' : undefined}
           onClick={() => setActiveTab('saved')}
           className={`flex-1 flex flex-col items-center justify-center py-1 transition-all active:scale-95 ${
             activeTab === 'saved' 

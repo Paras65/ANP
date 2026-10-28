@@ -1,0 +1,38 @@
+# Ambition News Portal — Full Knowledge Base for LLM Agents
+
+Title: Ambition News Portal (एम्बिशन न्यूज़)
+Domain: https://ambitionnews.init65.co.in/
+Type: Digital News Organization & Progressive Web Application (PWA)
+Language: Hindi (hi-IN)
+Geographic Focus: Central India (Chhattisgarh & Madhya Pradesh)
+Headquarters: Rajmahal Road, Kawardha, Kabirdham District, Chhattisgarh, India, PIN 491995
+Contact: grievance@ambitionnews.in | +91 94060 85165
+
+## Mission & Journalism Philosophy
+Ambition News Portal is committed to fearless, grassroots, and unbiased journalism in Central India. It emphasizes rural reporting, farmers' welfare, civic issues, local administrative accountability, and state-level governance.
+
+## Key Features of the Platform
+1. Real-Time News Feed: Verified reporting from accredited citizen and field reporters across 88 districts.
+2. 88 District Selector: Interactive filtering for all 33 districts of Chhattisgarh and 55 districts of Madhya Pradesh.
+3. Daily Mandi Bhav (Agricultural Prices): Live procurement rates for paddy, pulses, oilseeds, wheat, and fruits/vegetables.
+4. Video & Shorts Desk: Integrated YouTube bulletins and mobile-friendly vertical news reels.
+5. Citizen Reporter Portal: Secure submission channel for local citizens to upload civic grievances, photos, and breaking news.
+6. Offline PWA Support: Installable Progressive Web App with offline caching capabilities and low-bandwidth optimizations.
+7. Compliance Framework: Full compliance with the Digital Media Ethics Code (IT Rules 2021) with dedicated grievance redressal.
+
+## News Categories and Structure
+- Kawardha Special (कवर्धा स्पेशल): In-depth reporting from Kabirdham district headquarters, Bodla forest belt, Pandariya sugar mills, and Bhoramdev heritage corridor.
+- Chhattisgarh (छत्तीसगढ़): State capital announcements, Vidhan Sabha proceedings, welfare schemes, tribal affairs, and development projects.
+- Madhya Pradesh (मध्य प्रदेश): Central India governance, bordering district administration, agriculture, and civic infrastructure.
+- Politics (राजनीति): Neutral coverage of electoral processes, political discourse, and grassroots party movements.
+- Crime & Law (अपराध): Transparent police reports, vigilance actions, consumer protection, and public awareness.
+- Agriculture & Farming (कृषि व किसान): Kharif and Rabi crop advisories, MSP purchase centers, fertilizer availability, and weather forecasts.
+- Business & Mandi (व्यापार व मंडी): Local trade, gold rates, APMC auctions, and economic news.
+- Education & Jobs (रोजगार व शिक्षा): CGPSC, MPPSC, Vyapam, police recruitment, board exam results, and youth opportunities.
+
+## Legal and Redressal
+- Publisher: Ambition News Network
+- Editor & Grievance Officer: Mr. R. K. Verma
+- Grievance Email: grievance@ambitionnews.in
+- Physical Address: Rajmahal Road, Kawardha, Dist. Kabirdham, C.G. 491995
+- Response Timeline: 24 hours acknowledgment, resolution within 15 days as per Rule 11 of IT Rules 2021.

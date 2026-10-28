@@ -24,5 +24,55 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
+# AI & LLM Agentic Crawlers (OpenAI, Anthropic, Perplexity, Google, Apple)
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: CCBot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Cohere-ai
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
 # XML Sitemap Location
 Sitemap: https://ambitionnews.init65.co.in/sitemap.xml
+
+# LLMs Text Specification (Agentic Browsing Standard: https://llmstxt.org)
+# llms.txt: https://ambitionnews.init65.co.in/llms.txt
+# llms-full.txt: https://ambitionnews.init65.co.in/llms-full.txt
