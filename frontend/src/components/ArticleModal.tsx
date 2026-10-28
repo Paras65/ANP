@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Volume2, VolumeX, Eye, Calendar, UserCheck, MapPin, Heart, Bookmark } from 'lucide-react';
 import type { Article } from '../types';
 import { WhatsAppIcon } from './SocialIcons';
+import { getSmartCoverImage } from '../utils/categoryTheme';
 
 interface ArticleModalProps {
   article: Article;
@@ -283,10 +284,10 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
               isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
             }`}>
               <img 
-                src={article.coverImage} 
+                src={article.coverImage || getSmartCoverImage('', article.category, article.title, article.district)} 
                 alt={article.title}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/logo.png';
+                  (e.target as HTMLImageElement).src = getSmartCoverImage('', article.category, article.title, article.district);
                 }}
                 className={`w-full h-full ${article.coverImage?.includes('logo') ? 'object-contain p-8 bg-slate-950' : 'object-cover'}`} 
               />

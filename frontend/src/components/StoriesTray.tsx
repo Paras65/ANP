@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Article, VideoBulletin, MandiRate } from '../types';
+import { getCategoryTheme, getSmartCoverImage } from '../utils/categoryTheme';
 
 export interface StoryItem {
   id: string;
@@ -145,25 +146,19 @@ export function generateStoriesList(
 
   // 4. Remaining top articles dynamically converted into web story circles
   const remaining = articles.filter(a => !kwdArticle || a._id !== kwdArticle._id).slice(0, 5);
-  const ringGradients = [
-    'from-cyan-400 via-blue-500 to-indigo-600',
-    'from-purple-500 via-pink-600 to-rose-500',
-    'from-yellow-400 via-amber-500 to-orange-600',
-    'from-fuchsia-500 via-purple-600 to-blue-600',
-    'from-emerald-500 via-teal-500 to-cyan-500'
-  ];
 
-  remaining.forEach((art, idx) => {
+  remaining.forEach((art) => {
+    const theme = getCategoryTheme(art.category, art.title, art.district);
     dynamicList.push({
       id: `s-${art._id}`,
-      label: art.district.replace(/ \(.*\)/, '').slice(0, 8) || 'ताज़ा खबर',
+      label: art.district.replace(/ \(.*\)/, '').slice(0, 8) || theme.badgeText,
       title: art.title,
-      image: art.coverImage || '/logo.png',
+      image: getSmartCoverImage(art.coverImage, art.category, art.title, art.district),
       category: art.category,
       district: art.district,
       excerpt: art.excerpt,
-      badge: art.isBreaking ? 'ब्रेकिंग' : undefined,
-      ringGradient: ringGradients[idx % ringGradients.length],
+      badge: art.isBreaking ? 'ब्रेकिंग' : theme.icon,
+      ringGradient: theme.ringGradient,
       articleId: art._id
     });
   });

@@ -38,6 +38,7 @@ import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import type { TabType } from './components/BottomNav';
 import { useVoiceTyping } from './hooks/useVoiceTyping';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './components/SocialIcons';
+import { getSmartCoverImage } from './utils/categoryTheme';
 
 import { 
   INITIAL_ARTICLES, 
@@ -465,7 +466,7 @@ export const App: React.FC = () => {
       state: selectedState,
       category: newArticleData.category || '🔴 कवर्धा स्पेशल',
       author: newArticleData.author || 'फ़ील्ड रिपोर्टर',
-      coverImage: newArticleData.coverImage || '/logo.png',
+      coverImage: getSmartCoverImage(newArticleData.coverImage, newArticleData.category, newArticleData.title, newArticleData.district),
       views: 1,
       isBreaking: true,
       isFeatured: false,
@@ -1454,7 +1455,7 @@ export const App: React.FC = () => {
                             src={heroArticle.coverImage || "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80"} 
                             alt={heroArticle.title} 
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/logo.png';
+                              (e.target as HTMLImageElement).src = getSmartCoverImage('', heroArticle.category, heroArticle.title, heroArticle.district);
                             }}
                             className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
                           />

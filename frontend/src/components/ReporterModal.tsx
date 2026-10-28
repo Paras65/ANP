@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Send, X, Camera, MapPin, Tag, User, Mic } from 'lucide-react';
 import type { Article, DistrictItem } from '../types';
 import { useVoiceTyping } from '../hooks/useVoiceTyping';
+import { getSmartCoverImage } from '../utils/categoryTheme';
 
 interface ReporterModalProps {
   districts: DistrictItem[];
@@ -70,7 +71,7 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
         state: selectedState,
         category,
         author,
-        coverImage,
+        coverImage: getSmartCoverImage(coverImage, category, title, district),
         isBreaking: true,
         views: 1,
         publishedAt: new Date().toISOString()
@@ -254,13 +255,15 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
             <label className="block text-slate-400 mb-1 font-semibold flex items-center gap-1">
               <Camera size={12} className="text-emerald-500" /> फोटो चुनें
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {[
-                { label: '🔴 Ambition लोगो', url: '/logo.png' },
-                { label: '🏛️ विकास/सड़क', url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop&q=80' },
                 { label: '🌾 कृषि/मंडी', url: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=800&auto=format&fit=crop&q=80' },
-                { label: '🚔 पुलिस/कानून', url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80' },
-                { label: '📢 प्रेस वार्ता', url: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&auto=format&fit=crop&q=80' }
+                { label: '🚔 पुलिस/सुरक्षा', url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80' },
+                { label: '🌦️ मौसम/चिल्फी', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80' },
+                { label: '🛕 भोरमदेव/धरोहर', url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop&q=80' },
+                { label: '🏗️ विकास/सड़क', url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&auto=format&fit=crop&q=80' },
+                { label: '🎓 शिक्षा/युवा', url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80' },
+                { label: '🔴 Ambition लोगो', url: '/logo.png' }
               ].map((p, idx) => (
                 <button
                   key={idx}

@@ -3,6 +3,7 @@ import { X, ChevronRight, MapPin, Pause } from 'lucide-react';
 import type { StoryItem } from './StoriesTray';
 import { DEMO_STORIES } from './StoriesTray';
 import { WhatsAppIcon } from './SocialIcons';
+import { getCategoryTheme } from '../utils/categoryTheme';
 
 interface StoryViewerModalProps {
   initialStory: StoryItem;
@@ -112,7 +113,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         
         {/* Story Background Image with Error Fallback */}
         <div className="absolute inset-0 bg-slate-950 flex items-center justify-center overflow-hidden">
-          {currentStory.image?.includes('logo') ? (
+          {currentStory.id === 's-live' ? (
             <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-br from-red-950 via-slate-950 to-black">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 via-transparent to-transparent"></div>
               <img 
@@ -123,15 +124,23 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
             </div>
           ) : (
             <img 
-              src={currentStory.image || "/logo.png"} 
+              src={currentStory.image || getCategoryTheme(currentStory.category, currentStory.title, currentStory.district).photoUrl} 
               alt={currentStory.title}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = "/logo.png";
+                (e.target as HTMLImageElement).src = getCategoryTheme(currentStory.category, currentStory.title, currentStory.district).photoUrl;
               }}
               className="w-full h-full object-cover animate-in fade-in zoom-in-105 duration-700 pointer-events-none" 
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/60 pointer-events-none"></div>
+
+          {/* Discreet Studio Corner Bug / Watermark */}
+          <div className="absolute top-16 right-4 z-20 flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 pointer-events-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+            <span className="text-[10px] font-black text-white tracking-widest uppercase">
+              AMBITION NEWS
+            </span>
+          </div>
         </div>
 
         {/* Top Header & Multi-Story Progress Bars */}

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Download, Share2, Sparkles, Image as ImageIcon, Check } from 'lucide-react';
 import type { Article } from '../types';
+import { getSmartCoverImage } from '../utils/categoryTheme';
 
 interface NewsCardGeneratorModalProps {
   article: Article;
@@ -34,7 +35,7 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
     // Load Image
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = article.coverImage || '/logo.png';
+    img.src = getSmartCoverImage(article.coverImage, article.category, article.title, article.district);
 
     const drawContent = (imageElement: HTMLImageElement | null) => {
       // 1. Draw Background Image or Fallback Gradient

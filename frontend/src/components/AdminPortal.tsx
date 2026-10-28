@@ -1517,12 +1517,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                   <div className="flex flex-wrap gap-2 mb-2">
                     {[
-                      { label: '🔴 Ambition लोगो', url: '/logo.png' },
-                      { label: '🏛️ कवर्धा/भोरमदेव', url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🌾 कृषि/मंडी', url: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=1000&auto=format&fit=crop&q=80' },
-                      { label: '🏛️ मंत्रालय/सरकार', url: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1000&auto=format&fit=crop&q=80' },
-                      { label: '🚔 पुलिस/कानून', url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1000&auto=format&fit=crop&q=80' },
-                      { label: '🌦️ चिल्फी/मौसम', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&auto=format&fit=crop&q=80' }
+                      { label: '🚔 पुलिस/सुरक्षा', url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '🌦️ मौसम/चिल्फी', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '🛕 भोरमदेव/धरोहर', url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '🏗️ विकास/सड़क', url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '🏛️ शासन/मंत्रालय', url: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '🎓 शिक्षा/युवा', url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '🔴 Ambition लोगो', url: '/logo.png' }
                     ].map((p, idx) => (
                       <button
                         key={idx}
