@@ -131,3 +131,4 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
     </div>
   );
 };
+
