@@ -74,3 +74,19 @@ export interface DistrictItem {
   state: 'chhattisgarh' | 'madhya-pradesh';
 }
 
+export interface Reporter {
+  _id: string;
+  name: string;
+  nameHindi?: string;
+  phone: string;
+  role: 'REPORTER' | 'EDITOR' | 'ADMIN';
+  bureau: string;
+  district: string;
+  districtId?: string;
+  reporterIdCode: string;
+  photoUrl?: string;
+  articlesCount?: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+

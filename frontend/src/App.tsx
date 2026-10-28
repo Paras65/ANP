@@ -44,7 +44,7 @@ import {
   SOCIAL_LINKS 
 } from './data/mockData';
 import type { StoryItem } from './components/StoriesTray';
-import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate } from './types';
+import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter } from './types';
 import api from './api/client';
 import { syncYouTubeChannelVideos } from './utils/mediaUtils';
 
@@ -59,6 +59,7 @@ export const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('सभी खबरें');
   const [districtsList, setDistrictsList] = useState<DistrictItem[]>(ALL_DISTRICTS_DEMO);
   const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
+  const [reporters, setReporters] = useState<Reporter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [backendSynced, setBackendSynced] = useState(false);
   
@@ -141,6 +142,34 @@ export const App: React.FC = () => {
     showToast('मंडी भाव हटा दिया गया');
     try {
       await api.delete(`/mandi/${id}`);
+    } catch {}
+  };
+
+  const handleAddReporter = async (repData: Partial<Reporter>) => {
+    try {
+      const res = await api.post('/reporters', repData);
+      if (res.data?.data) {
+        setReporters(prev => [res.data.data, ...prev]);
+        showToast('✅ नया संवाददाता सफलतापूर्वक जोड़ा गया!');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'संवाददाता जोड़ने में विफल');
+    }
+  };
+
+  const handleUpdateReporter = async (id: string, updatedData: Partial<Reporter>) => {
+    setReporters(prev => prev.map(r => r._id === id ? { ...r, ...updatedData } : r));
+    showToast('✅ संवाददाता विवरण अपडेट हो गया!');
+    try {
+      await api.put(`/reporters/${id}`, updatedData);
+    } catch {}
+  };
+
+  const handleDeleteReporter = async (id: string) => {
+    setReporters(prev => prev.filter(r => r._id !== id));
+    showToast('🗑️ संवाददाता हटा दिए गए');
+    try {
+      await api.delete(`/reporters/${id}`);
     } catch {}
   };
 
@@ -388,13 +417,14 @@ export const App: React.FC = () => {
     }
   };
 
-  // Load live media (videos & reels) from MongoDB Atlas
+  // Load live media (videos & reels) & reporters from MongoDB Atlas
   const loadMediaFromBackend = async () => {
     try {
-      const [vRes, rRes, mRes] = await Promise.allSettled([
+      const [vRes, rRes, mRes, repRes] = await Promise.allSettled([
         api.get('/videos'),
         api.get('/reels'),
-        api.get('/mandi')
+        api.get('/mandi'),
+        api.get('/reporters')
       ]);
       if (vRes.status === 'fulfilled' && vRes.value.data?.data && Array.isArray(vRes.value.data.data) && vRes.value.data.data.length > 0) {
         setVideoBulletins(vRes.value.data.data);
@@ -405,6 +435,9 @@ export const App: React.FC = () => {
       if (mRes.status === 'fulfilled' && mRes.value.data?.data && Array.isArray(mRes.value.data.data) && mRes.value.data.data.length > 0) {
         setMandiRates(mRes.value.data.data);
         localStorage.setItem('anp_mandi_rates', JSON.stringify(mRes.value.data.data));
+      }
+      if (repRes.status === 'fulfilled' && repRes.value.data?.data && Array.isArray(repRes.value.data.data) && repRes.value.data.data.length > 0) {
+        setReporters(repRes.value.data.data);
       }
     } catch {
       // Keep local state
@@ -904,6 +937,10 @@ export const App: React.FC = () => {
         onUpdateMandiRate={handleUpdateMandiRate}
         onAddMandiRate={handleAddMandiRate}
         onDeleteMandiRate={handleDeleteMandiRate}
+        reporters={reporters}
+        onAddReporter={handleAddReporter}
+        onUpdateReporter={handleUpdateReporter}
+        onDeleteReporter={handleDeleteReporter}
       />
     );
   }

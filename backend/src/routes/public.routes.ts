@@ -1094,6 +1094,266 @@ router.delete('/mandi/:id', requireAdminAuth, contentCreationLimiter, async (req
   }
 });
 
+// 9e. GET /api/reporters - Fetch all Bureau Chiefs & Field Reporters (with initial seed fallback & dynamic article counts)
+router.get('/reporters', async (req: Request, res: Response) => {
+  try {
+    let reporters = await User.find({ role: { $in: ['REPORTER', 'EDITOR', 'ADMIN'] } })
+      .populate('districtId')
+      .sort({ createdAt: 1 })
+      .lean();
+
+    if (!reporters || reporters.length === 0) {
+      // Find default districts
+      const kawardhaDistrict = await District.findOne({ $or: [{ nameHindi: /कवर्धा|कबीरधाम/i }, { name: /kawardha|kabirdham/i }] });
+      const raipurDistrict = await District.findOne({ $or: [{ nameHindi: /रायपुर/i }, { name: /raipur/i }] });
+      const bilaspurDistrict = await District.findOne({ $or: [{ nameHindi: /बिलासपुर/i }, { name: /bilaspur/i }] });
+      const bhopalDistrict = await District.findOne({ $or: [{ nameHindi: /भोपाल/i }, { name: /bhopal/i }] });
+
+      const initialReporters = [
+        {
+          name: 'अमित चंद्रवंशी',
+          nameHindi: 'अमित चंद्रवंशी',
+          phone: '9826011111',
+          role: 'EDITOR',
+          bureau: 'कवर्धा (कबीरधाम) ब्यूरो चीफ',
+          districtId: kawardhaDistrict?._id,
+          reporterIdCode: 'ANP-CG-KBR-01',
+          photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+          isActive: true
+        },
+        {
+          name: 'संजय वर्मा',
+          nameHindi: 'संजय वर्मा',
+          phone: '9826022222',
+          role: 'REPORTER',
+          bureau: 'कवर्धा कृषि व मंडी डेस्क',
+          districtId: kawardhaDistrict?._id,
+          reporterIdCode: 'ANP-CG-KBR-02',
+          photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+          isActive: true
+        },
+        {
+          name: 'मनीष यादव',
+          nameHindi: 'मनीष यादव',
+          phone: '9826033333',
+          role: 'REPORTER',
+          bureau: 'चिल्फी घाटी / बोड़ला वनांचल',
+          districtId: kawardhaDistrict?._id,
+          reporterIdCode: 'ANP-CG-KBR-03',
+          photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+          isActive: true
+        },
+        {
+          name: 'विशेष संवाददाता',
+          nameHindi: 'विशेष संवाददाता',
+          phone: '9826044444',
+          role: 'REPORTER',
+          bureau: 'रायपुर मंत्रालय डेस्क',
+          districtId: raipurDistrict?._id,
+          reporterIdCode: 'ANP-CG-RAI-01',
+          photoUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&auto=format&fit=crop&q=80',
+          isActive: true
+        },
+        {
+          name: 'राजेश शुक्ला',
+          nameHindi: 'राजेश शुक्ला',
+          phone: '9826055555',
+          role: 'REPORTER',
+          bureau: 'बिलासपुर हाईकोर्ट डेस्क',
+          districtId: bilaspurDistrict?._id,
+          reporterIdCode: 'ANP-CG-BIL-01',
+          photoUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&auto=format&fit=crop&q=80',
+          isActive: true
+        },
+        {
+          name: 'नीलेश शर्मा',
+          nameHindi: 'नीलेश शर्मा',
+          phone: '9826066666',
+          role: 'REPORTER',
+          bureau: 'भोपाल ब्यूरो (एमपी प्रभारी)',
+          districtId: bhopalDistrict?._id,
+          reporterIdCode: 'ANP-MP-BHO-01',
+          photoUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80',
+          isActive: true
+        }
+      ];
+
+      for (const rep of initialReporters) {
+        await User.findOneAndUpdate({ phone: rep.phone }, rep, { upsert: true, new: true });
+      }
+
+      reporters = await User.find({ role: { $in: ['REPORTER', 'EDITOR', 'ADMIN'] } })
+        .populate('districtId')
+        .sort({ createdAt: 1 })
+        .lean();
+    }
+
+    // Dynamic Article Counts per Reporter
+    const data = await Promise.all(
+      reporters.map(async (r: any) => {
+        const safeName = r.nameHindi || r.name;
+        const count = await Article.countDocuments({
+          $or: [
+            { authorId: r._id },
+            { author: new RegExp(escapeRegex(safeName), 'i') }
+          ],
+          deletedAt: null
+        });
+
+        return {
+          _id: r._id.toString(),
+          name: r.name,
+          nameHindi: r.nameHindi || r.name,
+          phone: r.phone,
+          role: r.role,
+          bureau: r.bureau || 'क्षेत्रीय संवाददाता',
+          district: r.districtId?.nameHindi || r.districtId?.name || 'कवर्धा',
+          districtId: r.districtId?._id?.toString(),
+          reporterIdCode: r.reporterIdCode || `ANP-${r._id.toString().slice(-4).toUpperCase()}`,
+          photoUrl: r.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+          articlesCount: count,
+          isActive: r.isActive !== false,
+          createdAt: r.createdAt
+        };
+      })
+    );
+
+    res.json({ success: true, count: data.length, data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9f. POST /api/reporters - Register new Reporter / Bureau Chief
+router.post('/reporters', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
+  try {
+    const { name, nameHindi, phone, bureau, district, role, reporterIdCode, photoUrl } = req.body;
+    if (!name || !phone) {
+      return res.status(400).json({ success: false, message: 'संवाददाता का नाम और फोन नंबर आवश्यक है' });
+    }
+
+    let districtDoc = null;
+    if (district) {
+      const cleanDistrict = String(district).replace(/[()]/g, '').trim();
+      districtDoc = await District.findOne({
+        $or: [
+          { nameHindi: new RegExp(escapeRegex(cleanDistrict), 'i') },
+          { name: new RegExp(escapeRegex(cleanDistrict), 'i') }
+        ]
+      });
+    }
+
+    const cleanPhone = String(phone).replace(/\D/g, '').slice(-10);
+    const generatedCode = reporterIdCode?.trim() || `ANP-CG-${Math.floor(100 + Math.random() * 900)}`;
+
+    const user = await User.findOneAndUpdate(
+      { phone: cleanPhone },
+      {
+        name: name.trim(),
+        nameHindi: (nameHindi || name).trim(),
+        phone: cleanPhone,
+        bureau: (bureau || 'क्षेत्रीय संवाददाता').trim(),
+        districtId: districtDoc?._id,
+        role: role === 'EDITOR' ? 'EDITOR' : 'REPORTER',
+        reporterIdCode: generatedCode,
+        photoUrl: photoUrl?.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+        isActive: true
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'संवाददाता सफलतापूर्वक पंजीकृत हो गए',
+      data: {
+        _id: user._id.toString(),
+        name: user.name,
+        nameHindi: user.nameHindi,
+        phone: user.phone,
+        bureau: user.bureau,
+        district: districtDoc?.nameHindi || district || 'कवर्धा',
+        reporterIdCode: user.reporterIdCode,
+        role: user.role,
+        photoUrl: user.photoUrl,
+        articlesCount: 0,
+        isActive: user.isActive
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9g. PUT /api/reporters/:id - Update Reporter Details or Status
+router.put('/reporters/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, nameHindi, phone, bureau, district, role, reporterIdCode, photoUrl, isActive } = req.body;
+
+    let districtIdUpdate = undefined;
+    if (district) {
+      const cleanDistrict = String(district).replace(/[()]/g, '').trim();
+      const districtDoc = await District.findOne({
+        $or: [
+          { nameHindi: new RegExp(escapeRegex(cleanDistrict), 'i') },
+          { name: new RegExp(escapeRegex(cleanDistrict), 'i') }
+        ]
+      });
+      if (districtDoc) districtIdUpdate = districtDoc._id;
+    }
+
+    const updated = await User.findByIdAndUpdate(
+      id,
+      {
+        ...(name && { name: name.trim() }),
+        ...(nameHindi && { nameHindi: nameHindi.trim() }),
+        ...(phone && { phone: String(phone).replace(/\D/g, '').slice(-10) }),
+        ...(bureau && { bureau: bureau.trim() }),
+        ...(districtIdUpdate && { districtId: districtIdUpdate }),
+        ...(role && { role }),
+        ...(reporterIdCode && { reporterIdCode: reporterIdCode.trim() }),
+        ...(photoUrl && { photoUrl: photoUrl.trim() }),
+        ...(isActive !== undefined && { isActive })
+      },
+      { new: true }
+    ).populate('districtId');
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'संवाददाता नहीं मिले' });
+    }
+
+    res.json({
+      success: true,
+      message: 'संवाददाता विवरण अपडेट हो गया',
+      data: {
+        _id: updated._id.toString(),
+        name: updated.name,
+        nameHindi: updated.nameHindi,
+        phone: updated.phone,
+        bureau: updated.bureau,
+        district: (updated.districtId as any)?.nameHindi || district || 'कवर्धा',
+        reporterIdCode: updated.reporterIdCode,
+        role: updated.role,
+        photoUrl: updated.photoUrl,
+        isActive: updated.isActive
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9h. DELETE /api/reporters/:id - Remove Reporter
+router.delete('/reporters/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await User.findByIdAndDelete(id);
+    res.json({ success: true, message: 'संवाददाता नेटवर्क से हटा दिए गए' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // --- ADMIN SECURITY & CRYPTOGRAPHIC AUTHENTICATION (STRICT ENV ONLY) ---
 const PIN_SALT = process.env.JWT_SECRET || 'anp_editorial_desk_pin_hmac_salt_2026';
 

@@ -41,9 +41,14 @@ import {
   MessageCircle,
   Image as ImageIcon,
   Bell,
-  Wand2
+  Wand2,
+  Phone,
+  Printer,
+  QrCode,
+  Building2,
+  BadgeCheck
 } from 'lucide-react';
-import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate } from '../types';
+import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter } from '../types';
 import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos, parseReelMedia } from '../utils/mediaUtils';
 import { WhatsAppIcon } from './SocialIcons';
 import api, { setAuthToken } from '../api/client';
@@ -80,6 +85,10 @@ interface AdminPortalProps {
   onUpdateMandiRate?: (rate: MandiRate) => void | Promise<void>;
   onAddMandiRate?: (rate: Omit<MandiRate, 'id'>) => void | Promise<void>;
   onDeleteMandiRate?: (id: string) => void | Promise<void>;
+  reporters?: Reporter[];
+  onAddReporter?: (reporter: Partial<Reporter>) => void | Promise<void>;
+  onUpdateReporter?: (id: string, reporter: Partial<Reporter>) => void | Promise<void>;
+  onDeleteReporter?: (id: string) => void | Promise<void>;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
@@ -107,7 +116,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   mandiRates = [],
   onUpdateMandiRate,
   onAddMandiRate,
-  onDeleteMandiRate
+  onDeleteMandiRate,
+  reporters = [],
+  onAddReporter,
+  onUpdateReporter,
+  onDeleteReporter
 }) => {
   const [activeTab, setActiveTab] = useState<'create' | 'articles' | 'breaking' | 'reporters' | 'media' | 'mandi'>('create');
   // Security & Authentication State (Strict Token-Based State)
@@ -125,6 +138,73 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [articleSearchQuery, setArticleSearchQuery] = useState('');
   const [articleDistrictFilter, setArticleDistrictFilter] = useState('सभी');
   const [articleStatusFilter, setArticleStatusFilter] = useState<'all' | 'PUBLISHED' | 'REVIEW'>('all');
+
+  // Reporters Management States (Tab 4)
+  const [reporterSearch, setReporterSearch] = useState('');
+  const [reporterDistrictFilter, setReporterDistrictFilter] = useState('सभी');
+  const [showReporterModal, setShowReporterModal] = useState(false);
+  const [editingReporter, setEditingReporter] = useState<Reporter | null>(null);
+  const [idCardReporter, setIdCardReporter] = useState<Reporter | null>(null);
+
+  // Form Inputs for Add/Edit Reporter
+  const [repName, setRepName] = useState('');
+  const [repNameHindi, setRepNameHindi] = useState('');
+  const [repPhone, setRepPhone] = useState('');
+  const [repBureau, setRepBureau] = useState('कवर्धा ब्यूरो प्रतिनिधि');
+  const [repDistrict, setRepDistrict] = useState('कवर्धा');
+  const [repRole, setRepRole] = useState<'REPORTER' | 'EDITOR'>('REPORTER');
+  const [repCode, setRepCode] = useState('');
+  const [repPhoto, setRepPhoto] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80');
+
+  const handleOpenAddReporter = () => {
+    setEditingReporter(null);
+    setRepName('');
+    setRepNameHindi('');
+    setRepPhone('');
+    setRepBureau('कवर्धा ब्यूरो प्रतिनिधि');
+    setRepDistrict('कवर्धा');
+    setRepRole('REPORTER');
+    setRepCode(`ANP-CG-${Math.floor(100 + Math.random() * 900)}`);
+    setRepPhoto('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80');
+    setShowReporterModal(true);
+  };
+
+  const handleOpenEditReporter = (rep: Reporter) => {
+    setEditingReporter(rep);
+    setRepName(rep.name);
+    setRepNameHindi(rep.nameHindi || rep.name);
+    setRepPhone(rep.phone);
+    setRepBureau(rep.bureau);
+    setRepDistrict(rep.district || 'कवर्धा');
+    setRepRole(rep.role === 'EDITOR' ? 'EDITOR' : 'REPORTER');
+    setRepCode(rep.reporterIdCode || '');
+    setRepPhoto(rep.photoUrl || '');
+    setShowReporterModal(true);
+  };
+
+  const handleSaveReporter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!repName.trim() || !repPhone.trim()) return;
+
+    const payload: Partial<Reporter> = {
+      name: repName.trim(),
+      nameHindi: (repNameHindi || repName).trim(),
+      phone: repPhone.trim(),
+      bureau: repBureau.trim(),
+      district: repDistrict.trim(),
+      role: repRole,
+      reporterIdCode: repCode.trim() || `ANP-CG-${Math.floor(100 + Math.random() * 900)}`,
+      photoUrl: repPhoto.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+      isActive: true
+    };
+
+    if (editingReporter && onUpdateReporter) {
+      await onUpdateReporter(editingReporter._id, payload);
+    } else if (onAddReporter) {
+      await onAddReporter(payload);
+    }
+    setShowReporterModal(false);
+  };
 
   // Mobile UX States
   const [tab1MobileView, setTab1MobileView] = useState<'form' | 'preview'>('form');
@@ -1274,9 +1354,42 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                 {/* Author Byline */}
                 <div>
-                  <label className="block text-slate-400 mb-1 font-semibold flex items-center gap-1">
-                    <User size={13} className="text-blue-500" /> रिपोर्टर / संवाददाता का नाम *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-400 font-semibold flex items-center gap-1">
+                      <User size={13} className="text-blue-500" /> रिपोर्टर / संवाददाता का नाम *
+                    </label>
+                    {reporters.length > 0 && (
+                      <span className="text-[10px] text-red-400 font-medium">
+                        या पंजीकृत ब्यूरो से चुनें
+                      </span>
+                    )}
+                  </div>
+
+                  {reporters.length > 0 && (
+                    <select
+                      onChange={(e) => {
+                        const rep = reporters.find(r => r._id === e.target.value);
+                        if (rep) {
+                          setAuthor(`${rep.nameHindi || rep.name} (${rep.bureau})`);
+                          if (rep.district && rep.district !== 'सभी') {
+                            setDistrict(rep.district);
+                          }
+                        }
+                      }}
+                      defaultValue=""
+                      className={`w-full rounded-xl p-2 text-xs font-medium outline-none transition mb-2 ${
+                        isDark ? 'bg-slate-900 border border-slate-700 text-slate-300' : 'bg-slate-100 border border-slate-300 text-slate-700'
+                      }`}
+                    >
+                      <option value="" disabled>-- 👥 पंजीकृत ब्यूरो संवाददाता चुनें --</option>
+                      {reporters.filter(r => r.isActive).map(r => (
+                        <option key={r._id} value={r._id}>
+                          {r.nameHindi || r.name} — {r.bureau} ({r.district})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
                   <input
                     type="text"
                     value={author}
@@ -1955,113 +2068,337 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         )}
 
         {/* TAB 4: REPORTERS NETWORK */}
-        {activeTab === 'reporters' && (
-          <div className={`p-5 rounded-3xl border ${
-            isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
-          }`}>
-            <h2 className="text-base font-black text-white mb-4 pb-3 border-b border-slate-800">
-              क्षेत्रीय ब्यूरो व संवाददाता नेटवर्क (CG & MP)
-            </h2>
+        {activeTab === 'reporters' && (() => {
+          const filteredReporters = reporters.filter(rep => {
+            const matchesSearch = !reporterSearch.trim() || 
+              rep.name?.toLowerCase().includes(reporterSearch.toLowerCase()) || 
+              rep.nameHindi?.toLowerCase().includes(reporterSearch.toLowerCase()) || 
+              rep.bureau?.toLowerCase().includes(reporterSearch.toLowerCase()) || 
+              rep.phone?.includes(reporterSearch) || 
+              rep.reporterIdCode?.toLowerCase().includes(reporterSearch.toLowerCase());
+            const matchesDistrict = reporterDistrictFilter === 'सभी' || (rep.district && rep.district.includes(reporterDistrictFilter));
+            return matchesSearch && matchesDistrict;
+          });
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[
-                { name: 'अमित चंद्रवंशी', bureau: 'कवर्धा (कबीरधाम) ब्यूरो चीफ', role: 'HQ डेस्क प्रमुख', count: 18 },
-                { name: 'संजय वर्मा', bureau: 'कवर्धा कृषि व मंडी डेस्क', role: 'मंडी संवाददाता', count: 12 },
-                { name: 'मनीष यादव', bureau: 'चिल्फी घाटी / बोड़ला', role: 'वनांचल रिपोर्टर', count: 9 },
-                { name: 'विशेष संवाददाता', bureau: 'रायपुर मंत्रालय डेस्क', role: 'राज्य संवाददाता', count: 15 },
-                { name: 'राजेश शुक्ला', bureau: 'बिलासपुर हाईकोर्ट डेस्क', role: 'विधि संवाददाता', count: 8 },
-                { name: 'नीलेश शर्मा', bureau: 'भोपाल ब्यूरो', role: 'एमपी प्रभारी', count: 11 }
-              ].map((rep, idx) => (
-                <div key={idx} className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                  <div className="text-white font-bold text-sm">{rep.name}</div>
-                  <div className="text-xs text-red-400 font-medium">{rep.bureau}</div>
-                  <div className="flex justify-between items-center text-[10px] text-slate-400 pt-2 border-t border-slate-800">
-                    <span>{rep.role}</span>
-                    <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono font-bold">
-                      {rep.count} खबरें
-                    </span>
+          const activeCount = reporters.filter(r => r.isActive).length;
+          const totalPublishedNews = reporters.reduce((sum, r) => sum + (r.articlesCount || 0), 0);
+          const distinctDistricts = new Set(reporters.map(r => r.district).filter(Boolean)).size;
+
+          return (
+            <div className={`p-5 rounded-3xl border ${
+              isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
+            }`}>
+              {/* Header & Add Reporter Action */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Users size={20} className="text-blue-500" />
+                    <h2 className="text-base font-black text-white">
+                      क्षेत्रीय ब्यूरो व संवाददाता नेटवर्क (CG & MP)
+                    </h2>
                   </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    सभी 88 जिलों के ब्यूरो प्रमुखों, फील्ड रिपोर्टर्स, लाइव खबरों व डिजिटल प्रेस कार्ड का नियंत्रण
+                  </p>
                 </div>
-              ))}
-            </div>
 
-            {/* Citizen Journalism / Scoop Inbox */}
-            <div className="mt-6 pt-5 border-t border-slate-800">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-                    <Send size={14} />
+                <button
+                  type="button"
+                  onClick={handleOpenAddReporter}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-600/30 transition active:scale-95 shrink-0 self-start sm:self-auto"
+                >
+                  <Plus size={14} />
+                  <span>+ नया संवाददाता जोड़ें</span>
+                </button>
+              </div>
+
+              {/* Stats Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                    <Users size={18} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <span>नागरिक पत्रकारिता व फ़ील्ड स्कूप डेस्क</span>
-                      {articles.filter(a => a.status === 'REVIEW').length > 0 && (
-                        <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full">
-                          {articles.filter(a => a.status === 'REVIEW').length} नई समीक्षाएं
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-[11px] text-slate-400">पोर्टल के "📢 खबर भेजें" डेस्क से नागरिकों एवं संवाददाताओं द्वारा भेजी गई खबरें</p>
+                    <span className="text-[10px] text-slate-400 block font-medium">कुल संवाददाता</span>
+                    <span className="text-sm font-black text-white font-mono">{reporters.length}</span>
                   </div>
                 </div>
-                {articles.filter(a => a.status === 'REVIEW').length > 0 && (
-                  <button
-                    onClick={() => {
-                      setActiveTab('articles');
-                      setArticleStatusFilter('REVIEW');
-                    }}
-                    className="text-xs text-amber-400 hover:text-amber-300 font-bold underline self-start sm:self-auto"
+
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                    <CheckCircle2 size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-medium">सक्रिय ब्यूरो</span>
+                    <span className="text-sm font-black text-emerald-400 font-mono">{activeCount}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+                    <FileText size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-medium">कवर की गई खबरें</span>
+                    <span className="text-sm font-black text-red-400 font-mono">{totalPublishedNews}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                    <MapPin size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-medium">जिले कवर</span>
+                    <span className="text-sm font-black text-amber-400 font-mono">{distinctDistricts}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search & Filter Bar */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                <div className="sm:col-span-2 relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text"
+                    value={reporterSearch}
+                    onChange={(e) => setReporterSearch(e.target.value)}
+                    placeholder="संवाददाता का नाम, फोन, प्रेस कोड या ब्यूरो से खोजें..."
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 outline-none transition"
+                  />
+                </div>
+
+                <div>
+                  <select
+                    value={reporterDistrictFilter}
+                    onChange={(e) => setReporterDistrictFilter(e.target.value)}
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
                   >
-                    सभी समीक्षा करें →
-                  </button>
+                    <option value="सभी">सभी जिले ({reporters.length})</option>
+                    <option value="कवर्धा">कवर्धा (कबीरधाम)</option>
+                    <option value="रायपुर">रायपुर</option>
+                    <option value="बिलासपुर">बिलासपुर</option>
+                    <option value="भोपाल">भोपाल</option>
+                    <option value="इंदौर">इंदौर</option>
+                    {districts
+                      .filter(d => !['कबीरधाम (कवर्धा)', 'कवर्धा', 'रायपुर', 'बिलासपुर', 'भोपाल', 'इंदौर'].includes(d.nameHindi || d.name))
+                      .map(d => (
+                        <option key={d._id} value={d.nameHindi || d.name}>
+                          {d.nameHindi || d.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Grid of Reporters */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredReporters.length === 0 ? (
+                  <div className="col-span-full p-8 text-center text-xs text-slate-400 border border-dashed border-white/10 rounded-2xl">
+                    कोई संवाददाता नहीं मिला। कृपया अलग खोज शब्द दर्ज करें या नया जोड़ें।
+                  </div>
+                ) : (
+                  filteredReporters.map((rep) => (
+                    <div 
+                      key={rep._id} 
+                      className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 hover:border-blue-500/40 transition-colors flex flex-col justify-between space-y-3 shadow-md"
+                    >
+                      <div>
+                        {/* Top: Avatar, Name, Status Badge */}
+                        <div className="flex items-start justify-between gap-2.5">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="relative shrink-0">
+                              <img 
+                                src={rep.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'} 
+                                alt={rep.name}
+                                className="w-11 h-11 rounded-xl object-cover bg-slate-900 border border-white/10"
+                              />
+                              <span 
+                                className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-slate-950 ${
+                                  rep.isActive ? 'bg-emerald-500' : 'bg-slate-500'
+                                }`} 
+                                title={rep.isActive ? 'सक्रिय' : 'निष्क्रिय'}
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-white font-bold text-xs truncate">
+                                {rep.nameHindi || rep.name}
+                              </div>
+                              <div className="text-[11px] text-red-400 font-semibold truncate mt-0.5">
+                                {rep.bureau}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase shrink-0 ${
+                            rep.isActive 
+                              ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800' 
+                              : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {rep.isActive ? 'सक्रिय' : 'बंद'}
+                          </span>
+                        </div>
+
+                        {/* Mid Meta: District & Press Code */}
+                        <div className="flex items-center justify-between gap-1 mt-3 pt-2.5 border-t border-slate-800/80 text-[10px]">
+                          <span className="text-slate-300 font-medium">📍 {rep.district}</span>
+                          <span className="font-mono bg-amber-950/60 text-amber-300 border border-amber-800/50 px-1.5 py-0.5 rounded font-bold">
+                            🪪 {rep.reporterIdCode}
+                          </span>
+                        </div>
+
+                        {/* Live Article Count & Contact */}
+                        <div className="flex items-center justify-between gap-1 mt-2 text-[10px] text-slate-400">
+                          <span className="font-bold text-slate-200">
+                            📰 {rep.articlesCount || 0} खबरें
+                          </span>
+                          <a 
+                            href={`https://wa.me/91${rep.phone}?text=नमस्ते ${encodeURIComponent(rep.nameHindi || rep.name)} जी, एम्बिशन न्यूज़ डेस्क से...`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-emerald-400 hover:underline font-mono font-medium flex items-center gap-1"
+                            title="सीधे WhatsApp करें"
+                          >
+                            <Phone size={10} />
+                            <span>+91 {rep.phone}</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons Toolbar */}
+                      <div className="pt-2.5 border-t border-slate-800 flex items-center justify-between gap-1.5 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setIdCardReporter(rep)}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition active:scale-95"
+                          title="डिजिटल प्रेस कार्ड देखें व प्रिंट करें"
+                        >
+                          <Printer size={12} />
+                          <span>प्रेस कार्ड</span>
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditReporter(rep)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                            title="संपादित करें"
+                          >
+                            <Edit3 size={13} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onUpdateReporter) {
+                                onUpdateReporter(rep._id, { isActive: !rep.isActive });
+                              }
+                            }}
+                            className={`p-1.5 rounded-lg transition ${
+                              rep.isActive ? 'text-emerald-400 hover:text-emerald-300' : 'text-slate-500 hover:text-slate-400'
+                            }`}
+                            title={rep.isActive ? 'डिएक्टिवेट करें' : 'एक्टिवेट करें'}
+                          >
+                            <CheckCircle2 size={13} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`क्या आप सच में संवाददाता "${rep.nameHindi || rep.name}" को हटाना चाहते हैं?`)) {
+                                if (onDeleteReporter) onDeleteReporter(rep._id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 transition"
+                            title="हटाएं"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
 
-              {articles.filter(a => a.status === 'REVIEW').length === 0 ? (
-                <div className="p-4 rounded-2xl bg-slate-950/40 border border-dashed border-slate-800 text-center text-xs text-slate-400">
-                  फिलहाल कोई लंबित नागरिक स्कूप नहीं है। सभी खबरें स्वीकृत व प्रकाशित हैं।
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {articles.filter(a => a.status === 'REVIEW').slice(0, 5).map(art => (
-                    <div key={art._id} className="p-3 rounded-2xl bg-slate-950 border border-amber-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2 text-[10px] text-amber-400 font-bold mb-0.5">
-                          <span>📍 {art.district}</span>
-                          <span>•</span>
-                          <span>✍️ {art.author}</span>
-                          <span className="bg-amber-950 text-amber-300 border border-amber-800/60 px-1.5 rounded">समीक्षा लंबित</span>
-                        </div>
-                        <h4 className="text-xs font-bold text-white line-clamp-1">{art.title}</h4>
-                      </div>
-                      <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-                        <button
-                          onClick={() => {
-                            if (onUpdateArticle) {
-                              onUpdateArticle(art._id, { status: 'PUBLISHED' });
-                            }
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow transition active:scale-95"
-                          title="तुरंत स्वीकृत कर पोर्टल पर लाइव प्रकाशित करें"
-                        >
-                          <Check size={12} />
-                          <span>स्वीकृत करें</span>
-                        </button>
-                        <button
-                          onClick={() => handleStartEdit(art)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center gap-1 transition active:scale-95"
-                        >
-                          <Edit3 size={12} />
-                          <span>संपादित करें</span>
-                        </button>
-                      </div>
+              {/* Citizen Journalism / Scoop Inbox */}
+              <div className="mt-6 pt-5 border-t border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                      <Send size={14} />
                     </div>
-                  ))}
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <span>नागरिक पत्रकारिता व फ़ील्ड स्कूप डेस्क</span>
+                        {articles.filter(a => a.status === 'REVIEW').length > 0 && (
+                          <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full">
+                            {articles.filter(a => a.status === 'REVIEW').length} नई समीक्षाएं
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-[11px] text-slate-400">पोर्टल के "📢 खबर भेजें" डेस्क से नागरिकों एवं संवाददाताओं द्वारा भेजी गई खबरें</p>
+                    </div>
+                  </div>
+                  {articles.filter(a => a.status === 'REVIEW').length > 0 && (
+                    <button
+                      onClick={() => {
+                        setActiveTab('articles');
+                        setArticleStatusFilter('REVIEW');
+                      }}
+                      className="text-xs text-amber-400 hover:text-amber-300 font-bold underline self-start sm:self-auto"
+                    >
+                      सभी समीक्षा करें →
+                    </button>
+                  )}
                 </div>
-              )}
+
+                {articles.filter(a => a.status === 'REVIEW').length === 0 ? (
+                  <div className="p-4 rounded-2xl bg-slate-950/40 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+                    फिलहाल कोई लंबित नागरिक स्कूप नहीं है। सभी खबरें स्वीकृत व प्रकाशित हैं।
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {articles.filter(a => a.status === 'REVIEW').slice(0, 5).map(art => (
+                      <div key={art._id} className="p-3 rounded-2xl bg-slate-950 border border-amber-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 text-[10px] text-amber-400 font-bold mb-0.5">
+                            <span>📍 {art.district}</span>
+                            <span>•</span>
+                            <span>✍️ {art.author}</span>
+                            <span className="bg-amber-950 text-amber-300 border border-amber-800/60 px-1.5 rounded">समीक्षा लंबित</span>
+                          </div>
+                          <h4 className="text-xs font-bold text-white line-clamp-1">{art.title}</h4>
+                        </div>
+                        <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                          <button
+                            onClick={() => {
+                              if (onUpdateArticle) {
+                                onUpdateArticle(art._id, { status: 'PUBLISHED' });
+                              }
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow transition active:scale-95"
+                            title="तुरंत स्वीकृत कर पोर्टल पर लाइव प्रकाशित करें"
+                          >
+                            <Check size={12} />
+                            <span>स्वीकृत करें</span>
+                          </button>
+                          <button
+                            onClick={() => handleStartEdit(art)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center gap-1 transition active:scale-95"
+                          >
+                            <Edit3 size={12} />
+                            <span>संपादित करें</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB 5: YOUTUBE & REELS HUB */}
         {activeTab === 'media' && (
@@ -3369,6 +3706,294 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           isDark={isDark}
           onClose={() => setCardArticle(null)}
         />
+      )}
+
+      {/* ADD / EDIT REPORTER MODAL */}
+      {showReporterModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0b0f19] border border-blue-500/30 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-4 bg-[#070a12] flex items-center justify-between border-b border-white/10">
+              <div className="flex items-center gap-2 text-blue-400 font-bold text-sm">
+                <Users size={18} />
+                <span className="text-white">
+                  {editingReporter ? 'संवाददाता विवरण संपादित करें' : 'नया क्षेत्रीय संवाददाता / ब्यूरो प्रमुख जोड़ें'}
+                </span>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowReporterModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveReporter} className="p-5 space-y-3.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-bold">नाम (हिंदी में) *</label>
+                  <input 
+                    type="text"
+                    value={repNameHindi}
+                    onChange={(e) => {
+                      setRepNameHindi(e.target.value);
+                      if (!repName) setRepName(e.target.value);
+                    }}
+                    placeholder="उदा. अमित चंद्रवंशी"
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-bold">नाम (अंग्रेजी / ID में) *</label>
+                  <input 
+                    type="text"
+                    value={repName}
+                    onChange={(e) => setRepName(e.target.value)}
+                    placeholder="Amit Chandrawanshi"
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-bold">मोबाइल नंबर (WhatsApp) *</label>
+                  <input 
+                    type="tel"
+                    value={repPhone}
+                    onChange={(e) => setRepPhone(e.target.value)}
+                    placeholder="98260XXXXX"
+                    maxLength={10}
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none font-mono"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-bold">पद / ब्यूरो (Designation) *</label>
+                  <input 
+                    type="text"
+                    value={repBureau}
+                    onChange={(e) => setRepBureau(e.target.value)}
+                    placeholder="उदा. कवर्धा ब्यूरो चीफ / ग्राउंड रिपोर्टर"
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-bold">जिला (District) *</label>
+                  <select
+                    value={repDistrict}
+                    onChange={(e) => setRepDistrict(e.target.value)}
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                  >
+                    <option value="कवर्धा">कवर्धा (कबीरधाम)</option>
+                    <option value="रायपुर">रायपुर</option>
+                    <option value="बिलासपुर">बिलासपुर</option>
+                    <option value="भोपाल">भोपाल</option>
+                    <option value="इंदौर">इंदौर</option>
+                    {districts
+                      .filter(d => !['कबीरधाम (कवर्धा)', 'कवर्धा', 'रायपुर', 'बिलासपुर', 'भोपाल', 'इंदौर'].includes(d.nameHindi || d.name))
+                      .map(d => (
+                        <option key={d._id} value={d.nameHindi || d.name}>
+                          {d.nameHindi || d.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-slate-300 font-bold">प्रेस आईडी कोड (Press ID)</label>
+                    <button
+                      type="button"
+                      onClick={() => setRepCode(`ANP-CG-${Math.floor(100 + Math.random() * 900)}`)}
+                      className="text-[10px] text-blue-400 hover:underline"
+                    >
+                      नया कोड
+                    </button>
+                  </div>
+                  <input 
+                    type="text"
+                    value={repCode}
+                    onChange={(e) => setRepCode(e.target.value)}
+                    placeholder="ANP-CG-KBR-01"
+                    className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-300 font-bold">फोटो लिंक (Photo URL)</label>
+                <input 
+                  type="url"
+                  value={repPhoto}
+                  onChange={(e) => setRepPhoto(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full bg-[#05070e] border border-white/15 focus:border-blue-500 rounded-xl px-3 py-2 text-white outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setShowReporterModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition"
+                >
+                  रद्द करें
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2 rounded-xl shadow-lg shadow-blue-600/30 transition active:scale-95 flex items-center gap-1.5"
+                >
+                  <Save size={14} />
+                  <span>{editingReporter ? 'अपडेट सहेजें' : 'संवाददाता जोड़ें'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DIGITAL PRESS ID CARD MODAL */}
+      {idCardReporter && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-sm flex flex-col items-center animate-in zoom-in-95 duration-200">
+            
+            {/* The Badge Container (Printable) */}
+            <div 
+              id="press-id-card-render"
+              className="w-full rounded-3xl overflow-hidden shadow-2xl border-2 border-amber-500/60 bg-gradient-to-b from-[#0e1628] via-[#090e1a] to-[#04060c] text-white relative flex flex-col p-5"
+            >
+              {/* Lanyard Punch Hole Marker */}
+              <div className="w-12 h-2.5 bg-black/60 rounded-full mx-auto -mt-2 mb-3 border border-white/20"></div>
+
+              {/* Card Header */}
+              <div className="text-center pb-3 border-b border-amber-500/40 relative">
+                <div className="inline-flex items-center justify-center gap-1.5 bg-red-600 text-white px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow">
+                  <span>PRESS / मीडिया प्रतिनिधि</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-white p-0.5 shadow shrink-0">
+                    <img src="/logo.png" alt="Logo" className="w-full h-full object-cover rounded-full" />
+                  </div>
+                  <div className="text-left">
+                    <h2 className="text-sm font-black text-white tracking-wide leading-none">AMBITION NEWS</h2>
+                    <span className="text-[9px] text-amber-400 font-bold block mt-0.5">राष्ट्रीय डिजिटल समाचार नेटवर्क</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Photo & Identity Section */}
+              <div className="flex flex-col items-center text-center py-4 relative">
+                <div className="w-24 h-24 rounded-2xl overflow-hidden p-1 bg-gradient-to-tr from-amber-500 to-red-600 shadow-xl relative">
+                  <img 
+                    src={idCardReporter.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'} 
+                    alt={idCardReporter.name}
+                    className="w-full h-full object-cover rounded-xl bg-slate-900" 
+                  />
+                  {idCardReporter.isActive && (
+                    <div className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-950"></div>
+                  )}
+                </div>
+
+                <h3 className="text-base font-black text-white mt-3 leading-tight">
+                  {idCardReporter.nameHindi || idCardReporter.name}
+                </h3>
+                <span className="text-xs text-slate-300 font-medium">
+                  {idCardReporter.name}
+                </span>
+
+                <div className="mt-2 bg-gradient-to-r from-red-950/80 to-amber-950/80 border border-amber-500/40 px-3 py-1 rounded-xl text-amber-300 font-bold text-xs shadow-sm">
+                  {idCardReporter.bureau}
+                </div>
+
+                <div className="flex items-center gap-2 mt-2 text-[11px] text-slate-300">
+                  <span>📍 {idCardReporter.district}</span>
+                  <span>•</span>
+                  <span>CG / MP</span>
+                </div>
+              </div>
+
+              {/* Credentials Details Box */}
+              <div className="bg-slate-950/80 rounded-2xl border border-white/10 p-3 space-y-2 text-xs">
+                <div className="flex justify-between items-center border-b border-white/10 pb-1.5">
+                  <span className="text-slate-400 text-[10px]">प्रेस कोड (ID No.)</span>
+                  <span className="font-mono font-black text-amber-400 text-xs tracking-wider">
+                    {idCardReporter.reporterIdCode}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b border-white/10 pb-1.5">
+                  <span className="text-slate-400 text-[10px]">मोबाइल नंबर</span>
+                  <span className="font-mono text-white text-[11px]">
+                    +91 {idCardReporter.phone}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b border-white/10 pb-1.5">
+                  <span className="text-slate-400 text-[10px]">प्रकाशन रिपोर्ट</span>
+                  <span className="font-bold text-emerald-400 text-[11px]">
+                    {idCardReporter.articlesCount || 0} खबरें प्रकाशित
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-[10px]">सत्र वैधता (Validity)</span>
+                  <span className="font-bold text-slate-200 text-[11px]">
+                    2026 – 2027 (सत्यापित)
+                  </span>
+                </div>
+              </div>
+
+              {/* Security Seal & Signatory Footer */}
+              <div className="pt-3.5 mt-3 border-t border-amber-500/30 flex items-center justify-between text-[9px] text-slate-400">
+                <div className="flex items-center gap-1.5 text-emerald-400">
+                  <BadgeCheck size={18} className="text-amber-400 shrink-0" />
+                  <div className="leading-tight">
+                    <span className="font-bold block text-white">डिजिटल सत्यापित</span>
+                    <span>पोर्टल आईडी कार्ड</span>
+                  </div>
+                </div>
+
+                <div className="text-right leading-tight">
+                  <span className="text-[10px] text-amber-300 block italic font-bold">
+                    Paras Chandra
+                  </span>
+                  <span className="text-[8px] text-slate-400 uppercase font-semibold">
+                    प्रधान संपादक (Editor-in-Chief)
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom Police & Admin Advisory */}
+              <div className="mt-2.5 pt-2 border-t border-white/5 text-center text-[8px] text-slate-500 leading-tight">
+                यह कार्ड अधिकृत समाचार कवरेज हेतु जारी किया गया है। समस्त पुलिस व प्रशासनिक सहयोग अपेक्षित है।
+              </div>
+            </div>
+
+            {/* Actions Bar outside card */}
+            <div className="flex items-center gap-2.5 mt-4 w-full">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-black py-2.5 rounded-2xl shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 text-xs transition active:scale-95 cursor-pointer"
+              >
+                <Printer size={15} />
+                <span>🖨️ कार्ड प्रिंट / सेव करें</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIdCardReporter(null)}
+                className="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition active:scale-95 cursor-pointer"
+              >
+                बंद करें
+              </button>
+            </div>
+
+          </div>
+        </div>
       )}
 
     </div>
