@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Mail, MapPin } from 'lucide-react';
+import { ShieldCheck, Mail, MapPin, Phone } from 'lucide-react';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './SocialIcons';
 import { SOCIAL_LINKS } from '../data/mockData';
 
@@ -48,9 +48,17 @@ export const Footer: React.FC<FooterProps> = ({
             <p className="text-[11px] leading-relaxed text-slate-400">
               कवर्धा (कबीरधाम) का अग्रणी डिजिटल न्यूज़ नेटवर्क। छत्तीसगढ़ के 33 और मध्यप्रदेश के 55 जिलों की निष्पक्ष, निर्भीक और सटीक जमीनी पत्रकारिता।
             </p>
-            <div className="text-[11px] text-red-500 font-semibold flex items-center gap-1">
-              <MapPin size={12} />
-              <span>कवर्धा (कबीरधाम), छत्तीसगढ़ — 491995</span>
+            <div className="flex flex-wrap items-center gap-3 text-[11px]">
+              <div className="text-red-500 font-semibold flex items-center gap-1">
+                <MapPin size={12} />
+                <span>कवर्धा (कबीरधाम), छत्तीसगढ़ — 491995</span>
+              </div>
+              <div className="text-emerald-500 font-semibold flex items-center gap-1">
+                <Phone size={12} />
+                <a href={`tel:${SOCIAL_LINKS.phoneFormatted}`} className="hover:underline">
+                  {SOCIAL_LINKS.phoneFormatted}
+                </a>
+              </div>
             </div>
           </div>
 
@@ -134,15 +142,34 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
-          {/* Col 3: Regional Bureaus */}
+          {/* Col 3: Regional Bureaus & Helpline */}
           <div className="space-y-2">
             <h4 className={`text-xs font-bold uppercase tracking-wider ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}>
-              प्रमुख ब्यूरो कार्यालय
+              प्रमुख ब्यूरो व संपर्क
             </h4>
             <ul className={`space-y-1.5 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               <li>• <b className={isDark ? 'text-slate-200' : 'text-slate-900'}>कवर्धा (मुख्यालय):</b> राजमहल रोड, कबीरधाम</li>
+              <li className="flex items-center gap-1.5 pt-1">
+                <Phone size={12} className="text-emerald-500 shrink-0" />
+                <span>हेल्पलाइन / फोन: </span>
+                <a href={`tel:${SOCIAL_LINKS.phoneFormatted}`} className="font-bold text-emerald-500 hover:underline">
+                  {SOCIAL_LINKS.phoneFormatted}
+                </a>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <WhatsAppIcon size={12} className="shrink-0" />
+                <span>WhatsApp: </span>
+                <a 
+                  href={SOCIAL_LINKS.whatsappDirect} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="font-bold text-emerald-500 hover:underline"
+                >
+                  {SOCIAL_LINKS.phoneFormatted}
+                </a>
+              </li>
             </ul>
           </div>
 

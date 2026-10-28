@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Send, X, Camera, MapPin, Tag, User, Mic } from 'lucide-react';
+import { WhatsAppIcon } from './SocialIcons';
+import { SOCIAL_LINKS } from '../data/mockData';
 import type { Article, DistrictItem } from '../types';
 import { useVoiceTyping } from '../hooks/useVoiceTyping';
 import { getSmartCoverImage } from '../utils/categoryTheme';
@@ -113,6 +115,36 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
             <X size={20} />
           </button>
         </div>
+
+        {/* Direct WhatsApp Scoop Option */}
+        <a 
+          href={`https://wa.me/91${SOCIAL_LINKS.phone}?text=${encodeURIComponent('नमस्ते Ambition News, मैं अपने क्षेत्र से ताज़ा खबर / ग्राउंड फोटो-वीडियो भेजना चाहता हूँ:')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center justify-between p-3 rounded-2xl border transition group cursor-pointer ${
+            isDark 
+              ? 'bg-emerald-950/40 border-emerald-800/80 hover:border-emerald-500 text-emerald-200' 
+              : 'bg-emerald-50 border-emerald-300 hover:border-emerald-500 text-emerald-900 shadow-sm'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow group-hover:scale-105 transition">
+              <WhatsAppIcon size={16} />
+            </div>
+            <div>
+              <div className="font-bold text-xs flex items-center gap-1.5">
+                <span>WhatsApp पर सीधे खबर/वीडियो भेजें</span>
+                <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-mono font-bold">{SOCIAL_LINKS.phoneFormatted}</span>
+              </div>
+              <p className={`text-[10px] ${isDark ? 'text-emerald-400/80' : 'text-emerald-700'}`}>
+                फोटो, वीडियो व ऑडियो रिकॉर्डिंग सीधे डेस्क को व्हाट्सएप करें
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-emerald-500 group-hover:translate-x-1 transition shrink-0 ml-2">
+            व्हाट्सएप खोलें →
+          </span>
+        </a>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">

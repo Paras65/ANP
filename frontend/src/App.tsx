@@ -2072,7 +2072,7 @@ export const App: React.FC = () => {
                                 </div>
                               </div>
                               <a 
-                                href={`https://api.whatsapp.com/send?phone=919827100000&text=${encodeURIComponent('नमस्ते Ambition News, मुझे अपने प्रतिष्ठान / व्यवसाय का विज्ञापन व कवरेज पोर्टल पर प्रकाशित करवाना है।')}`}
+                                href={`https://api.whatsapp.com/send?phone=917000139694&text=${encodeURIComponent('नमस्ते Ambition News, मुझे अपने प्रतिष्ठान / व्यवसाय का विज्ञापन व कवरेज पोर्टल पर प्रकाशित करवाना है।')}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer whitespace-nowrap"
