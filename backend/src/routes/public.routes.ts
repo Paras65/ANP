@@ -337,7 +337,7 @@ router.post('/articles/scoop', contentCreationLimiter, async (req: Request, res:
       slug,
       excerpt: (excerpt || content || '').trim().slice(0, 500),
       content: content || excerpt,
-      coverImage: coverImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1000&auto=format&fit=crop&q=80',
+      coverImage: coverImage || '/logo.png',
       stateId: stateDoc?._id,
       districtId: districtDoc?._id,
       categoryId: catDoc?._id,
@@ -757,7 +757,7 @@ router.post('/reels', requireAdminAuth, contentCreationLimiter, async (req: Requ
     }
     const newReel = await Reel.create({
       caption: caption.trim(),
-      imageUrl: imageUrl || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800'),
+      imageUrl: imageUrl || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : '/logo.png'),
       videoUrl: videoUrl ? videoUrl.trim() : undefined,
       youtubeId: youtubeId || undefined,
       embedUrl: embedUrl || (youtubeId ? `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&rel=0` : undefined),

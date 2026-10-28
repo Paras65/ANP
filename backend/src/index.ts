@@ -27,6 +27,9 @@ process.on('uncaughtException', (err) => {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust reverse proxy (Essential for Render, Vercel, AWS ELB to resolve client IP & satisfy express-rate-limit)
+app.set('trust proxy', 1);
+
 // 1. Enterprise HTTP Security Headers (OWASP Hardened via Helmet)
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allows news media images

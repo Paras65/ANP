@@ -47,6 +47,7 @@ export const authLimiter = rateLimit({
   max: 5, // Maximum 5 attempts per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   handler: createRateLimitHandler('AUTH_BRUTE_FORCE_PROTECT'),
   message: {
     success: false,
@@ -64,6 +65,7 @@ export const aiLimiter = rateLimit({
   max: 15, // Maximum 15 AI requests per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   handler: createRateLimitHandler('AI_QUOTA_FLOOD_PROTECT'),
   message: {
     success: false,
@@ -81,6 +83,7 @@ export const apiLimiter = rateLimit({
   max: 300, // 300 requests per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   handler: createRateLimitHandler('PUBLIC_API_TRAFFIC_PROTECT'),
   message: {
     success: false,
@@ -98,6 +101,7 @@ export const contentCreationLimiter = rateLimit({
   max: 30, // Maximum 30 write mutations per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   handler: createRateLimitHandler('BURP_POSTMAN_WRITE_FLOOD_PROTECT'),
   message: {
     success: false,
