@@ -47,9 +47,7 @@ import {
   BadgeCheck,
   X,
   Sun,
-  Moon,
-  ChevronLeft,
-  ChevronRight
+  Moon
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter } from '../types';
 import { parseYouTubeUrl, extractYouTubeChannelId, syncYouTubeChannelVideos, parseReelMedia } from '../utils/mediaUtils';
@@ -58,6 +56,7 @@ import api, { setAuthToken } from '../api/client';
 import { SOCIAL_LINKS } from '../data/mockData';
 import { WhatsAppBulletinModal } from './WhatsAppBulletinModal';
 import { NewsCardGeneratorModal } from './NewsCardGeneratorModal';
+import { PaginationBar } from './common/PaginationBar';
 import { generateHeadlinesAI, autoSummarizeAI, polishArticleAI, redactClientSecret, type AIHeadlineSuggestion } from '../utils/aiNewsAssistant';
 import { sendBreakingPushNotification } from '../utils/pushNotification';
 import { useVoiceTyping } from '../hooks/useVoiceTyping';
@@ -2102,77 +2101,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
               {/* Admin Pagination Controls */}
-              {totalAdminPages > 1 && (
-                <div className={`mt-4 pt-3 flex flex-wrap items-center justify-between gap-3 border-t text-xs ${
-                  isDark ? 'border-slate-800 text-slate-300' : 'border-slate-200 text-slate-700'
-                }`}>
-                  <div className="font-semibold">
-                    पेज <span className="font-bold text-red-500">{currentAdminPage}</span> of {totalAdminPages} 
-                    <span className={`font-normal ml-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      (कुल {filteredManagedArticles.length} खबरें)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={currentAdminPage <= 1}
-                      onClick={() => setAdminArticlePage(p => Math.max(1, p - 1))}
-                      className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 border disabled:opacity-40 disabled:cursor-not-allowed ${
-                        isDark 
-                          ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700' 
-                          : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-sm'
-                      }`}
-                    >
-                      <ChevronLeft size={14} />
-                      <span>पिछला</span>
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalAdminPages }, (_, idx) => idx + 1)
-                        .filter(pageNum => 
-                          pageNum === 1 || 
-                          pageNum === totalAdminPages || 
-                          Math.abs(pageNum - currentAdminPage) <= 1
-                        )
-                        .map((pageNum, idx, arr) => (
-                          <React.Fragment key={pageNum}>
-                            {idx > 0 && arr[idx - 1] !== pageNum - 1 && (
-                              <span className="px-1 text-slate-500 font-bold">...</span>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => setAdminArticlePage(pageNum)}
-                              className={`w-7 h-7 rounded-xl font-bold text-xs transition flex items-center justify-center ${
-                                pageNum === currentAdminPage
-                                  ? 'bg-red-600 text-white shadow'
-                                  : isDark
-                                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                              }`}
-                            >
-                              {pageNum}
-                            </button>
-                          </React.Fragment>
-                        ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      disabled={currentAdminPage >= totalAdminPages}
-                      onClick={() => setAdminArticlePage(p => Math.min(totalAdminPages, p + 1))}
-                      className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 border disabled:opacity-40 disabled:cursor-not-allowed ${
-                        isDark 
-                          ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700' 
-                          : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-sm'
-                      }`}
-                    >
-                      <span>अगला</span>
-                      <ChevronRight size={14} />
-                    </button>
-                  </div>
-                </div>
-              )}
+              <PaginationBar
+                currentPage={currentAdminPage}
+                totalPages={totalAdminPages}
+                totalItems={filteredManagedArticles.length}
+                pageSize={adminPageSize}
+                onPageChange={setAdminArticlePage}
+                isDark={isDark}
+                itemLabel="खबरें"
+                accentColor="red"
+              />
             </div>
           );
         })()}
@@ -2576,67 +2514,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
               {/* REPORTER PAGINATION TOOLBAR */}
-              {totalReporterPages > 1 && (
-                <div className={`mt-4 pt-3.5 border-t flex flex-wrap items-center justify-between gap-3 text-xs ${
-                  isDark ? 'border-slate-800' : 'border-slate-200'
-                }`}>
-                  <div className={isDark ? 'text-slate-400' : 'text-slate-600'}>
-                    दिख रहे हैं <span className="font-bold text-blue-500 font-mono">{(currentRepPage - 1) * REPORTERS_PER_PAGE + 1} - {Math.min(currentRepPage * REPORTERS_PER_PAGE, filteredReporters.length)}</span> (कुल <span className="font-bold font-mono">{filteredReporters.length}</span> संवाददाता)
-                  </div>
-
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <button
-                      onClick={() => setAdminReporterPage(p => Math.max(1, p - 1))}
-                      disabled={currentRepPage === 1}
-                      className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                        isDark 
-                          ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' 
-                          : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
-                      }`}
-                    >
-                      <ChevronLeft size={14} />
-                      <span>पिछला</span>
-                    </button>
-
-                    {Array.from({ length: totalReporterPages }, (_, i) => i + 1)
-                      .filter(p => p === 1 || p === totalReporterPages || Math.abs(p - currentRepPage) <= 1)
-                      .map((p, idx, arr) => {
-                        const prev = arr[idx - 1];
-                        const showEllipsis = prev && p - prev > 1;
-                        return (
-                          <React.Fragment key={p}>
-                            {showEllipsis && <span className="px-1 text-slate-500">...</span>}
-                            <button
-                              onClick={() => setAdminReporterPage(p)}
-                              className={`w-8 h-8 rounded-xl font-bold text-xs transition font-mono ${
-                                currentRepPage === p
-                                  ? 'bg-blue-600 text-white shadow-md'
-                                  : isDark
-                                    ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                                    : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 shadow-sm'
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          </React.Fragment>
-                        );
-                      })}
-
-                    <button
-                      onClick={() => setAdminReporterPage(p => Math.min(totalReporterPages, p + 1))}
-                      disabled={currentRepPage === totalReporterPages}
-                      className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                        isDark 
-                          ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' 
-                          : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
-                      }`}
-                    >
-                      <span>अगला</span>
-                      <ChevronRight size={14} />
-                    </button>
-                  </div>
-                </div>
-              )}
+              <PaginationBar
+                currentPage={currentRepPage}
+                totalPages={totalReporterPages}
+                totalItems={filteredReporters.length}
+                pageSize={REPORTERS_PER_PAGE}
+                onPageChange={setAdminReporterPage}
+                isDark={isDark}
+                itemLabel="संवाददाता"
+                accentColor="blue"
+              />
 
               {/* Citizen Journalism / Scoop Inbox */}
               <div className={`mt-6 pt-5 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
@@ -3280,67 +3167,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     )}
 
                     {/* Video Pagination Bar */}
-                    {totalVideoPages > 1 && (
-                      <div className={`mt-3 pt-3 border-t flex flex-wrap items-center justify-between gap-3 text-xs ${
-                        isDark ? 'border-white/10' : 'border-slate-200'
-                      }`}>
-                        <div className={isDark ? 'text-slate-400' : 'text-slate-600'}>
-                          दिख रहे हैं <span className="font-bold text-red-500 font-mono">{(currentVideoPage - 1) * VIDEOS_PER_PAGE + 1} - {Math.min(currentVideoPage * VIDEOS_PER_PAGE, filteredVideos.length)}</span> (कुल <span className="font-bold font-mono">{filteredVideos.length}</span> वीडियो)
-                        </div>
-
-                        <div className="flex items-center gap-1.5 ml-auto">
-                          <button
-                            onClick={() => setAdminVideosPage(p => Math.max(1, p - 1))}
-                            disabled={currentVideoPage === 1}
-                            className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                              isDark 
-                                ? 'bg-slate-800 border-white/10 text-slate-200 hover:bg-slate-700' 
-                                : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
-                            }`}
-                          >
-                            <ChevronLeft size={13} />
-                            <span>पिछला</span>
-                          </button>
-
-                          {Array.from({ length: totalVideoPages }, (_, i) => i + 1)
-                            .filter(p => p === 1 || p === totalVideoPages || Math.abs(p - currentVideoPage) <= 1)
-                            .map((p, idx, arr) => {
-                              const prev = arr[idx - 1];
-                              const showEllipsis = prev && p - prev > 1;
-                              return (
-                                <React.Fragment key={p}>
-                                  {showEllipsis && <span className="px-1 text-slate-500">...</span>}
-                                  <button
-                                    onClick={() => setAdminVideosPage(p)}
-                                    className={`w-7 h-7 rounded-xl font-bold text-xs transition font-mono ${
-                                      currentVideoPage === p
-                                        ? 'bg-red-600 text-white shadow-md'
-                                        : isDark
-                                          ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                                          : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 shadow-sm'
-                                    }`}
-                                  >
-                                    {p}
-                                  </button>
-                                </React.Fragment>
-                              );
-                            })}
-
-                          <button
-                            onClick={() => setAdminVideosPage(p => Math.min(totalVideoPages, p + 1))}
-                            disabled={currentVideoPage === totalVideoPages}
-                            className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                              isDark 
-                                ? 'bg-slate-800 border-white/10 text-slate-200 hover:bg-slate-700' 
-                                : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
-                            }`}
-                          >
-                            <span>अगला</span>
-                            <ChevronRight size={13} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    <PaginationBar
+                      currentPage={currentVideoPage}
+                      totalPages={totalVideoPages}
+                      totalItems={filteredVideos.length}
+                      pageSize={VIDEOS_PER_PAGE}
+                      onPageChange={setAdminVideosPage}
+                      isDark={isDark}
+                      itemLabel="वीडियो"
+                      accentColor="red"
+                    />
                   </div>
                 );
               })()}
@@ -3578,59 +3414,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         ))}
                       </div>
 
-                      {totalReelsPages > 1 && (
-                        <div className={`mt-3 pt-3 border-t flex flex-wrap items-center justify-between gap-3 text-xs ${
-                          isDark ? 'border-white/10' : 'border-slate-200'
-                        }`}>
-                          <div className={isDark ? 'text-slate-400' : 'text-slate-600'}>
-                            दिख रहे हैं <span className="font-bold text-pink-500 font-mono">{(currentReelPage - 1) * REELS_PER_PAGE + 1} - {Math.min(currentReelPage * REELS_PER_PAGE, reels.length)}</span> (कुल <span className="font-bold font-mono">{reels.length}</span> रील्स)
-                          </div>
-
-                          <div className="flex items-center gap-1.5 ml-auto">
-                            <button
-                              onClick={() => setAdminReelsPage(p => Math.max(1, p - 1))}
-                              disabled={currentReelPage === 1}
-                              className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                                isDark 
-                                  ? 'bg-slate-800 border-white/10 text-slate-200 hover:bg-slate-700' 
-                                  : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
-                              }`}
-                            >
-                              <ChevronLeft size={13} />
-                              <span>पिछला</span>
-                            </button>
-
-                            {Array.from({ length: totalReelsPages }, (_, i) => i + 1).map((p) => (
-                              <button
-                                key={p}
-                                onClick={() => setAdminReelsPage(p)}
-                                className={`w-7 h-7 rounded-xl font-bold text-xs transition font-mono ${
-                                  currentReelPage === p
-                                    ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md'
-                                    : isDark
-                                      ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                                      : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 shadow-sm'
-                                }`}
-                              >
-                                {p}
-                              </button>
-                            ))}
-
-                            <button
-                              onClick={() => setAdminReelsPage(p => Math.min(totalReelsPages, p + 1))}
-                              disabled={currentReelPage === totalReelsPages}
-                              className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                                isDark 
-                                  ? 'bg-slate-800 border-white/10 text-slate-200 hover:bg-slate-700' 
-                                  : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
-                              }`}
-                            >
-                              <span>अगला</span>
-                              <ChevronRight size={13} />
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                      {/* Reels Pagination Bar */}
+                      <PaginationBar
+                        currentPage={currentReelPage}
+                        totalPages={totalReelsPages}
+                        totalItems={reels.length}
+                        pageSize={REELS_PER_PAGE}
+                        onPageChange={setAdminReelsPage}
+                        isDark={isDark}
+                        itemLabel="रील्स"
+                        accentColor="pink"
+                      />
                     </>
                   );
                 })()}

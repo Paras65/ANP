@@ -33,20 +33,92 @@ function escapeRegex(text: string): string {
   return String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&').slice(0, 80);
 }
 
-// 1. GET /api/districts - Fetch districts live from MongoDB Atlas
+/**
+ * High-Performance In-Memory Master Cache:
+ * Eliminates 3 redundant DB round-trips (State, District, Category) on EVERY reader request.
+ * Automatically refreshed every 10 minutes or invalidated upon mutations.
+ */
+interface MasterCache {
+  states: Map<string, any>;
+  districts: any[];
+  districtLookup: Map<string, any>;
+  categories: any[];
+  categoryLookup: Map<string, any>;
+  lastFetched: number;
+}
+
+const masterCache: MasterCache = {
+  states: new Map(),
+  districts: [],
+  districtLookup: new Map(),
+  categories: [],
+  categoryLookup: new Map(),
+  lastFetched: 0
+};
+
+const MASTER_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+export async function getMasterData() {
+  const now = Date.now();
+  if (masterCache.lastFetched && now - masterCache.lastFetched < MASTER_CACHE_TTL) {
+    return masterCache;
+  }
+
+  try {
+    const [states, districts, categories] = await Promise.all([
+      State.find().lean(),
+      District.find().populate('stateId').lean(),
+      Category.find().lean()
+    ]);
+
+    masterCache.states.clear();
+    states.forEach((s: any) => {
+      masterCache.states.set(s.slug?.toLowerCase(), s);
+      masterCache.states.set(s._id.toString(), s);
+    });
+
+    masterCache.districts = districts;
+    masterCache.districtLookup.clear();
+    districts.forEach((d: any) => {
+      if (d.slug) masterCache.districtLookup.set(d.slug.toLowerCase(), d);
+      if (d.name) masterCache.districtLookup.set(d.name.toLowerCase(), d);
+      if (d.nameHindi) masterCache.districtLookup.set(d.nameHindi.toLowerCase(), d);
+      masterCache.districtLookup.set(d._id.toString(), d);
+    });
+
+    masterCache.categories = categories;
+    masterCache.categoryLookup.clear();
+    categories.forEach((c: any) => {
+      if (c.slug) masterCache.categoryLookup.set(c.slug.toLowerCase(), c);
+      if (c.name) masterCache.categoryLookup.set(c.name.toLowerCase(), c);
+      masterCache.categoryLookup.set(c._id.toString(), c);
+    });
+
+    masterCache.lastFetched = now;
+  } catch (err: any) {
+    logger.warn('Failed to refresh master data cache:', err.message);
+  }
+
+  return masterCache;
+}
+
+export function invalidateMasterCache() {
+  masterCache.lastFetched = 0;
+}
+
+// 1. GET /api/districts - Fetch districts live from MongoDB Atlas (Cached & Edge Accelerated)
 router.get('/districts', async (req: Request, res: Response) => {
   try {
+    res.set('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
     const { state } = req.query;
-    let filter: any = {};
+    const cache = await getMasterData();
+    let docs = cache.districts;
 
     if (state) {
-      const stateDoc = await State.findOne({ slug: String(state).toLowerCase() });
-      if (stateDoc) {
-        filter.stateId = stateDoc._id;
-      }
+      const stateSlug = String(state).toLowerCase();
+      docs = docs.filter((d: any) => d.stateId?.slug?.toLowerCase() === stateSlug);
     }
 
-    const docs = await District.find(filter).populate('stateId').sort({ nameHindi: 1 }).lean();
     const data = docs.map((d: any) => ({
       _id: d._id.toString(),
       name: d.name,
@@ -64,6 +136,7 @@ router.get('/districts', async (req: Request, res: Response) => {
 // 2. GET /api/breaking - Live breaking ticker items from MongoDB Atlas
 router.get('/breaking', async (req: Request, res: Response) => {
   try {
+    res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=60');
     const breaking = await Article.find({ isBreaking: true, deletedAt: null, status: 'PUBLISHED' })
       .populate('districtId')
       .populate('categoryId')
@@ -96,9 +169,10 @@ router.get('/breaking', async (req: Request, res: Response) => {
   }
 });
 
-// 3. GET /api/articles - List published articles filtered live from MongoDB Atlas (with Pagination Support)
+// 3. GET /api/articles - List published articles filtered live from MongoDB Atlas (with In-Memory Master Cache & Edge Acceleration)
 router.get('/articles', async (req: Request, res: Response) => {
   try {
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
     const { district, state, category, search, includeReview, page, limit, all } = req.query;
     let filter: any = { deletedAt: null };
     if (includeReview === 'true') {
@@ -107,32 +181,31 @@ router.get('/articles', async (req: Request, res: Response) => {
       filter.status = 'PUBLISHED';
     }
 
+    const cache = await getMasterData();
+
     if (state) {
-      const stateDoc = await State.findOne({ slug: String(state).toLowerCase() });
+      const stateDoc = cache.states.get(String(state).toLowerCase());
       if (stateDoc) filter.stateId = stateDoc._id;
     }
 
     if (district && district !== 'सभी') {
-      const safeDistrict = escapeRegex(String(district));
-      const districtDoc = await District.findOne({
-        $or: [
-          { nameHindi: new RegExp(safeDistrict, 'i') },
-          { name: new RegExp(safeDistrict, 'i') },
-          { slug: String(district).toLowerCase().slice(0, 50) }
-        ]
-      });
+      const cleanDist = String(district).toLowerCase().trim();
+      const districtDoc = cache.districtLookup.get(cleanDist) || 
+        cache.districts.find((d: any) => 
+          d.nameHindi?.toLowerCase().includes(cleanDist) || 
+          d.name?.toLowerCase().includes(cleanDist) ||
+          d.slug?.toLowerCase().includes(cleanDist)
+        );
       if (districtDoc) filter.districtId = districtDoc._id;
     }
 
     if (category && category !== 'सभी खबरें') {
-      const cleanCat = String(category).replace(/[^\u0900-\u097F\w]/g, '').trim();
-      const safeCat = escapeRegex(cleanCat);
-      const catDoc = await Category.findOne({
-        $or: [
-          { name: new RegExp(safeCat, 'i') },
-          { slug: String(category).toLowerCase().slice(0, 50) }
-        ]
-      });
+      const cleanCat = String(category).toLowerCase().trim();
+      const catDoc = cache.categoryLookup.get(cleanCat) || 
+        cache.categories.find((c: any) => 
+          c.name?.toLowerCase().includes(cleanCat) || 
+          c.slug?.toLowerCase().includes(cleanCat)
+        );
       if (catDoc) filter.categoryId = catDoc._id;
     }
 
@@ -309,9 +382,14 @@ router.post('/articles', requireAdminAuth, contentCreationLimiter, async (req: R
   }
 });
 
-// 4b. POST /api/articles/scoop - Citizen Journalism & Field Reporter Scoop Submission (Rate-Limited, Zero-Auth Required)
+// 4b. POST /api/articles/scoop - Citizen Journalism & Field Reporter Scoop Submission (Rate-Limited, Zero-Auth Required, Anti-Bot Honeypot)
 router.post('/articles/scoop', contentCreationLimiter, async (req: Request, res: Response) => {
   try {
+    // Anti-Bot Honeypot Defense: Bots fill hidden inputs, silently accept & drop without DB write
+    if (req.body.website || req.body._hp) {
+      return res.status(200).json({ success: true, message: 'समाचार समीक्षा के लिए प्राप्त हुआ' });
+    }
+
     const { title, excerpt, content, district, state, author, coverImage } = req.body;
 
     if (!title || !title.trim()) {

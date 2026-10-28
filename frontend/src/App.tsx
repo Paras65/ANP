@@ -28,8 +28,8 @@ import { MandiWidget } from './components/MandiWidget';
 import { VideoSection } from './components/VideoSection';
 import { InstagramSection } from './components/InstagramSection';
 import { ArticleModal } from './components/ArticleModal';
-import { AdminPortal } from './components/AdminPortal';
-import { SuperAdminPortal } from './components/SuperAdminPortal';
+const AdminPortal = React.lazy(() => import('./components/AdminPortal').then(m => ({ default: m.AdminPortal })));
+const SuperAdminPortal = React.lazy(() => import('./components/SuperAdminPortal').then(m => ({ default: m.SuperAdminPortal })));
 import { Footer } from './components/Footer';
 import { StoriesTray } from './components/StoriesTray';
 import { StoryViewerModal } from './components/StoryViewerModal';
@@ -1068,49 +1068,63 @@ export const App: React.FC = () => {
 
   const popularDistricts = selectedState === 'chhattisgarh' ? POPULAR_DISTRICTS_CG : POPULAR_DISTRICTS_MP;
 
+  const adminFallback = (
+    <div className={`min-h-screen flex flex-col items-center justify-center p-6 ${
+      isDark ? 'bg-[#060911] text-white' : 'bg-slate-50 text-slate-900'
+    }`}>
+      <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4" />
+      <p className="text-base font-bold tracking-wide">प्रशासन पोर्टल लोड हो रहा है...</p>
+      <p className="text-xs text-stone-500 mt-1">Ambition News Network • Secure Management Console</p>
+    </div>
+  );
+
   if (currentView === 'super-admin') {
     return (
-      <SuperAdminPortal 
-        onBackToPublic={handleBackToPublic}
-        isDark={isDark}
-      />
+      <React.Suspense fallback={adminFallback}>
+        <SuperAdminPortal 
+          onBackToPublic={handleBackToPublic}
+          isDark={isDark}
+        />
+      </React.Suspense>
     );
   }
 
   if (currentView === 'admin') {
     return (
-      <AdminPortal 
-        articles={articles}
-        districts={districtsList}
-        selectedState={selectedState}
-        onPublishArticle={handleNewArticleSubmit}
-        onUpdateArticle={handleUpdateArticle}
-        onDeleteArticle={handleDeleteArticle}
-        onBackToPublic={handleBackToPublic}
-        isDark={isDark}
-        toggleTheme={toggleTheme}
-        videos={videoBulletins}
-        onAddVideo={handleAddVideo}
-        onDeleteVideo={handleDeleteVideo}
-        reels={instagramPosts}
-        onAddReel={handleAddReel}
-        onEditReel={handleEditReel}
-        onDeleteReel={handleDeleteReel}
-        youtubeChannelId={youtubeChannelId}
-        hasYouTubeApiKey={hasYouTubeApiKey}
-        onSaveChannelId={handleSaveChannelId}
-        onSyncChannel={handleSyncYouTube}
-        whatsappLink={whatsappLink}
-        onSaveWhatsAppLink={handleSaveWhatsAppLink}
-        mandiRates={mandiRates}
-        onUpdateMandiRate={handleUpdateMandiRate}
-        onAddMandiRate={handleAddMandiRate}
-        onDeleteMandiRate={handleDeleteMandiRate}
-        reporters={reporters}
-        onAddReporter={handleAddReporter}
-        onUpdateReporter={handleUpdateReporter}
-        onDeleteReporter={handleDeleteReporter}
-      />
+      <React.Suspense fallback={adminFallback}>
+        <AdminPortal 
+          articles={articles}
+          districts={districtsList}
+          selectedState={selectedState}
+          onPublishArticle={handleNewArticleSubmit}
+          onUpdateArticle={handleUpdateArticle}
+          onDeleteArticle={handleDeleteArticle}
+          onBackToPublic={handleBackToPublic}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
+          videos={videoBulletins}
+          onAddVideo={handleAddVideo}
+          onDeleteVideo={handleDeleteVideo}
+          reels={instagramPosts}
+          onAddReel={handleAddReel}
+          onEditReel={handleEditReel}
+          onDeleteReel={handleDeleteReel}
+          youtubeChannelId={youtubeChannelId}
+          hasYouTubeApiKey={hasYouTubeApiKey}
+          onSaveChannelId={handleSaveChannelId}
+          onSyncChannel={handleSyncYouTube}
+          whatsappLink={whatsappLink}
+          onSaveWhatsAppLink={handleSaveWhatsAppLink}
+          mandiRates={mandiRates}
+          onUpdateMandiRate={handleUpdateMandiRate}
+          onAddMandiRate={handleAddMandiRate}
+          onDeleteMandiRate={handleDeleteMandiRate}
+          reporters={reporters}
+          onAddReporter={handleAddReporter}
+          onUpdateReporter={handleUpdateReporter}
+          onDeleteReporter={handleDeleteReporter}
+        />
+      </React.Suspense>
     );
   }
 

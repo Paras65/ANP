@@ -51,5 +51,6 @@ const VideoSchema = new Schema<IVideo>({
 }, { timestamps: true });
 
 VideoSchema.index({ publishedAt: -1 });
+VideoSchema.index({ isShort: 1, publishedAt: -1 });
 
 export const Video = model<IVideo>('Video', VideoSchema);

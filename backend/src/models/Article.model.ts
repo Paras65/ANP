@@ -115,6 +115,7 @@ const ArticleSchema = new Schema<IArticle>({
 
 // Compound indexes for rapid high-traffic query optimization
 ArticleSchema.index({ status: 1, publishedAt: -1, deletedAt: 1 });
+ArticleSchema.index({ stateId: 1, status: 1, publishedAt: -1 });
 ArticleSchema.index({ districtId: 1, status: 1, publishedAt: -1 });
 ArticleSchema.index({ categoryId: 1, status: 1, publishedAt: -1 });
 ArticleSchema.index({ isBreaking: 1, status: 1 });
