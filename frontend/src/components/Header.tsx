@@ -314,19 +314,19 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* State Toggle & Quick Action Controls */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           
           {/* State Switcher (Styled with News Theme) */}
-          <div className={`flex p-0.5 rounded-lg sm:rounded-xl border ${
+          <div className={`flex p-0.5 rounded-xl border ${
             isDark ? 'bg-[#05070d] border-red-950/60' : 'bg-slate-100 border-slate-300'
           }`}>
             <button 
               onClick={() => setSelectedState('chhattisgarh')}
               aria-label="छत्तीसगढ़ राज्य के 33 जिलों के समाचार चुनें"
-              className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all min-h-[30px] sm:min-h-[36px] flex items-center justify-center ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition-all min-h-[38px] sm:min-h-[40px] flex items-center justify-center ${
                 selectedState === 'chhattisgarh' 
                   ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
-                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
+                  : isDark ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-950'
               }`}
             >
               <span className="sm:hidden">छ.ग.</span>
@@ -335,10 +335,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={() => setSelectedState('madhya-pradesh')}
               aria-label="मध्य प्रदेश राज्य के 55 जिलों के समाचार चुनें"
-              className={`px-1.5 sm:px-3.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all min-h-[30px] sm:min-h-[36px] flex items-center justify-center ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition-all min-h-[38px] sm:min-h-[40px] flex items-center justify-center ${
                 selectedState === 'madhya-pradesh' 
                   ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
-                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
+                  : isDark ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-950'
               }`}
             >
               <span className="sm:hidden">म.प्र.</span>
@@ -351,56 +351,56 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={onOpenReporterModal}
               aria-label="नागरिक रिपोर्टर - तुरंत खबर भेजें"
-              className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl flex items-center gap-1 transition active:scale-95 shadow-md shadow-red-950/40 shrink-0 min-h-[30px] sm:min-h-[36px]"
+              className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold p-2 sm:px-3 sm:py-2 rounded-xl flex items-center justify-center gap-1 transition active:scale-95 shadow-md shadow-red-950/40 shrink-0 min-h-[38px] sm:min-h-[40px] min-w-[38px] sm:min-w-[40px]"
               title="नागरिक व फ़ील्ड रिपोर्टर • तुरंत खबर भेजें"
             >
-              <span>📢</span>
+              <span className="text-sm">📢</span>
               <span className="hidden sm:inline text-xs">खबर भेजें</span>
             </button>
           )}
 
-          {/* Admin Desk Button */}
+          {/* Admin Desk Button (Desktop & Tablet display) */}
           <button 
             onClick={onOpenAdminPortal}
             aria-label="संपादकीय एवं एडमिन पोर्टल खोलें"
-            className={`flex text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border items-center gap-1 transition active:scale-95 shadow shrink-0 min-h-[30px] sm:min-h-[36px] ${
-              isDark ? 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700/80' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+            className={`hidden sm:flex text-xs font-bold p-2 sm:px-3 sm:py-2 rounded-xl border items-center gap-1.5 transition active:scale-95 shadow shrink-0 min-h-[38px] sm:min-h-[40px] ${
+              isDark ? 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700/80' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
             }`}
             title="Open Editorial & Admin Desk"
           >
-            <ShieldCheck size={14} className="text-amber-400 shrink-0" />
+            <ShieldCheck size={15} className="text-amber-400 shrink-0" />
             <span className="hidden sm:inline text-xs">एडमिन</span>
           </button>
 
-          {/* WhatsApp Share App Button - shown on tablet & desktop, hidden on small mobile to avoid crowding */}
+          {/* WhatsApp Share App Button - shown on tablet & desktop */}
           {onShareAppWhatsApp && (
             <button 
               onClick={onShareAppWhatsApp}
               aria-label="व्हाट्सएप पर ऐप शेयर करें"
-              className="hidden sm:flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl items-center gap-1 transition active:scale-95 shadow shadow-emerald-950/40 shrink-0 min-h-[36px]"
+              className="hidden md:flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold p-2 sm:px-3 sm:py-2 rounded-xl items-center gap-1 transition active:scale-95 shadow shadow-emerald-950/40 shrink-0 min-h-[38px] sm:min-h-[40px]"
               title="व्हाट्सएप पर ऐप शेयर करें"
             >
               <WhatsAppIcon size={14} className="shrink-0" />
-              <span className="hidden sm:inline text-xs">शेयर ऐप</span>
+              <span className="hidden lg:inline text-xs">शेयर ऐप</span>
             </button>
           )}
 
-          {/* Saved / Bookmarks Button (Desktop & Tablet Access - hidden on mobile since BottomNav has it) */}
+          {/* Saved / Bookmarks Button (Desktop Access) */}
           {setActiveTab && (
             <button
               onClick={() => setActiveTab('saved')}
               aria-label="सहेजी गई खबरें व रील्स देखें"
-              className={`hidden md:flex p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 items-center gap-1.5 text-xs font-bold min-h-[36px] ${
+              className={`hidden lg:flex p-2 sm:px-3 sm:py-2 rounded-xl border transition active:scale-95 shrink-0 items-center gap-1.5 text-xs font-bold min-h-[38px] sm:min-h-[40px] ${
                 activeTab === 'saved'
                   ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-sm'
                   : isDark 
                     ? 'border-slate-700 bg-slate-800/90 text-slate-300 hover:text-white' 
-                    : 'border-slate-300 bg-slate-100 text-slate-700 hover:text-slate-950'
+                    : 'border-slate-300 bg-slate-100 text-slate-800 hover:text-slate-950'
               }`}
               title="सेव की गई खबरें व रील्स"
             >
               <Bookmark size={14} className={activeTab === 'saved' ? 'fill-current text-amber-400' : ''} />
-              <span className="hidden lg:inline text-xs">सेव्ड</span>
+              <span className="text-xs">सेव्ड</span>
               {savedCount !== undefined && savedCount > 0 && (
                 <span className="bg-amber-500 text-slate-950 font-black text-[9px] min-w-[15px] h-[15px] px-1 rounded-full flex items-center justify-center shadow">
                   {savedCount}
@@ -414,12 +414,12 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onToggleSearch}
               aria-label="समाचार खोजें"
-              className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 min-w-[30px] sm:min-w-[36px] min-h-[30px] sm:min-h-[36px] flex items-center justify-center ${
-                isDark ? 'border-slate-700 bg-slate-800/90 text-slate-300 hover:text-white' : 'border-slate-300 bg-slate-100 text-slate-700 hover:text-slate-950'
+              className={`p-2 rounded-xl border transition active:scale-95 shrink-0 min-w-[38px] sm:min-w-[40px] min-h-[38px] sm:min-h-[40px] flex items-center justify-center ${
+                isDark ? 'border-slate-700 bg-slate-800/90 text-slate-200 hover:text-white' : 'border-slate-300 bg-slate-100 text-slate-800 hover:text-slate-950'
               }`}
               title="खबरें खोजें (Search)"
             >
-              <Search size={14} />
+              <Search size={16} />
             </button>
           )}
 
@@ -427,12 +427,12 @@ export const Header: React.FC<HeaderProps> = ({
           <button 
             onClick={toggleTheme}
             aria-label={isDark ? "लाइट थीम पर स्विच करें" : "डार्क थीम पर स्विच करें"}
-            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border text-sm transition shrink-0 min-w-[30px] sm:min-w-[36px] min-h-[30px] sm:min-h-[36px] flex items-center justify-center ${
-              isDark ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+            className={`p-2 rounded-xl border text-sm transition shrink-0 min-w-[38px] sm:min-w-[40px] min-h-[38px] sm:min-h-[40px] flex items-center justify-center ${
+              isDark ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
             }`}
             title="Toggle theme"
           >
-            {isDark ? <Sun size={14} /> : <Moon size={14} />}
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         </div>
 
@@ -442,19 +442,19 @@ export const Header: React.FC<HeaderProps> = ({
       <div className={`w-full max-w-full overflow-x-auto no-scrollbar border-t transition-colors ${
         isDark ? 'bg-[#05070e] border-red-950/30' : 'bg-slate-50 border-slate-200'
       }`}>
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1.5 flex items-center gap-1.5 text-xs whitespace-nowrap">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 flex items-center gap-1.5 text-xs whitespace-nowrap">
           {CATEGORIES.map((cat) => {
             const isActive = selectedCategory === cat;
             return (
               <button 
                 key={cat} 
                 onClick={() => handleCategoryClick(cat)}
-                className={`px-3 py-1 rounded-full font-bold text-[11px] sm:text-xs transition-all active:scale-95 ${
+                className={`px-3.5 py-1.5 rounded-full font-bold text-xs transition-all active:scale-95 min-h-[34px] flex items-center justify-center ${
                   isActive 
                     ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/40' 
                     : isDark 
                       ? 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700' 
-                      : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200'
+                      : 'text-slate-700 hover:text-slate-950 hover:bg-slate-200'
                 }`}
               >
                 {cat}

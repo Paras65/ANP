@@ -79,6 +79,7 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
           {onViewFull && (
             <button 
               onClick={onViewFull}
+              aria-label="कवर्धा व क्षेत्रीय कृषि मंडी भाव पूरा देखें"
               className="text-[10px] sm:text-[11px] font-bold text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded-xl bg-emerald-950/60 border border-emerald-800/60 shrink-0 flex items-center gap-0.5 transition whitespace-nowrap cursor-pointer active:scale-95"
             >
               <span>पूरा देखें</span>

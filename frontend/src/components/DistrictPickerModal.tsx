@@ -160,7 +160,11 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
       <div className="absolute inset-0" onClick={onClose}></div>
 
       {/* Modal Dialog */}
-      <div className={`relative w-full max-w-2xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10 ${
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="district-modal-title"
+        className={`relative w-full max-w-2xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10 ${
         isDark ? 'bg-[#090d18] border-red-950/60 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
         
@@ -171,13 +175,13 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
               <MapPin size={20} />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-black tracking-wide flex items-center gap-2">
+              <h2 id="district-modal-title" className="text-base sm:text-lg font-black tracking-wide flex items-center gap-2">
                 <span>जिला चुनें</span>
                 <span className="text-xs bg-red-600/20 text-red-400 border border-red-600/30 px-2 py-0.5 rounded-full font-bold">
                   88 जिले
                 </span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              </h2>
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 छत्तीसगढ़ (33) व मध्य प्रदेश (55) के अपने जिले की ताज़ा खबरें देखें
               </p>
             </div>
@@ -185,6 +189,7 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
 
           <button 
             onClick={onClose}
+            aria-label="जिला चयन विंडो बंद करें"
             className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
             title="बंद करें"
           >
@@ -248,6 +253,7 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
               {search && (
                 <button
                   onClick={() => setSearch('')}
+                  aria-label="जिला खोज साफ़ करें"
                   className="text-slate-400 hover:text-white text-xs px-1"
                 >
                   हटाएं
@@ -267,6 +273,7 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
               onSelectDistrict('सभी', activeTab);
               onClose();
             }}
+            aria-label={activeTab === 'chhattisgarh' ? 'छत्तीसगढ़ के सभी 33 जिलों की खबरें चुनें' : 'मध्य प्रदेश के सभी 55 जिलों की खबरें चुनें'}
             className={`w-full mb-3 p-3 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-98 ${
               currentDistrict === 'सभी'
                 ? 'bg-red-600/20 border-red-500 text-red-300 font-bold'
@@ -293,6 +300,7 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
                     onSelectDistrict(d.nameHindi, activeTab);
                     onClose();
                   }}
+                  aria-label={`${d.nameHindi} जिले के ताज़ा समाचार चुनें`}
                   className={`p-2.5 rounded-xl border text-left flex items-center justify-between text-xs transition cursor-pointer active:scale-95 ${
                     isSelected
                       ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white border-red-500 shadow-md font-bold'

@@ -117,9 +117,9 @@ export const PwaInstallPrompt: React.FC<PwaInstallPromptProps> = ({ onShareWhats
         {/* Center Text Info */}
         <div className="flex-1 min-w-0 pr-1">
           <div className="flex items-center gap-1.5">
-            <h4 className="text-xs font-black text-white truncate">
+            <p className="text-xs font-black text-white truncate">
               एम्बिशन न्यूज़ ऐप लगाएं
-            </h4>
+            </p>
             <span className="text-[9px] bg-red-950 text-red-300 font-bold px-1 rounded border border-red-800">
               कवर्धा
             </span>
@@ -134,6 +134,7 @@ export const PwaInstallPrompt: React.FC<PwaInstallPromptProps> = ({ onShareWhats
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={handleInstallClick}
+            aria-label="एम्बिशन न्यूज़ ऐप होमस्क्रीन पर जोड़ें"
             className="bg-red-600 hover:bg-red-500 active:scale-95 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow flex items-center gap-1 transition"
           >
             <Download size={12} />
@@ -143,6 +144,7 @@ export const PwaInstallPrompt: React.FC<PwaInstallPromptProps> = ({ onShareWhats
           {onShareWhatsApp && (
             <button
               onClick={onShareWhatsApp}
+              aria-label="व्हाट्सएप पर ऐप शेयर करें"
               className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white p-1.5 rounded-xl shadow flex items-center justify-center transition"
               title="व्हाट्सएप पर शेयर करें"
             >
@@ -152,6 +154,7 @@ export const PwaInstallPrompt: React.FC<PwaInstallPromptProps> = ({ onShareWhats
 
           <button
             onClick={handleDismiss}
+            aria-label="ऐप इंस्टॉल बैनर हटाएं"
             className="p-1 rounded-lg text-slate-400 hover:text-white transition"
             title="हटाएं"
           >
@@ -174,6 +177,7 @@ export const PwaInstallPrompt: React.FC<PwaInstallPromptProps> = ({ onShareWhats
           </p>
           <button 
             onClick={() => setShowIosGuide(false)}
+            aria-label="iPhone गाइड बंद करें"
             className="text-[10px] text-red-400 font-bold underline pt-1 block"
           >
             समझ गया (Close)

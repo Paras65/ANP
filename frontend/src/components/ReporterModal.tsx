@@ -86,7 +86,11 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
       <div className="absolute inset-0" onClick={onClose}></div>
-      <div className={`relative w-full max-w-lg sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl border p-5 space-y-4 my-0 sm:my-auto max-h-[92vh] overflow-y-auto z-10 ${
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reporter-modal-title"
+        className={`relative w-full max-w-lg sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl border p-5 space-y-4 my-0 sm:my-auto max-h-[92vh] overflow-y-auto z-10 ${
         isDark ? 'bg-slate-900 text-slate-100 border-slate-700' : 'bg-white text-slate-900 border-slate-300'
       }`}>
         
@@ -100,9 +104,9 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
               <Send size={16} />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-white">
+              <h2 id="reporter-modal-title" className="text-sm sm:text-base font-bold text-white">
                 फ़ील्ड रिपोर्टर पोर्टल • तुरंत खबर भेजें
-              </h3>
+              </h2>
               <p className="text-[11px] text-slate-400">
                 सीधे Ambition News लाइव पोर्टल और सोशल डेस्क पर प्रकाशित होगी
               </p>

@@ -71,6 +71,7 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
             href={SOCIAL_LINKS.instagram}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="एम्बिशन न्यूज़ आधिकारिक इंस्टाग्राम पर फॉलो करें"
             className="flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-pink-600/30 transition active:scale-95 shrink-0"
           >
             <InstagramIcon size={15} />
@@ -183,6 +184,7 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
 
           <button
             onClick={() => onSelectReel(visiblePosts[0]?.id || posts[0]?.id)}
+            aria-label="सभी रील्स फुलस्क्रीन में लगातार चलाएं"
             className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-pink-600/25 transition active:scale-95"
           >
             <Play size={14} className="fill-white" />

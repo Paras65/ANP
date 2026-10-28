@@ -238,7 +238,11 @@ export const ComplianceModal: React.FC<ComplianceModalProps> = ({
                   </div>
                   <div>
                     <span className="text-slate-400 block">ईमेल (विधिक पत्राचार):</span>
-                    <a href="mailto:grievance@ambitionnews.in" className="font-bold text-red-500 hover:underline">
+                    <a 
+                      href="mailto:grievance@ambitionnews.in" 
+                      aria-label="शिकायत निवारण अधिकारी को ईमेल भेजें"
+                      className="font-bold text-red-500 hover:underline"
+                    >
                       grievance@ambitionnews.in
                     </a>
                   </div>
@@ -326,6 +330,7 @@ export const ComplianceModal: React.FC<ComplianceModalProps> = ({
           <button
             type="button"
             onClick={onClose}
+            aria-label="विधिक नीति विंडो बंद करें"
             className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition"
           >
             समझ गए (Close)

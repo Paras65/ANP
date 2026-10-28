@@ -86,6 +86,9 @@ ${groupInviteUrl}
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="whatsapp-modal-title"
         className={`w-full max-w-lg rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
           isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
         }`}
@@ -97,14 +100,15 @@ ${groupInviteUrl}
               <MessageCircle size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-black tracking-wide leading-tight">
+              <h2 id="whatsapp-modal-title" className="text-sm font-black tracking-wide leading-tight">
                 📱 1-क्लिक WhatsApp बुलेटिन जनरेटर
-              </h3>
+              </h2>
               <p className="text-[10px] text-emerald-100">रेडी-टू-फॉरवर्ड फॉर्मेट (ग्रुप्स व ब्रॉडकास्ट के लिए)</p>
             </div>
           </div>
           <button 
             onClick={onClose}
+            aria-label="व्हाट्सएप बुलेटिन जनरेटर बंद करें"
             className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center text-xs font-bold transition"
           >
             ✕

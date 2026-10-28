@@ -195,6 +195,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                   e.stopPropagation();
                   onClose();
                 }}
+                aria-label="वेब स्टोरी विंडो बंद करें"
                 className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur transition cursor-pointer"
                 title="बंद करें"
               >
@@ -262,6 +263,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                     onReadFullArticle(currentStory);
                   }
                 }}
+                aria-label="कवर्धा कृषि उपज मंडी भाव देखें"
                 className="flex-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs py-2.5 rounded-xl shadow-lg shadow-emerald-950/60 transition active:scale-95 text-center flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>🌾 आज के सभी मंडी भाव देखें</span>
@@ -279,6 +281,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                     onReadFullArticle(currentStory);
                   }
                 }}
+                aria-label="लाइव टीवी और वीडियो बुलेटिन देखें"
                 className="flex-1 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs py-2.5 rounded-xl shadow-lg shadow-red-950/60 transition active:scale-95 text-center flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>▶️ लाइव टीवी व वीडियो देखें</span>
@@ -292,6 +295,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                   onClose();
                   onReadFullArticle(currentStory);
                 }}
+                aria-label="पूरी खबर पढ़ें"
                 className="flex-1 bg-white hover:bg-slate-100 text-slate-950 font-black text-xs py-2.5 rounded-xl shadow-lg transition active:scale-95 text-center flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>📰 पूरी खबर पढ़ें</span>
@@ -305,6 +309,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                 e.stopPropagation();
                 onShareWhatsApp(currentStory);
               }}
+              aria-label="यह वेब स्टोरी व्हाट्सएप पर शेयर करें"
               className="bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-xl shadow-lg transition active:scale-95 cursor-pointer shrink-0"
               title="WhatsApp पर स्टोरी शेयर करें"
             >

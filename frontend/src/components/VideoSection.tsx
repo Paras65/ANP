@@ -406,6 +406,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 
                 <button
                   onClick={(e) => handleShare(featuredVideo, e)}
+                  aria-label="मुख्य वीडियो व्हाट्सएप पर शेयर करें"
                   className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
                   title="WhatsApp पर शेयर करें"
                 >
@@ -601,6 +602,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 {/* Previous Video Button */}
                 <button
                   onClick={handlePrev}
+                  aria-label="पिछला वीडियो बुलेटिन चलाएं"
                   className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition active:scale-90 cursor-pointer flex items-center gap-1 text-xs font-bold"
                   title="पिछला बुलेटिन (Previous)"
                 >
@@ -611,6 +613,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 {/* Next Video Button */}
                 <button
                   onClick={handleNext}
+                  aria-label="अगला वीडियो बुलेटिन चलाएं"
                   className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition active:scale-90 cursor-pointer flex items-center gap-1 text-xs font-bold"
                   title="अगला बुलेटिन (Next)"
                 >
@@ -623,6 +626,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     setCountdown(null);
                     setActiveVideo(null);
                   }}
+                  aria-label="वीडियो प्लेयर विंडो बंद करें"
                   className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition cursor-pointer ml-1"
                   title="बंद करें"
                 >
@@ -716,6 +720,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleShare(activeVideo)}
+                      aria-label="यह वीडियो व्हाट्सएप पर शेयर करें"
                       className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95 cursor-pointer"
                     >
                       <WhatsAppIcon size={15} />
@@ -726,6 +731,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                       href={activeVideo.youtubeUrl || `https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label="यूट्यूब पर यह वीडियो देखें"
                       className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95"
                     >
                       <YoutubeIcon size={15} />

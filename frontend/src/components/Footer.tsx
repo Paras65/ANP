@@ -23,6 +23,7 @@ export const Footer: React.FC<FooterProps> = ({
       isDark ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-300 text-slate-600'
     }`}>
       <div className="max-w-7xl mx-auto px-4 space-y-8">
+        <h2 className="sr-only">एम्बिशन न्यूज़ पोर्टल पादलेख (Footer)</h2>
         
         {/* Row 1: Brand, Address & Socials */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

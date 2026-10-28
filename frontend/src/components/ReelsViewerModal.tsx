@@ -519,6 +519,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
         {isMuted && showMuteHint && (
           <button
             onClick={toggleMute}
+            aria-label="रील की आवाज़ चालू करें"
             className="absolute top-16 left-1/2 -translate-x-1/2 z-30 bg-black/85 hover:bg-black backdrop-blur-md border border-pink-500/50 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl transition active:scale-95 animate-pulse cursor-pointer pointer-events-auto"
           >
             <VolumeX size={14} className="text-pink-400 shrink-0" />
@@ -563,6 +564,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           <div className="flex items-center gap-2">
             <button 
               onClick={onClose}
+              aria-label="रील्स प्लेयर विंडो बंद करें"
               className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur text-white transition active:scale-90 cursor-pointer"
               title="Close Reels"
             >
@@ -609,6 +611,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           <button 
             onClick={handlePrev}
             disabled={currentIndex === 0}
+            aria-label="पिछली रील देखें"
             className="w-10 h-10 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white flex items-center justify-center shadow-xl transition disabled:opacity-30 disabled:cursor-not-allowed"
             title="Previous Reel (Up Arrow)"
           >
@@ -616,6 +619,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           </button>
           <button 
             onClick={handleNext}
+            aria-label="अगली रील देखें"
             className="w-10 h-10 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white flex items-center justify-center shadow-xl transition"
             title="Next Reel (Down Arrow)"
           >
@@ -629,6 +633,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           {/* Like Button */}
           <button 
             onClick={toggleLike}
+            aria-label={isCurrentLiked ? "रील अनलाइक करें" : "रील लाइक करें"}
             className="flex flex-col items-center gap-1 group active:scale-75 transition-transform"
           >
             <div className={`p-2.5 rounded-full transition-all ${
@@ -646,6 +651,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           {/* Comments Button */}
           <button 
             onClick={() => setShowComments(true)}
+            aria-label="रील पर टिप्पणियां देखें"
             className="flex flex-col items-center gap-1 group active:scale-75 transition-transform"
           >
             <div className="p-2.5 rounded-full bg-black/40 group-hover:bg-black/60 transition">
@@ -662,6 +668,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
               const reelLink = currentReel.postUrl || (currentReel.youtubeId ? `https://youtube.com/shorts/${currentReel.youtubeId}` : window.location.href);
               onShareWhatsApp(currentReel.caption, reelLink);
             }}
+            aria-label="यह रील व्हाट्सएप पर शेयर करें"
             className="flex flex-col items-center gap-1 group active:scale-75 transition-transform"
             title="Share Reel on WhatsApp"
           >
@@ -787,6 +794,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
               </div>
               <button 
                 onClick={() => setShowComments(false)}
+                aria-label="कमेंट्स पैनल बंद करें"
                 className="text-slate-400 hover:text-white p-1"
               >
                 <X size={18} />

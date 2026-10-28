@@ -3,6 +3,7 @@ import { X, Volume2, VolumeX, Eye, Calendar, UserCheck, MapPin, Heart, Bookmark 
 import type { Article } from '../types';
 import { WhatsAppIcon } from './SocialIcons';
 import { getSmartCoverImage } from '../utils/categoryTheme';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 interface ArticleModalProps {
   article: Article;
@@ -285,7 +286,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
               isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
             }`}>
               <img 
-                src={article.coverImage || getSmartCoverImage('', article.category, article.title, article.district)} 
+                src={getOptimizedImageUrl(article.coverImage, 'hero')} 
                 alt={article.title}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = getSmartCoverImage('', article.category, article.title, article.district);
@@ -336,6 +337,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             {onToggleBookmark && (
               <button 
                 onClick={() => onToggleBookmark(article)}
+                aria-label={isBookmarked ? "खबर सेव्ड लिस्ट से हटाएं" : "यह खबर बाद में पढ़ने के लिए सेव करें"}
                 className={`p-2 rounded-xl text-xs font-bold transition active:scale-95 ${
                   isBookmarked 
                     ? 'bg-amber-600/20 text-amber-400 border border-amber-500/40' 
@@ -352,6 +354,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           <div className="flex items-center gap-2">
             <button 
               onClick={() => onShareWhatsApp(article.title, article._id)}
+              aria-label="यह खबर व्हाट्सएप पर शेयर करें"
               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95"
             >
               <WhatsAppIcon size={14} />
@@ -360,6 +363,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 
             <button 
               onClick={onClose}
+              aria-label="लेख विवरण विंडो बंद करें"
               className={`hidden sm:inline-block text-xs px-3.5 py-2 rounded-xl font-medium transition ${
                 isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
               }`}

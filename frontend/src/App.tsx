@@ -43,6 +43,7 @@ import type { TabType } from './components/BottomNav';
 import { useVoiceTyping } from './hooks/useVoiceTyping';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './components/SocialIcons';
 import { getSmartCoverImage } from './utils/categoryTheme';
+import { getOptimizedImageUrl } from './utils/imageUtils';
 
 import { 
   ALL_DISTRICTS_DEMO, 
@@ -1255,6 +1256,7 @@ export const App: React.FC = () => {
                   {totalSavedCount > 0 && (
                     <button
                       onClick={handleClearAllSaved}
+                      aria-label="सभी सहेजी गई सामग्री हटाएं"
                       className="inline-flex items-center gap-1 text-xs text-rose-500 hover:text-rose-400 font-bold px-2.5 py-1 rounded-lg border border-rose-500/30 hover:bg-rose-500/10 transition active:scale-95"
                       title="सभी सेव्ड आइटम्स हटाएं"
                     >
@@ -1568,6 +1570,7 @@ export const App: React.FC = () => {
                   href={SOCIAL_LINKS.youtube}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="एम्बिशन न्यूज़ आधिकारिक यूट्यूब चैनल खोलें"
                   className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md transition active:scale-95 shrink-0"
                 >
                   <YoutubeIcon size={16} />
@@ -1822,6 +1825,7 @@ export const App: React.FC = () => {
                     {searchQuery ? (
                       <button
                         onClick={() => setSearchQuery('')}
+                        aria-label="खोज रीसेट करें"
                         className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer"
                       >
                         खोज रीसेट करें
@@ -1830,6 +1834,7 @@ export const App: React.FC = () => {
                       <>
                         <button
                           onClick={() => setShowReporterModal(true)}
+                          aria-label="फ़ील्ड रिपोर्टर पोर्टल खोलें और खबर भेजें"
                           className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
                         >
                           <span>📢</span>
@@ -1840,6 +1845,7 @@ export const App: React.FC = () => {
                             setCurrentDistrict('सभी');
                             setSelectedCategory('सभी खबरें');
                           }}
+                          aria-label="सभी 88 जिलों की ताज़ा खबरें देखें"
                           className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl border border-slate-700 transition cursor-pointer"
                         >
                           सभी 88 जिलों की खबरें देखें
@@ -1865,7 +1871,7 @@ export const App: React.FC = () => {
                       >
                         <div className="relative h-64 sm:h-96 w-full overflow-hidden bg-slate-950">
                           <img 
-                            src={heroArticle.coverImage || "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=65"} 
+                            src={getOptimizedImageUrl(heroArticle.coverImage, 'hero')} 
                             alt={heroArticle.title} 
                             // @ts-ignore
                             fetchpriority="high"
@@ -1908,11 +1914,11 @@ export const App: React.FC = () => {
                               <span className="text-orange-400 font-black uppercase tracking-wider">
                                 {heroArticle.category}
                               </span>
-                              <span className="text-slate-400 flex items-center gap-1">
+                              <span className="text-slate-300 flex items-center gap-1">
                                 <Clock size={11} className="text-red-400" />
                                 <span>{formatRelativeHindiTime(heroArticle.publishedAt)}</span>
                               </span>
-                              <span className="text-slate-400 hidden sm:inline">
+                              <span className="text-slate-300 hidden sm:inline">
                                 • {estimateReadingTime(heroArticle.content || heroArticle.excerpt)}
                               </span>
                             </div>
@@ -1929,7 +1935,7 @@ export const App: React.FC = () => {
                               <div className="flex items-center gap-2">
                                 <span className="text-[11px] font-medium text-slate-300">✍️ {heroArticle.author}</span>
                                 {heroArticle.views && (
-                                  <span className="text-[10px] text-slate-400 hidden sm:flex items-center gap-0.5">
+                                  <span className="text-[10px] text-slate-300 hidden sm:flex items-center gap-0.5">
                                     <Eye size={10} />
                                     <span>{formatHindiViews(heroArticle.views)}</span>
                                   </span>
@@ -2025,37 +2031,37 @@ export const App: React.FC = () => {
                                 <span className="bg-red-950/40 border border-red-900/60 px-2 py-0.5 rounded text-[10px]">
                                   {art.category}
                                 </span>
-                                <div className={`flex items-center gap-1.5 text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                                  <span className={`flex items-center gap-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                                    <Clock size={10} className="text-red-400" />
+                                <div className={`flex items-center gap-1.5 text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+                                  <span className={`flex items-center gap-0.5 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+                                    <Clock size={10} className="text-red-500" />
                                     <span>{formatRelativeHindiTime(art.publishedAt)}</span>
                                   </span>
                                   <span>•</span>
                                   <span className="flex items-center gap-0.5">
-                                    <MapPin size={10} className="text-red-500" /> {art.district}
+                                    <MapPin size={10} className="text-red-600" /> {art.district}
                                   </span>
                                 </div>
                               </div>
 
                               <h3 className={`text-xs sm:text-sm font-bold leading-snug line-clamp-2 transition-colors ${
-                                isDark ? 'text-slate-100 group-hover:text-red-400' : 'text-slate-900 group-hover:text-red-600'
+                                isDark ? 'text-slate-100 group-hover:text-red-400' : 'text-slate-900 group-hover:text-red-700'
                               }`}>
                                 {art.title}
                               </h3>
 
-                              <p className={`text-[11px] mt-1.5 line-clamp-2 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                              <p className={`text-[11px] mt-1.5 line-clamp-2 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                                 {art.excerpt}
                               </p>
                             </div>
 
                             <div className={`mt-3 pt-2 border-t flex items-center justify-between text-xs ${
-                              isDark ? 'border-slate-800/60 text-slate-400' : 'border-slate-200 text-slate-600'
+                              isDark ? 'border-slate-800/60 text-slate-400' : 'border-slate-200 text-slate-700'
                             }`}>
                               <span className="text-[10px] truncate max-w-[120px]">
                                 ✍️ {art.author}
                               </span>
                               <div className="flex items-center gap-2">
-                                <span className={`text-[9px] hidden sm:inline ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                <span className={`text-[9px] hidden sm:inline ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
                                   {estimateReadingTime(art.content || art.excerpt)}
                                 </span>
                                 <button
@@ -2064,7 +2070,7 @@ export const App: React.FC = () => {
                                     toggleBookmark(art);
                                   }}
                                   aria-label={savedArticles.some(a => a._id === art._id) ? "खबर सेव्ड लिस्ट से हटाएं" : "यह खबर बाद में पढ़ने के लिए सेव करें"}
-                                  className="text-slate-400 hover:text-amber-400 transition cursor-pointer"
+                                  className={`${isDark ? 'text-slate-400' : 'text-slate-600'} hover:text-amber-500 transition cursor-pointer`}
                                   title="सेव करें"
                                 >
                                   <Bookmark size={13} className={savedArticles.some(a => a._id === art._id) ? 'fill-amber-400 text-amber-400' : ''} />
@@ -2119,6 +2125,7 @@ export const App: React.FC = () => {
                                 href={`https://api.whatsapp.com/send?phone=917000139694&text=${encodeURIComponent('नमस्ते Ambition News, मुझे अपने प्रतिष्ठान / व्यवसाय का विज्ञापन व कवरेज पोर्टल पर प्रकाशित करवाना है।')}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                aria-label="विज्ञापन व कवरेज के लिए संपादकीय डेस्क से व्हाट्सएप पर संपर्क करें"
                                 className="shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer whitespace-nowrap"
                               >
                                 <WhatsAppIcon size={13} />
@@ -2260,6 +2267,7 @@ export const App: React.FC = () => {
                         href={whatsappLink}
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label="एम्बिशन न्यूज़ आधिकारिक व्हाट्सएप ग्रुप से जुड़ें"
                         className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-950/40 transition active:scale-95 cursor-pointer"
                       >
                         <WhatsAppIcon size={14} />
@@ -2384,6 +2392,7 @@ export const App: React.FC = () => {
                         href={SOCIAL_LINKS.instagram}
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label="एम्बिशन न्यूज़ आधिकारिक इंस्टाग्राम प्रोफाइल खोलें"
                         className="flex-1 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow"
                       >
                         <InstagramIcon size={13} />
@@ -2393,6 +2402,7 @@ export const App: React.FC = () => {
                         href={SOCIAL_LINKS.facebook}
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label="एम्बिशन न्यूज़ आधिकारिक फेसबुक पेज खोलें"
                         className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow transition"
                       >
                         <FacebookIcon size={13} />
@@ -2419,6 +2429,7 @@ export const App: React.FC = () => {
                     <div className="flex flex-col gap-1.5 pt-1">
                       <button 
                         onClick={() => showToast('📲 PWA इंस्टॉलेशन प्रॉम्प्ट सक्रिय हुआ (डेमो)')}
+                        aria-label="एम्बिशन न्यूज़ PWA ऐप होम स्क्रीन पर जोड़ें"
                         className={`w-full font-bold text-xs py-1.5 rounded-xl shadow transition ${
                           isDark 
                             ? 'bg-white text-slate-900 hover:bg-slate-100' 

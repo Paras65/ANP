@@ -247,6 +247,9 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="newscard-modal-title"
         className={`w-full max-w-lg rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[95vh] ${
           isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
         }`}
@@ -258,14 +261,15 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
               <ImageIcon size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-black tracking-wide leading-tight">
+              <h2 id="newscard-modal-title" className="text-sm font-black tracking-wide leading-tight">
                 🖼️ सोशल मीडिया फोटो कार्ड जनरेटर
-              </h3>
+              </h2>
               <p className="text-[10px] text-red-100">व्हाट्सएप स्टेटस, इंस्टाग्राम व फेसबुक के लिए रेडी कार्ड</p>
             </div>
           </div>
           <button 
             onClick={onClose}
+            aria-label="फोटो कार्ड जनरेटर बंद करें"
             className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center text-xs font-bold transition"
           >
             ✕
