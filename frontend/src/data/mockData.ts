@@ -3,6 +3,8 @@ import type { Article, VideoBulletin, InstagramPost, MandiRate, DistrictItem } f
 export const SOCIAL_LINKS = {
   website: 'https://ambitionnews.com',
   domain: 'ambitionnews.com',
+  email: 'grievance@ambitionnews.in',
+  grievanceEmail: 'grievance@ambitionnews.in',
   logo: '/logo.png',
   phone: '7000139694',
   phoneFormatted: '+91 70001 39694',

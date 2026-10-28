@@ -238,8 +238,8 @@ export const ComplianceModal: React.FC<ComplianceModalProps> = ({
                   </div>
                   <div>
                     <span className="text-slate-400 block">ईमेल (विधिक पत्राचार):</span>
-                    <a href="mailto:grievance@ambition.news" className="font-bold text-red-500 hover:underline">
-                      grievance@ambition.news
+                    <a href="mailto:grievance@ambitionnews.in" className="font-bold text-red-500 hover:underline">
+                      grievance@ambitionnews.in
                     </a>
                   </div>
                   <div>

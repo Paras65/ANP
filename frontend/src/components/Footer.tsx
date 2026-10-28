@@ -200,7 +200,7 @@ export const Footer: React.FC<FooterProps> = ({
                 श्री आर. के. वर्मा
               </div>
               <div className={`flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                <Mail size={11} /> grievance@ambition.news
+                <Mail size={11} /> grievance@ambitionnews.in
               </div>
               <div className={`text-[10px] pt-1 border-t ${isDark ? 'text-slate-500 border-slate-800' : 'text-slate-400 border-slate-200'}`}>
                 24 घंटे में acknowledgment और 15 दिन में समाधान अनिवार्य। विवरण देखें ↗
