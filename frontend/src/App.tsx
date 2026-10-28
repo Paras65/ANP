@@ -273,6 +273,18 @@ export const App: React.FC = () => {
     } catch {}
   };
 
+  const handleEditReel = async (updatedReel: InstagramPost) => {
+    const updated = instagramPosts.map(r => r.id === updatedReel.id ? updatedReel : r);
+    setInstagramPosts(updated);
+    localStorage.setItem('anp_instagram_posts', JSON.stringify(updated));
+    showToast('रील विवरण अपडेट कर दिया गया!');
+    try {
+      await api.put(`/reels/${updatedReel.id}`, updatedReel);
+    } catch (err) {
+      console.error('Failed to sync reel edit with server:', err);
+    }
+  };
+
   const handleDeleteReel = async (id: string) => {
     const updated = instagramPosts.filter(r => r.id !== id);
     setInstagramPosts(updated);
@@ -859,6 +871,7 @@ export const App: React.FC = () => {
         onDeleteVideo={handleDeleteVideo}
         reels={instagramPosts}
         onAddReel={handleAddReel}
+        onEditReel={handleEditReel}
         onDeleteReel={handleDeleteReel}
         youtubeChannelId={youtubeChannelId}
         hasYouTubeApiKey={hasYouTubeApiKey}
@@ -1557,10 +1570,9 @@ export const App: React.FC = () => {
         <BottomNav 
           activeTab={activeTab}
           setActiveTab={(tab) => {
+            setActiveTab(tab);
             if (tab === 'insta') {
               openReelModal(instagramPosts[0]?.id || '1');
-            } else {
-              setActiveTab(tab);
             }
           }}
           savedCount={savedArticles.length}

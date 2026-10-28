@@ -87,6 +87,56 @@ export function parseInstagramUrl(input: string): ParsedInstagram | null {
 }
 
 /**
+ * Checks whether a URL is a direct web-compatible video file (.mp4, .webm, .mov)
+ */
+export function isDirectVideoUrl(input: string): boolean {
+  if (!input) return false;
+  const clean = input.trim().toLowerCase();
+  return clean.endsWith('.mp4') || clean.endsWith('.webm') || clean.endsWith('.mov') || clean.includes('.mp4?') || clean.includes('/video/');
+}
+
+export interface ParsedReelMedia {
+  type: 'instagram' | 'youtube_short' | 'direct_video';
+  embedUrl?: string;
+  previewThumb?: string;
+  rawId?: string;
+  videoUrl?: string;
+  postUrl: string;
+}
+
+export function parseReelMedia(input: string): ParsedReelMedia | null {
+  if (!input) return null;
+  const url = input.trim();
+  const ig = parseInstagramUrl(url);
+  if (ig) {
+    return {
+      type: 'instagram',
+      embedUrl: ig.embedUrl,
+      postUrl: ig.reelUrl
+    };
+  }
+  const yt = parseYouTubeUrl(url);
+  if (yt) {
+    return {
+      type: 'youtube_short',
+      embedUrl: yt.embedUrl,
+      previewThumb: yt.thumbnailUrl,
+      rawId: yt.id,
+      postUrl: yt.watchUrl
+    };
+  }
+  if (isDirectVideoUrl(url)) {
+    return {
+      type: 'direct_video',
+      videoUrl: url,
+      postUrl: url,
+      previewThumb: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800'
+    };
+  }
+  return null;
+}
+
+/**
  * Extracts a YouTube Channel ID from raw ID, full URL, or channel link
  */
 export function extractYouTubeChannelId(input: string): string | null {

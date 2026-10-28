@@ -27,6 +27,15 @@ export interface VideoBulletin {
   youtubeUrl: string;
 }
 
+export interface ReelComment {
+  id: string;
+  user: string;
+  text: string;
+  time: string;
+  avatar: string;
+  createdAt?: string;
+}
+
 export interface InstagramPost {
   id: string;
   caption: string;
@@ -36,8 +45,10 @@ export interface InstagramPost {
   embedUrl?: string;
   postUrl: string;
   likes: string;
+  likesCount?: number;
   commentsCount?: string;
   sharesCount?: string;
+  comments?: ReelComment[];
   district: string;
   timeAgo: string;
   audioTrack?: string;

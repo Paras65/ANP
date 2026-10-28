@@ -3,7 +3,7 @@ import { Heart, ExternalLink, Play, Film, Plus, X, Check, AlertCircle } from 'lu
 import { InstagramIcon } from './SocialIcons';
 import type { InstagramPost } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
-import { parseInstagramUrl, parseYouTubeUrl } from '../utils/mediaUtils';
+import { parseInstagramUrl, parseYouTubeUrl, parseReelMedia } from '../utils/mediaUtils';
 
 interface InstagramSectionProps {
   posts: InstagramPost[];
@@ -23,7 +23,7 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
   const [captionInput, setCaptionInput] = useState('');
   const [districtInput, setDistrictInput] = useState('कवर्धा');
   const [audioInput, setAudioInput] = useState('Ambition News Original');
-  const [parsedReel, setParsedReel] = useState<{ type: 'instagram' | 'youtube_short'; embedUrl: string; previewThumb?: string; rawId?: string } | null>(null);
+  const [parsedReel, setParsedReel] = useState<ReturnType<typeof parseReelMedia>>(null);
 
   // Compact Shelf Controls
   const [isExpanded, setIsExpanded] = useState(false);
@@ -40,25 +40,7 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
 
   const handleUrlChange = (val: string) => {
     setReelUrlInput(val);
-    const ig = parseInstagramUrl(val);
-    if (ig) {
-      setParsedReel({
-        type: 'instagram',
-        embedUrl: ig.embedUrl
-      });
-      return;
-    }
-    const yt = parseYouTubeUrl(val);
-    if (yt) {
-      setParsedReel({
-        type: 'youtube_short',
-        embedUrl: yt.embedUrl,
-        previewThumb: yt.thumbnailUrl,
-        rawId: yt.id
-      });
-      return;
-    }
-    setParsedReel(null);
+    setParsedReel(parseReelMedia(val));
   };
 
   const handleSaveReel = (e: React.FormEvent) => {
@@ -69,12 +51,15 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
       id: 'reel_' + Date.now(),
       caption: captionInput.trim(),
       imageUrl: parsedReel.previewThumb || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800',
+      videoUrl: parsedReel.videoUrl,
       youtubeId: parsedReel.type === 'youtube_short' ? parsedReel.rawId : undefined,
       embedUrl: parsedReel.embedUrl,
-      postUrl: reelUrlInput.trim(),
+      postUrl: parsedReel.postUrl || reelUrlInput.trim(),
       likes: '1',
+      likesCount: 1,
       commentsCount: '0',
       sharesCount: '0',
+      comments: [],
       district: districtInput,
       timeAgo: 'अभी-अभी',
       audioTrack: audioInput.trim() || 'Ambition News Original'

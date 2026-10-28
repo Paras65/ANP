@@ -44,7 +44,7 @@ import {
   Wand2
 } from 'lucide-react';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate } from '../types';
-import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos } from '../utils/mediaUtils';
+import { parseYouTubeUrl, parseInstagramUrl, extractYouTubeChannelId, syncYouTubeChannelVideos, parseReelMedia } from '../utils/mediaUtils';
 import { WhatsAppIcon } from './SocialIcons';
 import api, { setAuthToken } from '../api/client';
 import { SOCIAL_LINKS } from '../data/mockData';
@@ -68,6 +68,7 @@ interface AdminPortalProps {
   onDeleteVideo?: (id: string) => void;
   reels?: InstagramPost[];
   onAddReel?: (post: InstagramPost) => void;
+  onEditReel?: (post: InstagramPost) => void;
   onDeleteReel?: (id: string) => void;
   youtubeChannelId?: string;
   hasYouTubeApiKey?: boolean;
@@ -95,6 +96,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onDeleteVideo,
   reels = [],
   onAddReel,
+  onEditReel,
   onDeleteReel,
   youtubeChannelId = '',
   hasYouTubeApiKey = false,
@@ -230,6 +232,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     },
     onInterim: (text) => {
       setReelCaptionInterim(text);
+    }
+  });
+
+  // Voice Typing for Edit Reel Caption
+  const [editReelCaptionInterim, setEditReelCaptionInterim] = useState('');
+  const {
+    isListening: isListeningEditReelCaption,
+    toggleListening: toggleVoiceEditReelCaption
+  } = useVoiceTyping({
+    lang: 'hi-IN',
+    onResult: (text) => {
+      setEditReelCaption((prev) => (prev ? prev + ' ' + text : text));
+    },
+    onInterim: (text) => {
+      setEditReelCaptionInterim(text);
     }
   });
 
@@ -448,7 +465,46 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [reelCaption, setReelCaption] = useState('');
   const [reelDistrict, setReelDistrict] = useState('कवर्धा');
   const [reelAudio, setReelAudio] = useState('Ambition News Original');
-  const [parsedReel, setParsedReel] = useState<{ type: 'instagram' | 'youtube_short'; embedUrl: string; previewThumb?: string; rawId?: string } | null>(null);
+  const [parsedReel, setParsedReel] = useState<ReturnType<typeof parseReelMedia>>(null);
+
+  // Edit Reel States
+  const [editingReel, setEditingReel] = useState<InstagramPost | null>(null);
+  const [editReelCaption, setEditReelCaption] = useState('');
+  const [editReelUrl, setEditReelUrl] = useState('');
+  const [editReelDistrict, setEditReelDistrict] = useState('कवर्धा');
+  const [editReelAudio, setEditReelAudio] = useState('Ambition News Original');
+  const [editParsedReel, setEditParsedReel] = useState<ReturnType<typeof parseReelMedia>>(null);
+
+  const handleStartEditReel = (reel: InstagramPost) => {
+    setEditingReel(reel);
+    setEditReelCaption(reel.caption || '');
+    setEditReelUrl(reel.postUrl || (reel.youtubeId ? `https://youtube.com/shorts/${reel.youtubeId}` : reel.videoUrl || ''));
+    setEditReelDistrict(reel.district || 'कवर्धा');
+    setEditReelAudio(reel.audioTrack || 'Ambition News Original');
+    const parsed = parseReelMedia(reel.postUrl || (reel.youtubeId ? `https://youtube.com/shorts/${reel.youtubeId}` : reel.videoUrl || ''));
+    setEditParsedReel(parsed);
+  };
+
+  const handleSaveEditReel = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReel || !editReelCaption.trim()) return;
+    const media = editParsedReel || parseReelMedia(editReelUrl.trim());
+    const updated: InstagramPost = {
+      ...editingReel,
+      caption: editReelCaption.trim(),
+      district: editReelDistrict,
+      audioTrack: editReelAudio.trim() || 'Ambition News Original',
+      postUrl: editReelUrl.trim() || editingReel.postUrl,
+      imageUrl: media?.previewThumb || editingReel.imageUrl,
+      videoUrl: media?.videoUrl || editingReel.videoUrl,
+      youtubeId: media?.type === 'youtube_short' ? media.rawId : (media?.type === 'direct_video' ? undefined : editingReel.youtubeId),
+      embedUrl: media?.embedUrl || editingReel.embedUrl
+    };
+    if (onEditReel) {
+      onEditReel(updated);
+    }
+    setEditingReel(null);
+  };
   
   // Editing Article State
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
@@ -2278,9 +2334,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       id: 'reel_' + Date.now(),
                       caption: reelCaption.trim(),
                       imageUrl: parsedReel.previewThumb || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800',
+                      videoUrl: parsedReel.videoUrl,
                       youtubeId: parsedReel.type === 'youtube_short' ? parsedReel.rawId : undefined,
                       embedUrl: parsedReel.embedUrl,
-                      postUrl: reelUrl.trim(),
+                      postUrl: parsedReel.postUrl || reelUrl.trim(),
                       likes: '1',
                       commentsCount: '0',
                       sharesCount: '0',
@@ -2297,13 +2354,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               >
                 <div className="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Plus size={14} />
-                  <span>नई इंस्टाग्राम रील या यूट्यूब शॉर्ट जोड़ें</span>
+                  <span>नई इंस्टाग्राम रील, यूट्यूब शॉर्ट या डायरेक्ट MP4 वीडियो जोड़ें</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Instagram Reel या YouTube Shorts URL
+                      Instagram Reel, YouTube Short या Direct MP4 URL
                     </label>
                     <input 
                       type="text"
@@ -2311,19 +2368,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       onChange={(e) => {
                         const val = e.target.value;
                         setReelUrl(val);
-                        const ig = parseInstagramUrl(val);
-                        if (ig) {
-                          setParsedReel({ type: 'instagram', embedUrl: ig.embedUrl });
-                          return;
-                        }
-                        const yt = parseYouTubeUrl(val);
-                        if (yt) {
-                          setParsedReel({ type: 'youtube_short', embedUrl: yt.embedUrl, previewThumb: yt.thumbnailUrl, rawId: yt.id });
-                          return;
-                        }
-                        setParsedReel(null);
+                        setParsedReel(parseReelMedia(val));
                       }}
-                      placeholder="उदा. https://www.instagram.com/reel/... या shorts/..."
+                      placeholder="उदा. https://www.instagram.com/reel/..., shorts/... या https://.../video.mp4"
                       className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
                       required
                     />
@@ -2369,7 +2416,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 {parsedReel && (
                   <div className="flex items-center gap-3 p-2.5 bg-emerald-950/30 border border-emerald-500/40 rounded-xl">
                     <span className="text-xs text-emerald-400 font-bold">
-                      मान्य {parsedReel.type === 'instagram' ? 'इंस्टाग्राम रील' : 'यूट्यूब शॉर्ट'} लिंक मिला!
+                      मान्य {parsedReel.type === 'instagram' ? 'इंस्टाग्राम रील' : (parsedReel.type === 'youtube_short' ? 'यूट्यूब शॉर्ट' : 'डायरेक्ट MP4 वीडियो')} लिंक मिला!
                     </span>
                   </div>
                 )}
@@ -2427,20 +2474,148 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           <span>लिंक</span>
                           <ExternalLink size={10} />
                         </a>
-                        {onDeleteReel && (
+                        <div className="flex items-center gap-1.5">
                           <button
-                            onClick={() => onDeleteReel(reel.id)}
-                            className="text-red-400 hover:text-red-300 p-1"
-                            title="हटाएं"
+                            type="button"
+                            onClick={() => handleStartEditReel(reel)}
+                            className="text-amber-400 hover:text-amber-300 p-1 rounded hover:bg-amber-500/10 transition"
+                            title="संपादित करें (Edit Reel)"
                           >
-                            <Trash2 size={13} />
+                            <Edit3 size={13} />
                           </button>
-                        )}
+                          {onDeleteReel && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteReel(reel.id)}
+                              className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/10 transition"
+                              title="हटाएं"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Edit Reel Modal Popup */}
+              {editingReel && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                  <div className="w-full max-w-lg bg-[#0c101c] border border-pink-500/40 rounded-3xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-pink-600 flex items-center justify-center text-white">
+                          <Edit3 size={15} />
+                        </div>
+                        <h3 className="text-sm font-black text-white">रील विवरण संपादित करें (Edit Reel)</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingReel(null)}
+                        className="text-slate-400 hover:text-white p-1 rounded-full"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleSaveEditReel} className="space-y-3">
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                          Reel URL (Instagram / YouTube Shorts / Direct MP4)
+                        </label>
+                        <input
+                          type="text"
+                          value={editReelUrl}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditReelUrl(val);
+                            setEditParsedReel(parseReelMedia(val));
+                          }}
+                          className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] font-semibold text-slate-300">
+                            कैप्शन (Caption)
+                          </label>
+                          {isVoiceSupported && (
+                            <button
+                              type="button"
+                              onClick={toggleVoiceEditReelCaption}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition ${
+                                isListeningEditReelCaption ? 'bg-pink-600 text-white animate-pulse' : 'text-slate-400 hover:text-pink-400'
+                              }`}
+                            >
+                              <Mic size={11} className={isListeningEditReelCaption ? 'animate-bounce text-white' : ''} />
+                              <span>{isListeningEditReelCaption ? 'बोलना बंद करें ⏹️' : '🎙️ बोलकर संपादित करें'}</span>
+                            </button>
+                          )}
+                        </div>
+                        <textarea
+                          rows={3}
+                          value={editReelCaption}
+                          onChange={(e) => setEditReelCaption(e.target.value)}
+                          className="w-full bg-[#05070e] border border-white/15 focus:border-pink-500 rounded-xl px-3 py-2 text-xs text-white outline-none resize-none"
+                          required
+                        />
+                        {isListeningEditReelCaption && (
+                          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded">
+                            <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping" />
+                            <span>🎙️ सुन रहा हूँ: {editReelCaptionInterim || 'बोलिए...'}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            जिला
+                          </label>
+                          <input
+                            type="text"
+                            value={editReelDistrict}
+                            onChange={(e) => setEditReelDistrict(e.target.value)}
+                            className="w-full bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            ऑडियो ट्रैक
+                          </label>
+                          <input
+                            type="text"
+                            value={editReelAudio}
+                            onChange={(e) => setEditReelAudio(e.target.value)}
+                            className="w-full bg-[#05070e] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => setEditingReel(null)}
+                          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/10 transition"
+                        >
+                          रद्द करें
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={!editReelCaption.trim()}
+                          className="bg-gradient-to-r from-pink-600 to-indigo-600 hover:opacity-95 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow active:scale-95"
+                        >
+                          ✓ बदलाव सुरक्षित करें
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
 
             </div>
 

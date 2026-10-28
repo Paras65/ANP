@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { State } from '../models/State.model.js';
@@ -625,12 +626,22 @@ router.get('/reels', async (req: Request, res: Response) => {
         id: r._id.toString(),
         caption: r.caption,
         imageUrl: r.imageUrl,
+        videoUrl: r.videoUrl,
         youtubeId: r.youtubeId,
         embedUrl: r.embedUrl,
         postUrl: r.postUrl,
-        likes: r.likes,
-        commentsCount: r.commentsCount,
-        sharesCount: r.sharesCount,
+        likes: r.likes || `${r.likesCount || 0}`,
+        likesCount: typeof r.likesCount === 'number' ? r.likesCount : (parseInt(String(r.likes).replace(/[^0-9]/g, '')) || 0),
+        commentsCount: r.comments && r.comments.length > 0 ? String(r.comments.length) : (r.commentsCount || '0'),
+        sharesCount: r.sharesCount || '0',
+        comments: (r.comments || []).map((c: any) => ({
+          id: c._id ? c._id.toString() : `comm-${Date.now()}`,
+          user: c.user,
+          text: c.text,
+          time: c.timeAgo || 'अभी-अभी',
+          avatar: c.avatar || '👤',
+          createdAt: c.createdAt || new Date()
+        })),
         district: r.district,
         timeAgo: r.timeAgo,
         audioTrack: r.audioTrack
@@ -644,19 +655,22 @@ router.get('/reels', async (req: Request, res: Response) => {
 // 8. POST /api/reels - Add new Reel / Short directly into MongoDB Atlas
 router.post('/reels', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
-    const { caption, postUrl, youtubeId, imageUrl, district, audioTrack, embedUrl } = req.body;
-    if (!caption) {
+    const { caption, postUrl, youtubeId, imageUrl, videoUrl, district, audioTrack, embedUrl } = req.body;
+    if (!caption || !caption.trim()) {
       return res.status(400).json({ success: false, message: 'कैप्शन आवश्यक है' });
     }
     const newReel = await Reel.create({
       caption: caption.trim(),
       imageUrl: imageUrl || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800'),
+      videoUrl: videoUrl ? videoUrl.trim() : undefined,
       youtubeId: youtubeId || undefined,
       embedUrl: embedUrl || (youtubeId ? `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&rel=0` : undefined),
       postUrl: postUrl || 'https://www.instagram.com/ambition_news/',
       likes: '1',
+      likesCount: 1,
       commentsCount: '0',
       sharesCount: '0',
+      comments: [],
       district: district || 'कवर्धा',
       timeAgo: 'अभी-अभी',
       audioTrack: audioTrack || 'Ambition News Original'
@@ -667,12 +681,15 @@ router.post('/reels', requireAdminAuth, contentCreationLimiter, async (req: Requ
         id: newReel._id.toString(),
         caption: newReel.caption,
         imageUrl: newReel.imageUrl,
+        videoUrl: newReel.videoUrl,
         youtubeId: newReel.youtubeId,
         embedUrl: newReel.embedUrl,
         postUrl: newReel.postUrl,
         likes: newReel.likes,
-        commentsCount: newReel.commentsCount,
+        likesCount: newReel.likesCount,
+        commentsCount: '0',
         sharesCount: newReel.sharesCount,
+        comments: [],
         district: newReel.district,
         timeAgo: newReel.timeAgo,
         audioTrack: newReel.audioTrack
@@ -683,12 +700,182 @@ router.post('/reels', requireAdminAuth, contentCreationLimiter, async (req: Requ
   }
 });
 
-// 8b. DELETE /api/reels/:id - Delete Reel from MongoDB Atlas
+// 8b. PUT /api/reels/:id - Edit / Update existing Reel in MongoDB Atlas
+router.put('/reels/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { caption, postUrl, youtubeId, imageUrl, videoUrl, district, audioTrack, embedUrl } = req.body;
+    if (!caption || !caption.trim()) {
+      return res.status(400).json({ success: false, message: 'कैप्शन आवश्यक है' });
+    }
+    const query = mongoose.isValidObjectId(id) ? { $or: [{ _id: id }, { youtubeId: id }] } : { youtubeId: id };
+    const updated = await Reel.findOneAndUpdate(
+      query,
+      {
+        $set: {
+          caption: caption.trim(),
+          imageUrl: imageUrl || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : undefined),
+          videoUrl: videoUrl !== undefined ? (videoUrl ? videoUrl.trim() : null) : undefined,
+          youtubeId: youtubeId || undefined,
+          embedUrl: embedUrl || (youtubeId ? `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&rel=0` : undefined),
+          postUrl: postUrl || 'https://www.instagram.com/ambition_news/',
+          district: district || 'कवर्धा',
+          audioTrack: audioTrack || 'Ambition News Original'
+        }
+      },
+      { new: true }
+    ).lean();
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'संपादित करने के लिए रील नहीं मिली' });
+    }
+
+    res.json({
+      success: true,
+      message: 'रील सफलतापूर्वक अपडेट कर दी गई',
+      data: {
+        id: updated._id.toString(),
+        caption: updated.caption,
+        imageUrl: updated.imageUrl,
+        videoUrl: updated.videoUrl,
+        youtubeId: updated.youtubeId,
+        embedUrl: updated.embedUrl,
+        postUrl: updated.postUrl,
+        likes: updated.likes,
+        likesCount: updated.likesCount,
+        commentsCount: updated.comments?.length ? String(updated.comments.length) : updated.commentsCount,
+        sharesCount: updated.sharesCount,
+        comments: (updated.comments || []).map((c: any) => ({
+          id: c._id ? c._id.toString() : `comm-${Date.now()}`,
+          user: c.user,
+          text: c.text,
+          time: c.timeAgo || 'अभी-अभी',
+          avatar: c.avatar || '👤'
+        })),
+        district: updated.district,
+        timeAgo: updated.timeAgo,
+        audioTrack: updated.audioTrack
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 8c. DELETE /api/reels/:id - Delete Reel from MongoDB Atlas
 router.delete('/reels/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await Reel.deleteOne({ $or: [{ _id: id }, { youtubeId: id }] });
+    const query = mongoose.isValidObjectId(id) ? { $or: [{ _id: id }, { youtubeId: id }] } : { youtubeId: id };
+    await Reel.deleteOne(query);
     res.json({ success: true, message: 'रील हटा दी गई' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 8d. POST /api/reels/:id/like - Real-time Like/Unlike Reel in MongoDB Atlas
+router.post('/reels/:id/like', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body; // 'like' | 'unlike'
+    const increment = action === 'unlike' ? -1 : 1;
+    const query = mongoose.isValidObjectId(id) ? { $or: [{ _id: id }, { youtubeId: id }] } : { youtubeId: id };
+
+    const reel = await Reel.findOne(query);
+    if (!reel) {
+      return res.status(404).json({ success: false, message: 'रील नहीं मिली' });
+    }
+
+    const currentLikes = typeof reel.likesCount === 'number' ? reel.likesCount : (parseInt(String(reel.likes).replace(/[^0-9]/g, '')) || 0);
+    const newLikesCount = Math.max(0, currentLikes + increment);
+    reel.likesCount = newLikesCount;
+    reel.likes = newLikesCount >= 1000 ? `${(newLikesCount / 1000).toFixed(1)}K` : `${newLikesCount}`;
+    await reel.save();
+
+    res.json({
+      success: true,
+      data: {
+        id: reel._id.toString(),
+        likesCount: reel.likesCount,
+        likes: reel.likes
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 8e. POST /api/reels/:id/comments - Add Public Comment to Reel in MongoDB Atlas
+router.post('/reels/:id/comments', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { user, text, avatar } = req.body;
+
+    const cleanUser = String(user || 'पाठक').trim().slice(0, 100);
+    const cleanText = String(text || '').trim().slice(0, 500);
+
+    if (!cleanText) {
+      return res.status(400).json({ success: false, message: 'कमेंट सामग्री आवश्यक है' });
+    }
+
+    const query = mongoose.isValidObjectId(id) ? { $or: [{ _id: id }, { youtubeId: id }] } : { youtubeId: id };
+    const reel = await Reel.findOne(query);
+    if (!reel) {
+      return res.status(404).json({ success: false, message: 'रील नहीं मिली' });
+    }
+
+    const newComment = {
+      user: cleanUser,
+      text: cleanText,
+      timeAgo: 'अभी-अभी',
+      avatar: avatar || '👤',
+      createdAt: new Date()
+    };
+
+    reel.comments.unshift(newComment as any);
+    reel.commentsCount = String(reel.comments.length);
+    await reel.save();
+
+    const savedComment = reel.comments[0];
+    res.status(201).json({
+      success: true,
+      message: 'कमेंट सफलतापूर्वक पोस्ट हो गया',
+      data: {
+        id: savedComment._id?.toString() || `comm-${Date.now()}`,
+        user: savedComment.user,
+        text: savedComment.text,
+        time: savedComment.timeAgo,
+        avatar: savedComment.avatar,
+        commentsCount: reel.commentsCount
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 8f. DELETE /api/reels/:id/comments/:commentId - Delete Comment (Moderation)
+router.delete('/reels/:id/comments/:commentId', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { id, commentId } = req.params;
+    const query = mongoose.isValidObjectId(id) ? { $or: [{ _id: id }, { youtubeId: id }] } : { youtubeId: id };
+    const reel = await Reel.findOne(query);
+    if (!reel) {
+      return res.status(404).json({ success: false, message: 'रील नहीं मिली' });
+    }
+
+    reel.comments = reel.comments.filter((c: any) => c._id?.toString() !== commentId);
+    reel.commentsCount = String(reel.comments.length);
+    await reel.save();
+
+    res.json({
+      success: true,
+      message: 'कमेंट हटा दिया गया',
+      data: {
+        commentsCount: reel.commentsCount
+      }
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

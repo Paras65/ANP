@@ -16,6 +16,7 @@ import {
 import type { InstagramPost } from '../types';
 import { InstagramIcon, WhatsAppIcon } from './SocialIcons';
 import { SOCIAL_LINKS } from '../data/mockData';
+import api from '../api/client';
 
 interface ReelsViewerModalProps {
   initialPostId: string;
@@ -107,6 +108,20 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
       document.body.classList.remove('modal-open');
     };
   }, []);
+
+  // Sync comments for current active reel (Atlas DB comments take priority)
+  useEffect(() => {
+    const active = posts[currentIndex];
+    if (active && active.comments && active.comments.length > 0) {
+      setCommentsList(active.comments.map(c => ({
+        id: c.id,
+        user: c.user,
+        text: c.text,
+        time: c.time || 'अभी-अभी',
+        avatar: c.avatar || '👤'
+      })));
+    }
+  }, [currentIndex, posts]);
 
   // Send control commands directly into YouTube IFrame without reload/restart
   const sendYouTubeCommand = (func: string, args: any[] = []) => {
@@ -279,7 +294,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     togglePlay();
   };
 
-  // Like Toggle with LocalStorage persistence
+  // Like Toggle with LocalStorage + MongoDB Atlas persistence
   const toggleLike = () => {
     const willLike = !isCurrentLiked;
     const updated = { ...likedPosts, [currentReel.id]: willLike };
@@ -289,12 +304,14 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     } catch {}
     setLikeCounts(prev => ({
       ...prev,
-      [currentReel.id]: willLike ? (prev[currentReel.id] || 1200) + 1 : (prev[currentReel.id] || 1200) - 1
+      [currentReel.id]: willLike ? (prev[currentReel.id] || 1200) + 1 : Math.max(0, (prev[currentReel.id] || 1200) - 1)
     }));
     if (willLike) {
       setShowHeartBurst(true);
       setTimeout(() => setShowHeartBurst(false), 900);
     }
+    // Live sync to MongoDB Atlas
+    api.post(`/reels/${currentReel.id}/like`, { action: willLike ? 'like' : 'unlike' }).catch(() => {});
   };
 
   // Double tap to like
@@ -317,23 +334,38 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
     } catch {}
   };
 
-  // Add Comment with LocalStorage persistence
-  const handleAddComment = (e: React.FormEvent) => {
+  // Add Comment with LocalStorage + MongoDB Atlas persistence
+  const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    const clean = newComment.trim();
+    if (!clean) return;
+
     const commentObj: Comment = {
       id: `comm-${Date.now()}`,
       user: 'आप (कवर्धा पाठक)',
-      text: newComment.trim(),
+      text: clean,
       time: 'अभी-अभी',
       avatar: '👤'
     };
     const updatedList = [commentObj, ...commentsList];
     setCommentsList(updatedList);
+    setNewComment('');
     try {
       localStorage.setItem('anp_reel_comments', JSON.stringify(updatedList));
     } catch {}
-    setNewComment('');
+
+    // Live sync to MongoDB Atlas
+    try {
+      const res = await api.post(`/reels/${currentReel.id}/comments`, {
+        user: 'कवर्धा पाठक',
+        text: clean
+      });
+      if (res.data?.success && res.data.data?.id) {
+        setCommentsList(prev => prev.map(c => c.id === commentObj.id ? { ...c, id: res.data.data.id } : c));
+      }
+    } catch (err) {
+      console.warn('Reel comment sync failed:', err);
+    }
   };
 
   return (
@@ -387,11 +419,18 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
             }
             if (currentReel.postUrl && currentReel.postUrl.includes('instagram.com/reel/')) {
               return (
-                <div className="w-full h-full flex items-center justify-center bg-black pointer-events-none">
+                <div className="w-full h-full flex items-center justify-center bg-black relative">
+                  {currentReel.imageUrl && (
+                    <img 
+                      src={currentReel.imageUrl} 
+                      alt="" 
+                      className="absolute inset-0 w-full h-full object-cover" 
+                    />
+                  )}
                   <iframe
                     src={`${currentReel.postUrl.replace(/\/$/, '')}/embed`}
                     title={currentReel.caption}
-                    className="w-full h-full border-0 pointer-events-none"
+                    className="w-full h-full border-0 relative z-10"
                     allowFullScreen
                     scrolling="no"
                     allow="autoplay; encrypted-media"
