@@ -985,7 +985,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col font-devanagari w-full max-w-full overflow-x-hidden ${
+    <div className={`min-h-screen flex flex-col font-devanagari w-full max-w-full ${
       isDark ? 'bg-[#060911] text-slate-100' : 'bg-slate-50 text-slate-900'
     } ${isMobileDeviceView ? 'bg-[#04060c] py-6 px-2 flex items-center justify-center' : ''}`}>
 

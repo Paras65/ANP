@@ -105,7 +105,9 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
   return (
-    <header className={`w-full max-w-full sticky top-0 z-40 border-b backdrop-blur-xl will-change-transform transition-all duration-300 ${
+    <header 
+      style={{ position: 'sticky', top: isMobileDeviceView ? 37 : 0 }}
+      className={`w-full max-w-full sticky top-0 z-40 border-b backdrop-blur-xl transition-all duration-300 ${
       isScrolled 
         ? isDark 
           ? 'bg-[#080c14]/98 border-red-900/60 text-slate-100 shadow-2xl shadow-black/80 ring-1 ring-red-900/20' 
