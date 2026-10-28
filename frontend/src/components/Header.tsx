@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Sun, Moon, MapPin, Smartphone, Monitor, Search } from 'lucide-react';
+import { ShieldCheck, Sun, Moon, MapPin, Smartphone, Monitor, Search, Bookmark } from 'lucide-react';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './SocialIcons';
 import { SOCIAL_LINKS } from '../data/mockData';
 import type { TabType } from './BottomNav';
@@ -22,6 +22,7 @@ interface HeaderProps {
   onOpenDistrictPicker?: () => void;
   onOpenReporterModal?: () => void;
   whatsappLink?: string;
+  savedCount?: number;
 }
 
 const CATEGORIES = [
@@ -53,7 +54,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSearch,
   onOpenDistrictPicker,
   onOpenReporterModal,
-  whatsappLink
+  whatsappLink,
+  savedCount
 }) => {
   const handleLogoClick = () => {
     if (setActiveTab) setActiveTab('home');
@@ -359,6 +361,29 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <WhatsAppIcon size={14} className="shrink-0" />
               <span className="hidden sm:inline text-xs">शेयर ऐप</span>
+            </button>
+          )}
+
+          {/* Saved / Bookmarks Button (Desktop & Tablet Access) */}
+          {setActiveTab && (
+            <button
+              onClick={() => setActiveTab('saved')}
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl border transition active:scale-95 shrink-0 flex items-center gap-1.5 text-xs font-bold ${
+                activeTab === 'saved'
+                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-sm'
+                  : isDark 
+                    ? 'border-slate-700 bg-slate-800/90 text-slate-300 hover:text-white' 
+                    : 'border-slate-300 bg-slate-100 text-slate-700 hover:text-slate-950'
+              }`}
+              title="सेव की गई खबरें व रील्स"
+            >
+              <Bookmark size={14} className={activeTab === 'saved' ? 'fill-current text-amber-400' : ''} />
+              <span className="hidden lg:inline text-xs">सेव्ड</span>
+              {savedCount !== undefined && savedCount > 0 && (
+                <span className="bg-amber-500 text-slate-950 font-black text-[9px] min-w-[15px] h-[15px] px-1 rounded-full flex items-center justify-center shadow">
+                  {savedCount}
+                </span>
+              )}
             </button>
           )}
 

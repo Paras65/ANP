@@ -14,7 +14,9 @@ import {
   Clock,
   Eye,
   ChevronDown,
-  MapPinOff
+  MapPinOff,
+  Trash2,
+  Play
 } from 'lucide-react';
 import { formatRelativeHindiTime, estimateReadingTime, formatHindiViews } from './utils/dateUtils';
 
@@ -80,7 +82,23 @@ export const App: React.FC = () => {
   const [activeStory, setActiveStory] = useState<StoryItem | null>(null);
   const [activeReelId, setActiveReelId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [savedArticles, setSavedArticles] = useState<Article[]>([INITIAL_ARTICLES[0]]);
+  const [savedArticles, setSavedArticles] = useState<Article[]>(() => {
+    try {
+      const saved = localStorage.getItem('anp_saved_articles');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [savedReelIds, setSavedReelIds] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('anp_bookmarked_reels');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [savedTabFilter, setSavedTabFilter] = useState<'all' | 'articles' | 'reels'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [showDistrictModal, setShowDistrictModal] = useState(false);
@@ -377,15 +395,46 @@ export const App: React.FC = () => {
     }, 3500);
   };
 
-  // Toggle Bookmark
+  // Toggle Bookmark with LocalStorage sync
   const toggleBookmark = (article: Article) => {
     const isSaved = savedArticles.some(a => a._id === article._id);
+    let next: Article[];
     if (isSaved) {
-      setSavedArticles(prev => prev.filter(a => a._id !== article._id));
+      next = savedArticles.filter(a => a._id !== article._id);
       showToast('🔖 आर्टिकल सेव्ड लिस्ट से हटाया गया');
     } else {
-      setSavedArticles(prev => [article, ...prev]);
+      next = [article, ...savedArticles];
       showToast('🔖 आर्टिकल ऑफलाइन पढ़ने के लिए सेव किया गया');
+    }
+    setSavedArticles(next);
+    try {
+      localStorage.setItem('anp_saved_articles', JSON.stringify(next));
+    } catch {}
+  };
+
+  // Toggle Reel Bookmark with LocalStorage sync
+  const toggleReelBookmark = (reelId: string) => {
+    const next = { ...savedReelIds, [reelId]: !savedReelIds[reelId] };
+    if (!next[reelId]) {
+      delete next[reelId];
+    }
+    setSavedReelIds(next);
+    try {
+      localStorage.setItem('anp_bookmarked_reels', JSON.stringify(next));
+    } catch {}
+    showToast(!savedReelIds[reelId] ? '🔖 रील सेव की गई' : '🔖 रील सेव्ड लिस्ट से हटाई गई');
+  };
+
+  // Clear All Saved Items (Articles + Reels)
+  const handleClearAllSaved = () => {
+    if (window.confirm('क्या आप सभी सेव की गई खबरें और रील्स हटाना चाहते हैं?')) {
+      setSavedArticles([]);
+      setSavedReelIds({});
+      try {
+        localStorage.removeItem('anp_saved_articles');
+        localStorage.removeItem('anp_bookmarked_reels');
+      } catch {}
+      showToast('🗑️ सभी सेव्ड आइटम्स साफ़ कर दिए गए');
     }
   };
 
@@ -785,6 +834,10 @@ export const App: React.FC = () => {
   const closeReelModal = () => {
     setActiveReelId(null);
     try {
+      const saved = localStorage.getItem('anp_bookmarked_reels');
+      if (saved) setSavedReelIds(JSON.parse(saved));
+    } catch {}
+    try {
       const url = new URL(window.location.href);
       if (url.searchParams.has('reel')) {
         url.searchParams.delete('reel');
@@ -955,6 +1008,13 @@ export const App: React.FC = () => {
     return generateStoriesList(articles, videoBulletins[0], mandiRates[0]);
   }, [articles, videoBulletins, mandiRates]);
 
+  // Saved Reels & Combined Total Saved Count
+  const savedReelsList = useMemo(() => {
+    return instagramPosts.filter(p => !!savedReelIds[p.id]);
+  }, [instagramPosts, savedReelIds]);
+
+  const totalSavedCount = savedArticles.length + savedReelsList.length;
+
   const popularDistricts = selectedState === 'chhattisgarh' ? POPULAR_DISTRICTS_CG : POPULAR_DISTRICTS_MP;
 
   if (currentView === 'super-admin') {
@@ -1059,6 +1119,7 @@ export const App: React.FC = () => {
           toggleDeviceView={() => setIsMobileDeviceView(!isMobileDeviceView)}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          savedCount={totalSavedCount}
           onToggleSearch={() => setIsSearching(prev => !prev)}
           onOpenDistrictPicker={openDistrictModal}
           onOpenReporterModal={() => setShowReporterModal(true)}
@@ -1098,74 +1159,306 @@ export const App: React.FC = () => {
         {/* 4. MAIN CONTENT CONTAINER (PADDED BOTTOM FOR NATIVE BOTTOM NAV) */}
         <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full max-w-full min-w-0 space-y-6 pb-28">
 
-          {/* TAB: SAVED ARTICLES VIEW */}
+          {/* TAB: SAVED ARTICLES & REELS VIEW */}
           {activeTab === 'saved' && (
             <div className="space-y-4 animate-in fade-in duration-300">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                    <Bookmark size={16} />
+              {/* Header with Title and Clear All Button */}
+              <div className={`p-4 rounded-3xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                    <Bookmark size={20} className="fill-amber-400" />
                   </div>
                   <div>
-                    <h2 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      सेव की गई खबरें (बुकमार्क)
+                    <h2 className={`text-base sm:text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      सेव की गई सामग्री (बुकमार्क)
                     </h2>
-                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      ऑफलाइन व बाद में पढ़ने के लिए सुरक्षित
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      ऑफलाइन व बाद में पढ़ने-देखने के लिए सुरक्षित
                     </p>
                   </div>
                 </div>
-                <span className="text-xs bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full font-bold">
-                  {savedArticles.length} खबरें
-                </span>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                  <span className="text-xs bg-amber-500/20 text-amber-500 border border-amber-500/30 px-2.5 py-1 rounded-full font-bold">
+                    कुल {totalSavedCount} सुरक्षित
+                  </span>
+
+                  {totalSavedCount > 0 && (
+                    <button
+                      onClick={handleClearAllSaved}
+                      className="inline-flex items-center gap-1 text-xs text-rose-500 hover:text-rose-400 font-bold px-2.5 py-1 rounded-lg border border-rose-500/30 hover:bg-rose-500/10 transition active:scale-95"
+                      title="सभी सेव्ड आइटम्स हटाएं"
+                    >
+                      <Trash2 size={13} />
+                      <span>सभी हटाएं</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {savedArticles.length === 0 ? (
-                <div className={`p-8 text-center space-y-2 rounded-2xl border border-dashed ${
-                  isDark ? 'border-slate-800' : 'border-slate-300'
+              {/* Sub-Filter Pills (All, Articles, Reels) */}
+              {totalSavedCount > 0 && (
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 text-xs">
+                  <button
+                    onClick={() => setSavedTabFilter('all')}
+                    className={`px-3.5 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 shrink-0 ${
+                      savedTabFilter === 'all'
+                        ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                        : isDark
+                        ? 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>सभी</span>
+                    <span className="text-[10px] bg-black/20 px-1.5 py-0.2 rounded-full font-mono">
+                      {totalSavedCount}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setSavedTabFilter('articles')}
+                    className={`px-3.5 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 shrink-0 ${
+                      savedTabFilter === 'articles'
+                        ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                        : isDark
+                        ? 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>📰 खबरें</span>
+                    <span className="text-[10px] bg-black/20 px-1.5 py-0.2 rounded-full font-mono">
+                      {savedArticles.length}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setSavedTabFilter('reels')}
+                    className={`px-3.5 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 shrink-0 ${
+                      savedTabFilter === 'reels'
+                        ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                        : isDark
+                        ? 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>🎬 रील्स व शॉर्ट्स</span>
+                    <span className="text-[10px] bg-black/20 px-1.5 py-0.2 rounded-full font-mono">
+                      {savedReelsList.length}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {/* EMPTY STATE */}
+              {totalSavedCount === 0 ? (
+                <div className={`p-8 sm:p-12 text-center rounded-3xl border border-dashed flex flex-col items-center justify-center space-y-3.5 ${
+                  isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-300 bg-slate-50'
                 }`}>
-                  <Bookmark size={32} className="mx-auto text-slate-400" />
-                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    आपने अभी तक कोई खबर सेव नहीं की है।
-                  </p>
+                  <div className="w-16 h-16 rounded-3xl bg-amber-500/15 text-amber-400 flex items-center justify-center border border-amber-500/30 shadow-inner">
+                    <Bookmark size={32} className="stroke-[1.7]" />
+                  </div>
+                  <div className="space-y-1 max-w-sm">
+                    <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      आपने अभी तक कोई खबर या रील सेव नहीं की है
+                    </h3>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} leading-relaxed`}>
+                      होमपेज पर खबर पढ़ते समय या रील देखते समय <strong>बुकमार्क (🔖)</strong> आइकन दबाकर उसे यहाँ सहेजें।
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('home')}
+                    className="mt-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-red-600/30 transition active:scale-95 flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>🏠 ताज़ा खबरें पढ़ें</span>
+                  </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {savedArticles.map((art) => (
-                    <div 
-                      key={art._id}
-                      onClick={() => openArticleModal(art)}
-                      className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer ${
-                        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex justify-between items-center text-[10px] text-red-500 font-bold mb-1.5">
-                          <span>{art.category}</span>
-                          <span>📍 {art.district}</span>
+                <div className="space-y-6">
+                  {/* 1. SAVED ARTICLES SECTION */}
+                  {(savedTabFilter === 'all' || savedTabFilter === 'articles') && savedArticles.length > 0 && (
+                    <div className="space-y-3">
+                      {savedTabFilter === 'all' && (
+                        <div className="flex items-center justify-between">
+                          <h3 className={`text-sm font-bold flex items-center gap-1.5 ${
+                            isDark ? 'text-slate-200' : 'text-slate-800'
+                          }`}>
+                            <span>📰 सेव की गई खबरें</span>
+                            <span className="text-xs text-amber-500 font-normal font-mono">({savedArticles.length})</span>
+                          </h3>
                         </div>
-                        <h3 className={`text-xs sm:text-sm font-bold line-clamp-2 ${
-                          isDark ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          {art.title}
-                        </h3>
-                      </div>
-                      <div className={`mt-3 pt-2 border-t flex justify-between items-center text-[11px] ${
-                        isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-600'
-                      }`}>
-                        <span>✍️ {art.author}</span>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleBookmark(art);
-                          }}
-                          className="text-amber-400 font-bold text-xs"
-                        >
-                          हटाएं
-                        </button>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {savedArticles.map((art) => {
+                          const cover = getSmartCoverImage(art.coverImage, art.category, art.title, art.district);
+                          return (
+                            <div 
+                              key={art._id}
+                              onClick={() => openArticleModal(art)}
+                              className={`p-3 sm:p-3.5 rounded-2xl border flex gap-3 cursor-pointer group transition-all hover:-translate-y-0.5 ${
+                                isDark 
+                                  ? 'bg-slate-900 border-slate-800 hover:border-amber-500/50' 
+                                  : 'bg-white border-slate-200 shadow-sm hover:border-amber-500/60 hover:shadow-md'
+                              }`}
+                            >
+                              {/* Thumbnail */}
+                              <div className="relative w-24 sm:w-28 h-22 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-slate-950">
+                                <img 
+                                  src={cover} 
+                                  alt={art.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/logo.png';
+                                  }}
+                                />
+                                <span className="absolute bottom-1 left-1 bg-black/75 backdrop-blur-xs text-[9px] font-bold text-amber-400 px-1 py-0.2 rounded">
+                                  {art.district || 'कवर्धा'}
+                                </span>
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 flex flex-col justify-between min-w-0">
+                                <div>
+                                  <div className="flex items-center justify-between text-[10px] font-bold text-red-500 mb-1">
+                                    <span className="truncate">{art.category}</span>
+                                    <span className="text-slate-400 font-normal shrink-0 flex items-center gap-0.5">
+                                      <Clock size={10} />
+                                      {formatRelativeHindiTime(art.publishedAt)}
+                                    </span>
+                                  </div>
+                                  <h4 className={`text-xs sm:text-sm font-bold line-clamp-2 leading-snug group-hover:text-amber-400 transition-colors ${
+                                    isDark ? 'text-white' : 'text-slate-900'
+                                  }`}>
+                                    {art.title}
+                                  </h4>
+                                </div>
+
+                                <div className={`mt-2 pt-1.5 border-t flex items-center justify-between text-[11px] ${
+                                  isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-500'
+                                }`}>
+                                  <span className="text-[10px] truncate max-w-[100px]">✍️ {art.author || 'संपादक'}</span>
+                                  
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        shareWhatsApp(art.title, art._id);
+                                      }}
+                                      className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition"
+                                      title="WhatsApp शेयर"
+                                    >
+                                      <WhatsAppIcon size={13} />
+                                    </button>
+
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleBookmark(art);
+                                      }}
+                                      className="inline-flex items-center gap-0.5 text-rose-500 hover:text-rose-400 font-bold text-[11px] p-1 rounded hover:bg-rose-500/10 transition"
+                                      title="सेव्ड लिस्ट से हटाएं"
+                                    >
+                                      <Trash2 size={12} />
+                                      <span>हटाएं</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  {/* 2. SAVED REELS SECTION */}
+                  {(savedTabFilter === 'all' || savedTabFilter === 'reels') && savedReelsList.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      {savedTabFilter === 'all' && (
+                        <div className="flex items-center justify-between">
+                          <h3 className={`text-sm font-bold flex items-center gap-1.5 ${
+                            isDark ? 'text-slate-200' : 'text-slate-800'
+                          }`}>
+                            <span>🎬 सेव की गई रील्स व शॉर्ट्स</span>
+                            <span className="text-xs text-amber-500 font-normal font-mono">({savedReelsList.length})</span>
+                          </h3>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {savedReelsList.map((reel) => (
+                          <div
+                            key={reel.id}
+                            onClick={() => openReelModal(reel.id)}
+                            className="relative aspect-[9/16] rounded-2xl overflow-hidden cursor-pointer group shadow-md border border-slate-800 bg-slate-950 flex flex-col justify-between p-3"
+                          >
+                            {/* Background Image / Thumbnail */}
+                            <img
+                              src={reel.imageUrl}
+                              alt={reel.caption}
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/logo.png';
+                              }}
+                            />
+                            
+                            {/* Gradient Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/60 group-hover:via-black/20 transition-colors" />
+
+                            {/* Top Controls: District & Remove Button */}
+                            <div className="relative z-10 flex items-center justify-between">
+                              <span className="text-[10px] font-bold bg-black/60 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30">
+                                📍 {reel.district || 'कवर्धा'}
+                              </span>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleReelBookmark(reel.id);
+                                }}
+                                className="p-1.5 rounded-full bg-black/70 text-slate-300 hover:text-rose-400 hover:bg-black transition active:scale-90"
+                                title="रील हटाएं"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+
+                            {/* Center Play Button Overlay */}
+                            <div className="relative z-10 self-center">
+                              <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                <Play size={16} className="fill-white ml-0.5" />
+                              </div>
+                            </div>
+
+                            {/* Bottom Caption & Views */}
+                            <div className="relative z-10 space-y-1">
+                              <p className="text-white text-xs font-bold line-clamp-2 leading-snug drop-shadow">
+                                {reel.caption}
+                              </p>
+                              <div className="flex items-center justify-between text-[10px] text-slate-300 font-medium">
+                                <span>❤️ {reel.likes}</span>
+                                <span className="text-amber-400 font-bold">चलाएं ▶</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty Sub-filter Notice */}
+                  {savedTabFilter === 'articles' && savedArticles.length === 0 && (
+                    <div className="p-8 text-center text-xs text-slate-400">
+                      कोई सेव की गई खबर नहीं है।
+                    </div>
+                  )}
+                  {savedTabFilter === 'reels' && savedReelsList.length === 0 && (
+                    <div className="p-8 text-center text-xs text-slate-400">
+                      कोई सेव की गई रील नहीं है।
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2076,7 +2369,7 @@ export const App: React.FC = () => {
               openReelModal(instagramPosts[0]?.id || '1');
             }
           }}
-          savedCount={savedArticles.length}
+          savedCount={totalSavedCount}
           isDark={isDark}
         />
 
