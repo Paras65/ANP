@@ -303,6 +303,9 @@ export const App: React.FC = () => {
       const res = await api.post('/articles/scoop', scoopData);
       showToast(res.data?.message || 'आपकी खबर सफलतापूर्वक समीक्षा के लिए भेज दी गई है!');
       setShowReporterModal(false);
+      if (currentView === 'admin') {
+        loadArticles(true);
+      }
     } catch (err: any) {
       const errMsg = err.response?.data?.message || 'खबर भेजने में विफल, कृपया पुनः प्रयास करें';
       showToast(errMsg);
@@ -364,11 +367,13 @@ export const App: React.FC = () => {
     }
   };
 
-  // Load live articles
-  const loadArticles = async () => {
+  // Load live articles (includes Citizen Scoops with includeReview=true for Admin Portal)
+  const loadArticles = async (isAdminView = currentView === 'admin') => {
     setIsLoading(true);
     try {
-      const query = `/articles?state=${selectedState}${currentDistrict !== 'सभी' ? `&district=${encodeURIComponent(currentDistrict)}` : ''}`;
+      const includeReviewParam = isAdminView ? '&includeReview=true' : '';
+      const districtParam = (!isAdminView && currentDistrict !== 'सभी') ? `&district=${encodeURIComponent(currentDistrict)}` : '';
+      const query = `/articles?state=${selectedState}${districtParam}${includeReviewParam}`;
       const res = await api.get(query);
       if (res.data?.data && res.data.data.length > 0) {
         setArticles(res.data.data);
@@ -408,9 +413,9 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadDistrictsFromBackend();
-    loadArticles();
+    loadArticles(currentView === 'admin');
     loadMediaFromBackend();
-  }, [selectedState, currentDistrict]);
+  }, [selectedState, currentDistrict, currentView]);
 
   // Handle new article submitted from Reporter Modal
   const handleNewArticleSubmit = async (newArticleData: Partial<Article>) => {
@@ -459,7 +464,7 @@ export const App: React.FC = () => {
   // Update existing article live in MongoDB Atlas
   const handleUpdateArticle = async (id: string, updatedData: Partial<Article>) => {
     setArticles(prev => prev.map(a => a._id === id ? { ...a, ...updatedData } : a));
-    showToast('✅ खबर सफलतापूर्वक अपडेट हो गई!');
+    showToast(updatedData.status === 'PUBLISHED' ? '🎉 खबर स्वीकृत व लाइव प्रकाशित हो गई!' : '✅ खबर सफलतापूर्वक अपडेट हो गई!');
     try {
       await api.put(`/articles/${id}`, updatedData);
     } catch {
@@ -683,11 +688,13 @@ export const App: React.FC = () => {
   const handleOpenAdmin = () => {
     setCurrentView('admin');
     window.history.pushState({ view: 'admin' }, '', '/admin');
+    loadArticles(true);
   };
 
   const handleBackToPublic = () => {
     setCurrentView('public');
     window.history.pushState({ view: 'public' }, '', '/');
+    loadArticles(false);
   };
 
   // Switch state and reset district to 'सभी'

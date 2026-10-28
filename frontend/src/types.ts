@@ -10,6 +10,7 @@ export interface Article {
   category: string;
   author: string;
   views?: number;
+  status?: 'PUBLISHED' | 'DRAFT' | 'REVIEW' | 'ARCHIVED';
   isBreaking?: boolean;
   isFeatured?: boolean;
   shares?: number;

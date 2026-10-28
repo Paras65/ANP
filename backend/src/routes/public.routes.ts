@@ -379,21 +379,28 @@ router.delete('/articles/:id', requireAdminAuth, contentCreationLimiter, async (
 router.put('/articles/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, excerpt, content, district, category, author, state, isBreaking, isFeatured, coverImage } = req.body;
+    const { title, excerpt, content, district, category, author, state, isBreaking, isFeatured, coverImage, status } = req.body;
+    const updatePayload: any = {
+      ...(title && { title: title.trim() }),
+      ...(excerpt && { excerpt: excerpt.trim() }),
+      ...(content && { content }),
+      ...(district && { district: district.trim() }),
+      ...(category && { category: category.trim() }),
+      ...(author && { author: author.trim() }),
+      ...(state && { state }),
+      ...(isBreaking !== undefined && { isBreaking }),
+      ...(isFeatured !== undefined && { isFeatured }),
+      ...(coverImage && { coverImage }),
+      ...(status && { status })
+    };
+
+    if (status === 'PUBLISHED') {
+      updatePayload.publishedAt = new Date();
+    }
+
     const updated = await Article.findByIdAndUpdate(
       id,
-      {
-        ...(title && { title: title.trim() }),
-        ...(excerpt && { excerpt: excerpt.trim() }),
-        ...(content && { content }),
-        ...(district && { district: district.trim() }),
-        ...(category && { category: category.trim() }),
-        ...(author && { author: author.trim() }),
-        ...(state && { state }),
-        ...(isBreaking !== undefined && { isBreaking }),
-        ...(isFeatured !== undefined && { isFeatured }),
-        ...(coverImage && { coverImage })
-      },
+      updatePayload,
       { new: true }
     );
     if (!updated) {

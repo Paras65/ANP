@@ -124,6 +124,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Articles Search & Filter State (Tab 2)
   const [articleSearchQuery, setArticleSearchQuery] = useState('');
   const [articleDistrictFilter, setArticleDistrictFilter] = useState('सभी');
+  const [articleStatusFilter, setArticleStatusFilter] = useState<'all' | 'PUBLISHED' | 'REVIEW'>('all');
 
   // Mobile UX States
   const [tab1MobileView, setTab1MobileView] = useState<'form' | 'preview'>('form');
@@ -602,6 +603,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         isBreaking,
         isFeatured,
         views: 1,
+        status: 'PUBLISHED' as const,
         publishedAt: new Date().toISOString()
       };
 
@@ -962,7 +964,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             }`}
           >
             <FileText size={14} />
-            <span>📰 सभी प्रकाशित खबरें ({articles.length})</span>
+            <span>📰 सभी खबरें ({articles.length})</span>
+            {articles.filter(a => a.status === 'REVIEW').length > 0 && (
+              <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full animate-pulse ml-0.5">
+                {articles.filter(a => a.status === 'REVIEW').length} स्कूप
+              </span>
+            )}
           </button>
 
           <button
@@ -1583,12 +1590,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
         {/* TAB 2: MANAGE PUBLISHED ARTICLES */}
         {activeTab === 'articles' && (() => {
+          const pendingScoops = articles.filter(art => art.status === 'REVIEW');
+          const publishedCount = articles.filter(art => art.status !== 'REVIEW').length;
+
           const filteredManagedArticles = articles.filter(art => {
             const matchesSearch = !articleSearchQuery.trim() || 
               art.title?.toLowerCase().includes(articleSearchQuery.toLowerCase()) || 
               art.author?.toLowerCase().includes(articleSearchQuery.toLowerCase());
             const matchesDistrict = articleDistrictFilter === 'सभी' || (art.district && art.district.includes(articleDistrictFilter));
-            return matchesSearch && matchesDistrict;
+            const matchesStatus = articleStatusFilter === 'all'
+              ? true
+              : articleStatusFilter === 'REVIEW'
+                ? art.status === 'REVIEW'
+                : art.status !== 'REVIEW';
+            return matchesSearch && matchesDistrict && matchesStatus;
           });
 
           return (
@@ -1609,6 +1624,80 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 >
                   <Plus size={14} />
                   <span>+ नई खबर जोड़ें</span>
+                </button>
+              </div>
+
+              {/* Citizen Scoop Review Alert Banner */}
+              {pendingScoops.length > 0 && (
+                <div 
+                  onClick={() => setArticleStatusFilter('REVIEW')}
+                  className="mb-4 p-3 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-950/60 transition group shadow-md"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                      <Send size={15} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-amber-300 flex items-center gap-2">
+                        <span>नागरिक पत्रकारिता डेस्क: {pendingScoops.length} नए स्कूप समीक्षा के लिए लंबित हैं</span>
+                        <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full">ACTION REQUIRED</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        क्षेत्रीय नागरिकों व फ़ील्ड रिपोर्टर्स द्वारा भेजी गई खबरों को जांचकर तुरंत लाइव प्रकाशित करें।
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-amber-400 group-hover:underline whitespace-nowrap shrink-0">
+                    समीक्षा करें →
+                  </span>
+                </div>
+              )}
+
+              {/* Status Filter Pills */}
+              <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar text-xs">
+                <button
+                  type="button"
+                  onClick={() => setArticleStatusFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+                    articleStatusFilter === 'all'
+                      ? 'bg-slate-700 text-white shadow'
+                      : 'bg-slate-950/60 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  <span>सभी खबरें</span>
+                  <span className="text-[10px] bg-slate-800 px-1.5 py-0.2 rounded-md font-mono">{articles.length}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setArticleStatusFilter('PUBLISHED')}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+                    articleStatusFilter === 'PUBLISHED'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'bg-slate-950/60 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  <ShieldCheck size={12} />
+                  <span>प्रकाशित (Live)</span>
+                  <span className="text-[10px] bg-slate-800 px-1.5 py-0.2 rounded-md font-mono">{publishedCount}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setArticleStatusFilter('REVIEW')}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+                    articleStatusFilter === 'REVIEW'
+                      ? 'bg-amber-600 text-white shadow'
+                      : pendingScoops.length > 0
+                        ? 'bg-amber-950/50 text-amber-400 border border-amber-600/40 hover:bg-amber-900/60 animate-pulse'
+                        : 'bg-slate-950/60 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  <Send size={12} />
+                  <span>समीक्षा लंबित (Scoops)</span>
+                  <span className="text-[10px] bg-amber-500 text-slate-950 font-bold px-1.5 py-0.2 rounded-md font-mono">
+                    {pendingScoops.length}
+                  </span>
                 </button>
               </div>
 
@@ -1689,8 +1778,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           <span className="text-red-400">{art.category}</span>
                           <span className="text-slate-500">•</span>
                           <span className="text-slate-300">📍 {art.district}</span>
-                          {art.isBreaking && (
-                            <span className="bg-red-600 text-white px-1 rounded text-[9px]">ब्रेकिंग</span>
+                          {art.status === 'REVIEW' ? (
+                            <span className="bg-amber-950 text-amber-300 border border-amber-800 px-1.5 py-0.2 rounded text-[9px] font-bold">
+                              ⏳ नागरिक स्कूप (समीक्षा लंबित)
+                            </span>
+                          ) : (
+                            art.isBreaking && (
+                              <span className="bg-red-600 text-white px-1 rounded text-[9px]">ब्रेकिंग</span>
+                            )
                           )}
                         </div>
                         <h3 className={`text-xs sm:text-sm font-bold line-clamp-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -1703,6 +1798,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5 self-end sm:self-center">
+                      {art.status === 'REVIEW' && (
+                        <button
+                          onClick={() => {
+                            if (onUpdateArticle) {
+                              onUpdateArticle(art._id, { status: 'PUBLISHED' });
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-900/30 transition active:scale-95 shrink-0"
+                          title="तुरंत स्वीकृत कर पोर्टल पर लाइव प्रकाशित करें"
+                        >
+                          <Check size={13} />
+                          <span>स्वीकृत करें</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => handleStartEdit(art)}
                         className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
@@ -1873,6 +1983,82 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Citizen Journalism / Scoop Inbox */}
+            <div className="mt-6 pt-5 border-t border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                    <Send size={14} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span>नागरिक पत्रकारिता व फ़ील्ड स्कूप डेस्क</span>
+                      {articles.filter(a => a.status === 'REVIEW').length > 0 && (
+                        <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full">
+                          {articles.filter(a => a.status === 'REVIEW').length} नई समीक्षाएं
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-[11px] text-slate-400">पोर्टल के "📢 खबर भेजें" डेस्क से नागरिकों एवं संवाददाताओं द्वारा भेजी गई खबरें</p>
+                  </div>
+                </div>
+                {articles.filter(a => a.status === 'REVIEW').length > 0 && (
+                  <button
+                    onClick={() => {
+                      setActiveTab('articles');
+                      setArticleStatusFilter('REVIEW');
+                    }}
+                    className="text-xs text-amber-400 hover:text-amber-300 font-bold underline self-start sm:self-auto"
+                  >
+                    सभी समीक्षा करें →
+                  </button>
+                )}
+              </div>
+
+              {articles.filter(a => a.status === 'REVIEW').length === 0 ? (
+                <div className="p-4 rounded-2xl bg-slate-950/40 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+                  फिलहाल कोई लंबित नागरिक स्कूप नहीं है। सभी खबरें स्वीकृत व प्रकाशित हैं।
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {articles.filter(a => a.status === 'REVIEW').slice(0, 5).map(art => (
+                    <div key={art._id} className="p-3 rounded-2xl bg-slate-950 border border-amber-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 text-[10px] text-amber-400 font-bold mb-0.5">
+                          <span>📍 {art.district}</span>
+                          <span>•</span>
+                          <span>✍️ {art.author}</span>
+                          <span className="bg-amber-950 text-amber-300 border border-amber-800/60 px-1.5 rounded">समीक्षा लंबित</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-white line-clamp-1">{art.title}</h4>
+                      </div>
+                      <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                        <button
+                          onClick={() => {
+                            if (onUpdateArticle) {
+                              onUpdateArticle(art._id, { status: 'PUBLISHED' });
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow transition active:scale-95"
+                          title="तुरंत स्वीकृत कर पोर्टल पर लाइव प्रकाशित करें"
+                        >
+                          <Check size={12} />
+                          <span>स्वीकृत करें</span>
+                        </button>
+                        <button
+                          onClick={() => handleStartEdit(art)}
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center gap-1 transition active:scale-95"
+                        >
+                          <Edit3 size={12} />
+                          <span>संपादित करें</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
