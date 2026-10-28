@@ -165,7 +165,8 @@ export function generateStoriesList(
     });
   });
 
-  return dynamicList.length >= 3 ? dynamicList : EDITORIAL_STORIES;
+  // Pure real data: Only return dynamic stories from real articles and live content
+  return dynamicList;
 }
 
 export const StoriesTray: React.FC<StoriesTrayProps> = ({ 
@@ -179,8 +180,11 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
   // Dynamically synthesize fresh stories from live articles & mandi rates
   const stories = useMemo<StoryItem[]>(() => {
     if (propStories && propStories.length > 0) return propStories;
+    if (!articles || articles.length === 0) return [];
     return generateStoriesList(articles, latestVideo, topMandiRate);
   }, [propStories, articles, latestVideo, topMandiRate]);
+
+  if (!stories || stories.length === 0) return null;
 
   return (
     <div className="w-full max-w-full overflow-x-auto no-scrollbar py-2 px-1">

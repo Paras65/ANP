@@ -36,6 +36,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   isDark, 
   onShareWhatsApp
 }) => {
+  // Pure real data: do not render video section if no live bulletins exist
+  if (!bulletins || bulletins.length === 0) return null;
+
   const [activeVideo, setActiveVideo] = useState<VideoBulletin | null>(null);
 
   // Filters & Progressive Load More

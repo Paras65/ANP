@@ -15,6 +15,9 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
   onSelectReel, 
   isDark
 }) => {
+  // Pure real data: do not render section if no live reels exist
+  if (!posts || posts.length === 0) return null;
+
   // Compact Shelf Controls
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDistrict, setSelectedDistrict] = useState<'all' | string>('all');

@@ -1206,22 +1206,10 @@ router.delete('/reels/:id/comments/:commentId', requireAdminAuth, async (req: Re
   }
 });
 
-// 9. GET /api/mandi - Fetch all Mandi Rates live from MongoDB Atlas (with initial seed fallback)
+// 9. GET /api/mandi - Fetch all Mandi Rates live from MongoDB Atlas
 router.get('/mandi', async (req: Request, res: Response) => {
   try {
-    let rates = await MandiRate.find().sort({ createdAt: 1 }).lean();
-    if (!rates || rates.length === 0) {
-      const initialRates = [
-        { crop: 'गुड़ (देसी/सुपर)', mandi: 'कवर्धा', state: 'CG', rate: 3480, unit: '₹/क्विंटल', change: 'up', diff: 80 },
-        { crop: 'चना (बड़ा)', mandi: 'कवर्धा', state: 'CG', rate: 5950, unit: '₹/क्विंटल', change: 'up', diff: 120 },
-        { crop: 'धान (सरना)', mandi: 'रायपुर/कवर्धा', state: 'CG', rate: 3100, unit: '₹/क्विंटल', change: 'steady', diff: 0 },
-        { crop: 'सोयाबीन (पीला)', mandi: 'राजनांदगांव', state: 'CG', rate: 4720, unit: '₹/क्विंटल', change: 'down', diff: -40 },
-        { crop: 'गेहूं (शरबती)', mandi: 'इंदौर/भोपाल', state: 'MP', rate: 2780, unit: '₹/क्विंटल', change: 'up', diff: 50 },
-        { crop: 'मक्का (हाइब्रिड)', mandi: 'छिंदवाड़ा', state: 'MP', rate: 2150, unit: '₹/क्विंटल', change: 'steady', diff: 0 }
-      ];
-      await MandiRate.insertMany(initialRates);
-      rates = await MandiRate.find().sort({ createdAt: 1 }).lean();
-    }
+    const rates = await MandiRate.find().sort({ createdAt: 1 }).lean();
     const data = rates.map((r: any) => ({
       id: r._id.toString(),
       crop: r.crop,
@@ -1323,99 +1311,13 @@ router.delete('/mandi/:id', requireAdminAuth, contentCreationLimiter, async (req
   }
 });
 
-// 9e. GET /api/reporters - Fetch all Bureau Chiefs & Field Reporters (with initial seed fallback & dynamic article counts)
+// 9e. GET /api/reporters - Fetch all Bureau Chiefs & Field Reporters live from MongoDB Atlas
 router.get('/reporters', async (req: Request, res: Response) => {
   try {
-    let reporters = await User.find({ role: { $in: ['REPORTER', 'EDITOR', 'ADMIN'] } })
+    const reporters = await User.find({ role: { $in: ['REPORTER', 'EDITOR', 'ADMIN'] } })
       .populate('districtId')
       .sort({ createdAt: 1 })
       .lean();
-
-    if (!reporters || reporters.length === 0) {
-      // Find default districts
-      const kawardhaDistrict = await District.findOne({ $or: [{ nameHindi: /कवर्धा|कबीरधाम/i }, { name: /kawardha|kabirdham/i }] });
-      const raipurDistrict = await District.findOne({ $or: [{ nameHindi: /रायपुर/i }, { name: /raipur/i }] });
-      const bilaspurDistrict = await District.findOne({ $or: [{ nameHindi: /बिलासपुर/i }, { name: /bilaspur/i }] });
-      const bhopalDistrict = await District.findOne({ $or: [{ nameHindi: /भोपाल/i }, { name: /bhopal/i }] });
-
-      const initialReporters = [
-        {
-          name: 'उत्तम चंद्रवंशी',
-          nameHindi: 'उत्तम चंद्रवंशी',
-          phone: '7000139694',
-          role: 'EDITOR',
-          bureau: 'कवर्धा (कबीरधाम) वरिष्ठ संपादक व ब्यूरो चीफ',
-          districtId: kawardhaDistrict?._id,
-          reporterIdCode: 'ANP-CG-KBR-01',
-          photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-          isActive: true
-        },
-        {
-          name: 'संजय वर्मा',
-          nameHindi: 'संजय वर्मा',
-          phone: '7000139691',
-          role: 'REPORTER',
-          bureau: 'कवर्धा कृषि व मंडी डेस्क',
-          districtId: kawardhaDistrict?._id,
-          reporterIdCode: 'ANP-CG-KBR-02',
-          photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-          isActive: true
-        },
-        {
-          name: 'मनीष यादव',
-          nameHindi: 'मनीष यादव',
-          phone: '7000139692',
-          role: 'REPORTER',
-          bureau: 'चिल्फी घाटी / बोड़ला वनांचल',
-          districtId: kawardhaDistrict?._id,
-          reporterIdCode: 'ANP-CG-KBR-03',
-          photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
-          isActive: true
-        },
-        {
-          name: 'विशेष संवाददाता',
-          nameHindi: 'विशेष संवाददाता',
-          phone: '7000139693',
-          role: 'REPORTER',
-          bureau: 'रायपुर मंत्रालय डेस्क',
-          districtId: raipurDistrict?._id,
-          reporterIdCode: 'ANP-CG-RAI-01',
-          photoUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&auto=format&fit=crop&q=80',
-          isActive: true
-        },
-        {
-          name: 'राजेश शुक्ला',
-          nameHindi: 'राजेश शुक्ला',
-          phone: '7000139695',
-          role: 'REPORTER',
-          bureau: 'बिलासपुर हाईकोर्ट डेस्क',
-          districtId: bilaspurDistrict?._id,
-          reporterIdCode: 'ANP-CG-BIL-01',
-          photoUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&auto=format&fit=crop&q=80',
-          isActive: true
-        },
-        {
-          name: 'नीलेश शर्मा',
-          nameHindi: 'नीलेश शर्मा',
-          phone: '7000139696',
-          role: 'REPORTER',
-          bureau: 'भोपाल ब्यूरो (एमपी प्रभारी)',
-          districtId: bhopalDistrict?._id,
-          reporterIdCode: 'ANP-MP-BHO-01',
-          photoUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80',
-          isActive: true
-        }
-      ];
-
-      for (const rep of initialReporters) {
-        await User.findOneAndUpdate({ phone: rep.phone }, rep, { upsert: true, new: true });
-      }
-
-      reporters = await User.find({ role: { $in: ['REPORTER', 'EDITOR', 'ADMIN'] } })
-        .populate('districtId')
-        .sort({ createdAt: 1 })
-        .lean();
-    }
 
     // Dynamic Article Counts per Reporter
     const data = await Promise.all(

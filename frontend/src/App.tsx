@@ -45,10 +45,6 @@ import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './compon
 import { getSmartCoverImage } from './utils/categoryTheme';
 
 import { 
-  INITIAL_ARTICLES, 
-  VIDEO_BULLETINS, 
-  INSTAGRAM_POSTS, 
-  MANDI_RATES, 
   ALL_DISTRICTS_DEMO, 
   POPULAR_DISTRICTS_CG, 
   POPULAR_DISTRICTS_MP, 
@@ -70,7 +66,7 @@ export const App: React.FC = () => {
   const [currentDistrict, setCurrentDistrict] = useState<string>('सभी');
   const [selectedCategory, setSelectedCategory] = useState<string>('सभी खबरें');
   const [districtsList, setDistrictsList] = useState<DistrictItem[]>(ALL_DISTRICTS_DEMO);
-  const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [reporters, setReporters] = useState<Reporter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [backendSynced, setBackendSynced] = useState(false);
@@ -134,13 +130,13 @@ export const App: React.FC = () => {
   // Dynamic Live YouTube Videos & Instagram Reels
   const [videoBulletins, setVideoBulletins] = useState<VideoBulletin[]>(() => {
     const saved = localStorage.getItem('anp_video_bulletins');
-    return saved ? JSON.parse(saved) : VIDEO_BULLETINS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   // Dynamic Live Mandi Rates
   const [mandiRates, setMandiRates] = useState<MandiRate[]>(() => {
     const saved = localStorage.getItem('anp_mandi_rates');
-    return saved ? JSON.parse(saved) : MANDI_RATES;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const handleUpdateMandiRate = async (updated: MandiRate) => {
@@ -208,7 +204,7 @@ export const App: React.FC = () => {
 
   const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(() => {
     const saved = localStorage.getItem('anp_instagram_posts');
-    return saved ? JSON.parse(saved) : INSTAGRAM_POSTS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   // Dynamic WhatsApp Group / Channel Link
@@ -1791,7 +1787,15 @@ export const App: React.FC = () => {
               </div>
 
               {/* ZERO ARTICLES EMPTY STATE (Edge Case: District or search has 0 results) */}
-              {displayArticles.length === 0 ? (
+              {isLoading && displayArticles.length === 0 ? (
+                <div className="space-y-4 animate-pulse my-2">
+                  <div className={`h-64 sm:h-80 rounded-3xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className={`h-48 rounded-2xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
+                    <div className={`h-48 rounded-2xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
+                  </div>
+                </div>
+              ) : displayArticles.length === 0 ? (
                 <div className={`p-8 sm:p-12 rounded-3xl border text-center space-y-4 my-2 animate-in fade-in duration-300 ${
                   isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
                 }`}>

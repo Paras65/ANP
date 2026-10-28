@@ -15,6 +15,9 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
   compact = false, 
   onViewFull 
 }) => {
+  // Pure real data: do not display widget if no live mandi rates exist
+  if (!rates || rates.length === 0) return null;
+
   // 1. Compact 1-line horizontal momentum strip for Homepage
   if (compact) {
     return (
