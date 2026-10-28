@@ -1056,9 +1056,6 @@ export const App: React.FC = () => {
               <VideoSection 
                 bulletins={videoBulletins} 
                 isDark={isDark} 
-                onAddVideo={handleAddVideo}
-                onSync={() => handleSyncYouTube()}
-                isSyncing={isSyncingYouTube}
                 onShareWhatsApp={(title, url) => {
                   const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -1074,7 +1071,6 @@ export const App: React.FC = () => {
                 posts={instagramPosts} 
                 onSelectReel={(id) => setActiveReelId(id)}
                 isDark={isDark} 
-                onAddReel={handleAddReel}
               />
             </div>
           )}
@@ -1553,9 +1549,6 @@ export const App: React.FC = () => {
               <VideoSection 
                 bulletins={videoBulletins} 
                 isDark={isDark} 
-                onAddVideo={handleAddVideo}
-                onSync={() => handleSyncYouTube()}
-                isSyncing={isSyncingYouTube}
                 onShareWhatsApp={(title, url) => {
                   const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -1567,7 +1560,6 @@ export const App: React.FC = () => {
                 posts={instagramPosts} 
                 onSelectReel={(id) => openReelModal(id)}
                 isDark={isDark} 
-                onAddReel={handleAddReel}
               />
             </>
           )}

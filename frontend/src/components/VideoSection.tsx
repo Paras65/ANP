@@ -6,24 +6,16 @@ import {
   Eye, 
   Clock, 
   Tv, 
-  Plus, 
-  Check, 
-  AlertCircle, 
-  RefreshCw,
-  SkipBack,
-  SkipForward
+  SkipBack, 
+  SkipForward 
 } from 'lucide-react';
 import { YoutubeIcon, WhatsAppIcon } from './SocialIcons';
 import type { VideoBulletin } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
-import { parseYouTubeUrl } from '../utils/mediaUtils';
 
 interface VideoSectionProps {
   bulletins: VideoBulletin[];
   isDark: boolean;
-  onAddVideo?: (video: VideoBulletin) => void;
-  onSync?: () => void;
-  isSyncing?: boolean;
   onShareWhatsApp?: (title: string, videoUrl?: string) => void;
 }
 
@@ -38,18 +30,9 @@ const CATEGORIES = [
 export const VideoSection: React.FC<VideoSectionProps> = ({ 
   bulletins, 
   isDark, 
-  onAddVideo, 
-  onSync, 
-  isSyncing = false,
   onShareWhatsApp
 }) => {
   const [activeVideo, setActiveVideo] = useState<VideoBulletin | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [inputUrl, setInputUrl] = useState('');
-  const [videoTitle, setVideoTitle] = useState('');
-  const [videoCategory, setVideoCategory] = useState('कवर्धा स्पेशल');
-  const [videoDuration, setVideoDuration] = useState('10:00');
-  const [parsedInfo, setParsedInfo] = useState<ReturnType<typeof parseYouTubeUrl>>(null);
 
   // Filters & Expansion
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -72,37 +55,6 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
       };
     }
   }, [activeVideo]);
-
-  const handleUrlChange = (val: string) => {
-    setInputUrl(val);
-    const parsed = parseYouTubeUrl(val);
-    setParsedInfo(parsed);
-  };
-
-  const handleSaveVideo = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!parsedInfo || !videoTitle.trim()) return;
-
-    const newVid: VideoBulletin = {
-      id: 'vid_' + Date.now(),
-      title: videoTitle.trim(),
-      youtubeId: parsedInfo.id,
-      thumbnail: parsedInfo.thumbnailUrl,
-      duration: videoDuration || '10:00',
-      views: 'ताज़ा',
-      timeAgo: 'अभी-अभी',
-      category: videoCategory,
-      youtubeUrl: parsedInfo.watchUrl
-    };
-
-    if (onAddVideo) {
-      onAddVideo(newVid);
-    }
-    setShowAddModal(false);
-    setInputUrl('');
-    setVideoTitle('');
-    setParsedInfo(null);
-  };
 
   // Filter bulletins based on selected category
   const filteredBulletins = bulletins.filter(b => {
@@ -255,29 +207,6 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             <Tv size={14} className="text-white" />
             <span>📺 लगातार चलाएं (TV Mode)</span>
           </button>
-
-          {onSync && (
-            <button
-              onClick={onSync}
-              disabled={isSyncing}
-              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition active:scale-95 shadow cursor-pointer disabled:opacity-50"
-              title="यूट्यूब से ताज़ा वीडियो स्वतः सिंक करें"
-            >
-              <RefreshCw size={13} className={`text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isSyncing ? 'सिंक हो रहा है...' : '🔄 ऑटो-सिंक'}</span>
-            </button>
-          )}
-
-          {onAddVideo && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition active:scale-95 shadow cursor-pointer"
-              title="नया यूट्यूब वीडियो लिंक जोड़ें"
-            >
-              <Plus size={14} className="text-red-400" />
-              <span>+ जोड़ें</span>
-            </button>
-          )}
 
           {/* Subscribe CTA Button */}
           <a 
@@ -730,128 +659,6 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
               </div>
 
             </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* 7. ADD NEW YOUTUBE VIDEO MODAL (Admin & Manual) */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0b0f19] border border-red-500/30 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
-            
-            <div className="p-4 bg-[#070a12] flex items-center justify-between border-b border-white/10">
-              <div className="flex items-center gap-2 text-red-500 font-bold text-sm">
-                <YoutubeIcon size={18} />
-                <span className="text-white font-bold">नया यूट्यूब वीडियो बुलेटिन जोड़ें</span>
-              </div>
-              <button 
-                onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveVideo} className="p-5 space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
-                  <span>यूट्यूब वीडियो लिंक (YouTube Video URL)</span>
-                  <span className="text-[10px] text-red-400 font-normal">youtube.com/watch?v=... या youtu.be/...</span>
-                </label>
-                <input 
-                  type="text"
-                  value={inputUrl}
-                  onChange={(e) => handleUrlChange(e.target.value)}
-                  placeholder="उदा. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                  className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition"
-                  required
-                />
-              </div>
-
-              {parsedInfo && (
-                <div className="p-3 rounded-2xl bg-black/40 border border-emerald-500/40 flex items-center gap-3">
-                  <div className="w-20 aspect-video rounded-lg overflow-hidden relative shrink-0 bg-slate-900 border border-white/10">
-                    <img src={parsedInfo.thumbnailUrl} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
-                      <Check size={12} />
-                      <span>मान्य यूट्यूब वीडियो आईडी: {parsedInfo.id}</span>
-                    </div>
-                    <span className="text-[10px] text-slate-400 block truncate mt-0.5">
-                      थंबनेल व HD प्लेयर तैयार है
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {inputUrl && !parsedInfo && (
-                <div className="p-2.5 rounded-xl bg-red-950/30 border border-red-500/30 flex items-center gap-2 text-[11px] text-red-400">
-                  <AlertCircle size={14} className="shrink-0" />
-                  <span>कृपया मान्य यूट्यूब वीडियो लिंक दर्ज करें।</span>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">वीडियो शीर्षक (Title)</label>
-                <input 
-                  type="text"
-                  value={videoTitle}
-                  onChange={(e) => setVideoTitle(e.target.value)}
-                  placeholder="उदा. कवर्धा में किसानों की बड़ी रैली, प्रशासन से मांग..."
-                  className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300">श्रेणी (Category)</label>
-                  <select
-                    value={videoCategory}
-                    onChange={(e) => setVideoCategory(e.target.value)}
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                  >
-                    <option value="कवर्धा विशेष">कवर्धा विशेष</option>
-                    <option value="ग्राउंड रिपोर्ट">ग्राउंड रिपोर्ट</option>
-                    <option value="राजनीति">राजनीति</option>
-                    <option value="क्राइम">क्राइम</option>
-                    <option value="विकास कार्य">विकास कार्य</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300">अवधि (Duration)</label>
-                  <input 
-                    type="text"
-                    value={videoDuration}
-                    onChange={(e) => setVideoDuration(e.target.value)}
-                    placeholder="10:00"
-                    className="w-full bg-[#05070e] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-                >
-                  रद्द करें
-                </button>
-                <button
-                  type="submit"
-                  disabled={!parsedInfo || !videoTitle.trim()}
-                  className="bg-gradient-to-r from-red-600 to-rose-600 hover:opacity-90 disabled:opacity-50 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-red-600/30 transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Check size={14} />
-                  <span>वीडियो प्रकाशित करें</span>
-                </button>
-              </div>
-
-            </form>
 
           </div>
         </div>
