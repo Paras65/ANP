@@ -22,7 +22,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-emerald-950 text-emerald-300 border border-emerald-700',
     badgeText: 'कृषि • मंडी',
     gradient: 'linear-gradient(135deg, #064e3b 0%, #022c22 45%, #0f172a 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-emerald-400 via-teal-500 to-green-600',
     accentColor: '#10b981'
   },
@@ -33,7 +33,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-blue-950 text-blue-300 border border-blue-700',
     badgeText: 'सुरक्षा अलर्ट',
     gradient: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 45%, #1e1b4b 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-blue-500 via-indigo-600 to-cyan-500',
     accentColor: '#3b82f6'
   },
@@ -44,7 +44,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-teal-950 text-teal-300 border border-teal-700',
     badgeText: 'मौसम विशेष',
     gradient: 'linear-gradient(135deg, #134e4a 0%, #042f2e 45%, #0f172a 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-teal-400 via-cyan-500 to-sky-600',
     accentColor: '#14b8a6'
   },
@@ -55,7 +55,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-amber-950 text-amber-300 border border-amber-700',
     badgeText: 'कवर्धा धरोहर',
     gradient: 'linear-gradient(135deg, #78350f 0%, #451a03 45%, #1c1917 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-amber-400 via-orange-500 to-red-600',
     accentColor: '#f59e0b'
   },
@@ -66,7 +66,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-slate-800 text-orange-300 border border-orange-700/60',
     badgeText: 'विकास एक्सप्रेस',
     gradient: 'linear-gradient(135deg, #374151 0%, #1f2937 45%, #111827 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-orange-400 via-amber-500 to-yellow-500',
     accentColor: '#f97316'
   },
@@ -77,7 +77,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-rose-950 text-rose-300 border border-rose-700',
     badgeText: 'शासन निर्णय',
     gradient: 'linear-gradient(135deg, #881337 0%, #4c0519 45%, #0f172a 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-rose-500 via-red-600 to-amber-500',
     accentColor: '#f43f5e'
   },
@@ -88,7 +88,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-purple-950 text-purple-300 border border-purple-700',
     badgeText: 'शिक्षा • करियर',
     gradient: 'linear-gradient(135deg, #581c87 0%, #3b0764 45%, #0f172a 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-purple-500 via-fuchsia-600 to-pink-500',
     accentColor: '#a855f7'
   },
@@ -99,7 +99,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-red-950 text-red-300 border border-red-700',
     badgeText: 'स्वास्थ्य सेवा',
     gradient: 'linear-gradient(135deg, #7f1d1d 0%, #450a0a 45%, #0f172a 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-red-400 via-rose-500 to-pink-600',
     accentColor: '#ef4444'
   },
@@ -110,7 +110,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-cyan-950 text-cyan-300 border border-cyan-700',
     badgeText: 'खेल जगत',
     gradient: 'linear-gradient(135deg, #164e63 0%, #083344 45%, #0f172a 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-cyan-400 via-blue-500 to-teal-500',
     accentColor: '#06b6d4'
   },
@@ -121,7 +121,7 @@ export const CATEGORY_THEMES: Record<string, CategoryThemeInfo> = {
     badgeBg: 'bg-red-950 text-red-300 border border-red-700',
     badgeText: '🔴 ब्रेकिंग',
     gradient: 'linear-gradient(135deg, #991b1b 0%, #450a0a 45%, #000000 100%)',
-    photoUrl: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=1000&auto=format&fit=crop&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop&q=65',
     ringGradient: 'from-red-600 via-rose-600 to-amber-500',
     accentColor: '#dc2626'
   }

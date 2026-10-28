@@ -32,7 +32,7 @@ export const DEMO_STORIES: StoryItem[] = [
     id: 's-kwd',
     label: 'कवर्धा',
     title: 'भोरमदेव कॉरिडोर प्रोजेक्ट: ₹45 करोड़ की भव्य योजना का मॉडल जारी',
-    image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=140&auto=format&fit=crop&q=60',
     category: 'विकास',
     district: 'कबीरधाम',
     excerpt: 'कवर्धा के ऐतिहासिक भोरमदेव मंदिर क्षेत्र में 4-लेन चौड़ीकरण, आधुनिक धर्मशाला और शिल्प ग्राम बनेगा।',
@@ -43,7 +43,7 @@ export const DEMO_STORIES: StoryItem[] = [
     id: 's-mandi',
     label: 'मंडी भाव',
     title: 'आज के मंडी भाव: कवर्धा मंडी में नया गुड़ ₹3,480 व चना ₹5,950 प्रति क्विंटल',
-    image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=140&auto=format&fit=crop&q=60',
     category: 'कृषि',
     district: 'कवर्धा मंडी',
     excerpt: 'कवर्धा कृषि उपज मंडी में नए गुड़ की रिकॉर्ड आवक दर्ज। किसानों को मिला तुरंत नकद भुगतान।',
@@ -54,7 +54,7 @@ export const DEMO_STORIES: StoryItem[] = [
     id: 's-chilphi',
     label: 'चिल्फी घाटी',
     title: 'मैकल की वादियों में कोहरे की चादर: चिल्फी घाटी में ठंड ने तोड़े रिकॉर्ड',
-    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=140&auto=format&fit=crop&q=60',
     category: 'मौसम',
     district: 'चिल्फी / बोड़ला',
     excerpt: 'छत्तीसगढ़ के शिमला कहे जाने वाले चिल्फी में न्यूनतम तापमान में भारी गिरावट, सैलानियों की भीड़ उमड़ी।',
@@ -64,7 +64,7 @@ export const DEMO_STORIES: StoryItem[] = [
     id: 's-crime',
     label: 'क्राइम अलर्ट',
     title: 'कोयला चोरी व तस्करी गिरोह पर पुलिस का शिकंजा: 4 गिरफ्तार, 2 ट्रक जब्त',
-    image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=140&auto=format&fit=crop&q=60',
     category: 'अपराध',
     district: 'बिलासपुर',
     excerpt: 'पुलिस अधीक्षक के निर्देश पर बनी स्पेशल टीम ने देर रात छापा मारकर मुख्य सरगना को धर दबोचा।',
@@ -74,7 +74,7 @@ export const DEMO_STORIES: StoryItem[] = [
     id: 's-dhan',
     label: 'धान बोनस',
     title: 'किसानों के खाते में धान बोनस की अगली किश्त की तारीख तय: सीएम समीक्षा',
-    image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=140&auto=format&fit=crop&q=60',
     category: 'किसान',
     district: 'रायपुर',
     excerpt: 'मंत्रालय महानदी भवन में आयोजित बैठक में अधिकारियों को निर्देश: भुगतान में न आए कोई रुकावट।',
@@ -119,7 +119,7 @@ export function generateStoriesList(
       id: `s-${kwdArticle._id}`,
       label: 'कवर्धा',
       title: kwdArticle.title,
-      image: kwdArticle.coverImage || 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=80',
+      image: kwdArticle.coverImage || 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=140&auto=format&fit=crop&q=60',
       category: kwdArticle.category,
       district: kwdArticle.district,
       excerpt: kwdArticle.excerpt,
@@ -135,7 +135,7 @@ export function generateStoriesList(
       id: 's-mandi',
       label: 'मंडी भाव',
       title: `आज के मंडी भाव: ${topMandiRate.crop} (${topMandiRate.mandi}) में ₹${topMandiRate.rate.toLocaleString('en-IN')}`,
-      image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=140&auto=format&fit=crop&q=60',
       category: 'कृषि',
       district: `${topMandiRate.mandi} मंडी`,
       excerpt: `${topMandiRate.mandi} कृषि उपज मंडी में आज का भाव दर्ज। किसानों को मिला तुरंत नकद भुगतान।`,
@@ -187,6 +187,7 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
           <button
             key={story.id}
             onClick={() => onSelectStory(story)}
+            aria-label={`वेब स्टोरी देखें: ${story.label} - ${story.title}`}
             className="flex flex-col items-center gap-1.5 focus:outline-none group active:scale-95 transition-transform cursor-pointer"
           >
             {/* Story Avatar Circle with Gradient Ring */}
@@ -197,6 +198,10 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
                 <img 
                   src={story.image} 
                   alt={story.label}
+                  loading="lazy"
+                  decoding="async"
+                  width="66"
+                  height="66"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/logo.png';
                   }}
