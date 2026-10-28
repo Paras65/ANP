@@ -569,6 +569,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [adminReelsPage, setAdminReelsPage] = useState<number>(1);
   const REELS_PER_PAGE = 8;
 
+  // Videos Pagination & Filter States
+  const VIDEOS_PER_PAGE = 8;
+  const [adminVideosPage, setAdminVideosPage] = useState<number>(1);
+  const [adminVideoSearch, setAdminVideoSearch] = useState<string>('');
+  const [adminVideoCategoryFilter, setAdminVideoCategoryFilter] = useState<string>('सभी');
+
+  useEffect(() => {
+    setAdminVideosPage(1);
+  }, [adminVideoSearch, adminVideoCategoryFilter]);
+
   // Edit Reel States
   const [editingReel, setEditingReel] = useState<InstagramPost | null>(null);
   const [editReelCaption, setEditReelCaption] = useState('');
@@ -3144,63 +3154,196 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
               </form>
 
-              {/* Existing Videos List */}
-              <div className="space-y-2">
-                <div className={`text-xs font-bold uppercase tracking-wider ${
-                  isDark ? 'text-slate-400' : 'text-slate-600'
-                }`}>
-                  लाइव वीडियो सूची ({videos.length})
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {videos.map((vid) => (
-                    <div key={vid.id} className={`p-3 rounded-2xl border flex items-center gap-3 ${
-                      isDark ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200 shadow-sm'
-                    }`}>
-                      <div className="w-20 aspect-video rounded-lg overflow-hidden relative shrink-0 bg-slate-900">
-                        <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover" />
-                        <span className="absolute bottom-1 right-1 bg-black/80 text-[9px] px-1 rounded text-white font-mono">
-                          {vid.duration}
-                        </span>
+              {/* Existing Videos List with Search & Pagination */}
+              {(() => {
+                const filteredVideos = videos.filter(v => {
+                  const matchesSearch = !adminVideoSearch.trim() || 
+                    v.title?.toLowerCase().includes(adminVideoSearch.toLowerCase()) || 
+                    v.youtubeId?.toLowerCase().includes(adminVideoSearch.toLowerCase());
+                  const matchesCategory = adminVideoCategoryFilter === 'सभी' || v.category === adminVideoCategoryFilter;
+                  return matchesSearch && matchesCategory;
+                });
+
+                const totalVideoPages = Math.ceil(filteredVideos.length / VIDEOS_PER_PAGE) || 1;
+                const currentVideoPage = Math.min(adminVideosPage, totalVideoPages);
+                const paginatedVideos = filteredVideos.slice(
+                  (currentVideoPage - 1) * VIDEOS_PER_PAGE,
+                  currentVideoPage * VIDEOS_PER_PAGE
+                );
+
+                const existingCategories = Array.from(new Set(videos.map(v => v.category).filter(Boolean)));
+
+                return (
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div className={`text-xs font-bold uppercase tracking-wider ${
+                        isDark ? 'text-slate-400' : 'text-slate-600'
+                      }`}>
+                        लाइव वीडियो सूची ({filteredVideos.length})
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className={`text-xs font-bold truncate ${
-                          isDark ? 'text-white' : 'text-slate-900'
-                        }`}>{vid.title}</div>
-                        <div className={`text-[10px] flex items-center gap-2 mt-0.5 ${
-                          isDark ? 'text-slate-400' : 'text-slate-600'
-                        }`}>
-                          <span className="text-red-500 font-semibold">{vid.category}</span>
-                          <span>•</span>
-                          <span>{vid.timeAgo}</span>
+
+                      {/* Video Search & Category Filter */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={adminVideoSearch}
+                            onChange={(e) => setAdminVideoSearch(e.target.value)}
+                            placeholder="वीडियो खोजें..."
+                            className={`pl-7 pr-3 py-1 rounded-xl text-xs outline-none border transition w-36 sm:w-48 ${
+                              isDark 
+                                ? 'bg-[#05070e] border-white/15 text-white placeholder:text-slate-500 focus:border-red-500' 
+                                : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-red-500'
+                            }`}
+                          />
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <a 
-                          href={vid.youtubeUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className={`p-1.5 transition ${
-                            isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+
+                        <select
+                          value={adminVideoCategoryFilter}
+                          onChange={(e) => setAdminVideoCategoryFilter(e.target.value)}
+                          className={`px-2.5 py-1 rounded-xl text-xs outline-none border transition ${
+                            isDark 
+                              ? 'bg-[#05070e] border-white/15 text-slate-200' 
+                              : 'bg-white border-slate-300 text-slate-800'
                           }`}
-                          title="Open on YouTube"
                         >
-                          <ExternalLink size={14} />
-                        </a>
-                        {onDeleteVideo && (
-                          <button
-                            onClick={() => onDeleteVideo(vid.id)}
-                            className="p-1.5 text-red-500 hover:text-red-600 transition"
-                            title="हटाएं"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
+                          <option value="सभी">सभी श्रेणियां</option>
+                          {existingCategories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
+                    {filteredVideos.length === 0 ? (
+                      <div className={`p-8 text-center text-xs border rounded-2xl ${
+                        isDark ? 'text-slate-400 border-dashed border-white/10' : 'text-slate-600 border-dashed border-slate-300'
+                      }`}>
+                        कोई वीडियो नहीं मिला।
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {paginatedVideos.map((vid) => (
+                          <div key={vid.id} className={`p-3 rounded-2xl border flex items-center gap-3 ${
+                            isDark ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200 shadow-sm'
+                          }`}>
+                            <div className="w-20 aspect-video rounded-lg overflow-hidden relative shrink-0 bg-slate-900">
+                              <img 
+                                src={vid.thumbnail} 
+                                alt={vid.title} 
+                                loading="lazy" 
+                                decoding="async" 
+                                className="w-full h-full object-cover" 
+                              />
+                              <span className="absolute bottom-1 right-1 bg-black/80 text-[9px] px-1 rounded text-white font-mono">
+                                {vid.duration}
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className={`text-xs font-bold truncate ${
+                                isDark ? 'text-white' : 'text-slate-900'
+                              }`}>{vid.title}</div>
+                              <div className={`text-[10px] flex items-center gap-2 mt-0.5 ${
+                                isDark ? 'text-slate-400' : 'text-slate-600'
+                              }`}>
+                                <span className="text-red-500 font-semibold">{vid.category}</span>
+                                <span>•</span>
+                                <span>{vid.timeAgo}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <a 
+                                href={vid.youtubeUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className={`p-1.5 transition ${
+                                  isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                                }`}
+                                title="Open on YouTube"
+                              >
+                                <ExternalLink size={14} />
+                              </a>
+                              {onDeleteVideo && (
+                                <button
+                                  onClick={() => onDeleteVideo(vid.id)}
+                                  className="p-1.5 text-red-500 hover:text-red-600 transition"
+                                  title="हटाएं"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Video Pagination Bar */}
+                    {totalVideoPages > 1 && (
+                      <div className={`mt-3 pt-3 border-t flex flex-wrap items-center justify-between gap-3 text-xs ${
+                        isDark ? 'border-white/10' : 'border-slate-200'
+                      }`}>
+                        <div className={isDark ? 'text-slate-400' : 'text-slate-600'}>
+                          दिख रहे हैं <span className="font-bold text-red-500 font-mono">{(currentVideoPage - 1) * VIDEOS_PER_PAGE + 1} - {Math.min(currentVideoPage * VIDEOS_PER_PAGE, filteredVideos.length)}</span> (कुल <span className="font-bold font-mono">{filteredVideos.length}</span> वीडियो)
+                        </div>
+
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <button
+                            onClick={() => setAdminVideosPage(p => Math.max(1, p - 1))}
+                            disabled={currentVideoPage === 1}
+                            className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                              isDark 
+                                ? 'bg-slate-800 border-white/10 text-slate-200 hover:bg-slate-700' 
+                                : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
+                            }`}
+                          >
+                            <ChevronLeft size={13} />
+                            <span>पिछला</span>
+                          </button>
+
+                          {Array.from({ length: totalVideoPages }, (_, i) => i + 1)
+                            .filter(p => p === 1 || p === totalVideoPages || Math.abs(p - currentVideoPage) <= 1)
+                            .map((p, idx, arr) => {
+                              const prev = arr[idx - 1];
+                              const showEllipsis = prev && p - prev > 1;
+                              return (
+                                <React.Fragment key={p}>
+                                  {showEllipsis && <span className="px-1 text-slate-500">...</span>}
+                                  <button
+                                    onClick={() => setAdminVideosPage(p)}
+                                    className={`w-7 h-7 rounded-xl font-bold text-xs transition font-mono ${
+                                      currentVideoPage === p
+                                        ? 'bg-red-600 text-white shadow-md'
+                                        : isDark
+                                          ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                          : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 shadow-sm'
+                                    }`}
+                                  >
+                                    {p}
+                                  </button>
+                                </React.Fragment>
+                              );
+                            })}
+
+                          <button
+                            onClick={() => setAdminVideosPage(p => Math.min(totalVideoPages, p + 1))}
+                            disabled={currentVideoPage === totalVideoPages}
+                            className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                              isDark 
+                                ? 'bg-slate-800 border-white/10 text-slate-200 hover:bg-slate-700' 
+                                : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
+                            }`}
+                          >
+                            <span>अगला</span>
+                            <ChevronRight size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* 2. REELS & SHORTS SECTION */}
