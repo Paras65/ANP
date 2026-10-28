@@ -931,6 +931,10 @@ router.post('/reels/:id/comments', async (req: Request, res: Response) => {
     };
 
     reel.comments.unshift(newComment as any);
+    // Anti-bloat: Cap comments at 100 recent entries to prevent MongoDB 16MB document exhaustion & slow API payloads
+    if (reel.comments.length > 100) {
+      reel.comments = reel.comments.slice(0, 100);
+    }
     reel.commentsCount = String(reel.comments.length);
     await reel.save();
 
