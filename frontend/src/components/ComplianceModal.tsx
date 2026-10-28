@@ -234,7 +234,7 @@ export const ComplianceModal: React.FC<ComplianceModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
                     <span className="text-slate-400 block">नाम एवं पद:</span>
-                    <strong className={isDark ? 'text-white' : 'text-slate-900'}>श्री आर. के. वर्मा (वरिष्ठ संपादक व विधिक प्रतिनिधि)</strong>
+                    <strong className={isDark ? 'text-white' : 'text-slate-900'}>श्री उत्तम चंद्रवंशी (वरिष्ठ संपादक व विधिक प्रतिनिधि)</strong>
                   </div>
                   <div>
                     <span className="text-slate-400 block">ईमेल (विधिक पत्राचार):</span>

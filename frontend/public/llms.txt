@@ -20,10 +20,11 @@
 
 ## Editorial & Compliance
 - **Compliance**: Adheres strictly to Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
-- **Grievance Officer**: Mr. R. K. Verma (grievance@ambitionnews.in)
+- **Grievance Officer**: Mr. Uttam Chandrawanshi (grievance@ambitionnews.in)
 - **Fact-Checking Policy**: Strict multi-source verification with on-the-ground reporter confirmation before publication.
 
 ## Machine-Readable Resources
 - [Full LLM Knowledge Base](https://ambitionnews.init65.co.in/llms-full.txt): Extended documentation for AI assistants and context retrieval.
 - [Sitemap](https://ambitionnews.init65.co.in/sitemap.xml): XML sitemap of all primary pages and news URLs.
 - [RSS Feed](https://ambitionnews.init65.co.in/api/rss): RSS 2.0 syndication feed.
+

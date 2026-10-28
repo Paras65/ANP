@@ -206,7 +206,7 @@ export const Footer: React.FC<FooterProps> = ({
                 शिकायत निवारण अधिकारी (Grievance Officer):
               </div>
               <div className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                श्री आर. के. वर्मा
+                श्री उत्तम चंद्रवंशी
               </div>
               <div className={`flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 <Mail size={11} /> grievance@ambitionnews.in
