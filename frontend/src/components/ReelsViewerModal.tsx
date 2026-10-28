@@ -94,9 +94,18 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [showMuteHint, setShowMuteHint] = useState(true);
+  const [showMuteToast, setShowMuteToast] = useState(false);
   const [isAutoScroll, setIsAutoScroll] = useState<boolean>(true);
   const isTouchRef = useRef(false);
   const lastWheelRef = useRef(0);
+
+  // Auto-hide the "Tap for sound" hint after 3.5s so it does not permanently block headlines
+  useEffect(() => {
+    setShowMuteHint(true);
+    const t = setTimeout(() => setShowMuteHint(false), 3500);
+    return () => clearTimeout(t);
+  }, [currentIndex]);
 
   // Lock body scroll while modal is active to prevent background rubber-band jerks
   useEffect(() => {
@@ -136,10 +145,15 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
   };
 
   // Toggle Mute without restarting the video
-  const toggleMute = (e?: React.MouseEvent) => {
+  const toggleMute = (e?: React.MouseEvent | React.TouchEvent) => {
     if (e) e.stopPropagation();
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
+    setShowMuteHint(false);
+    if (!nextMuted) {
+      setShowMuteToast(true);
+      setTimeout(() => setShowMuteToast(false), 1200);
+    }
 
     // Direct property change for HTML5 video (prevents video reload/restart)
     if (videoRef.current) {
@@ -279,19 +293,27 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
         handlePrev();
       }
     } else if (Math.abs(diffY) < 12 && Math.abs(diffX) < 12) {
-      // Clean Tap -> Toggle Play/Pause
-      togglePlay();
+      // Clean Tap -> If muted, unmuting on tap is the most natural & intuitive mobile behavior
+      if (isMuted) {
+        toggleMute(e);
+      } else {
+        togglePlay();
+      }
     }
     setTouchStartY(null);
     setTouchStartX(null);
   };
 
-  const handleDesktopClick = () => {
+  const handleDesktopClick = (e: React.MouseEvent) => {
     if (isTouchRef.current) {
       isTouchRef.current = false;
       return;
     }
-    togglePlay();
+    if (isMuted) {
+      toggleMute(e);
+    } else {
+      togglePlay();
+    }
   };
 
   // Like Toggle with LocalStorage + MongoDB Atlas persistence
@@ -427,7 +449,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                   <iframe
                     ref={iframeRef}
                     key={ytId}
-                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=1&controls=0&loop=${isAutoScroll ? '0' : '1'}&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                    src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=1&controls=0&loop=${isAutoScroll ? '0' : '1'}&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
                     title={currentReel.caption}
                     onLoad={() => {
                       iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), '*');
@@ -443,7 +465,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                         });
                       }
                     }}
-                    className="w-[170%] h-[120%] -ml-[35%] -mt-[10%] object-cover border-0 pointer-events-none relative z-10"
+                    className="w-full h-full object-cover border-0 pointer-events-none relative z-10 scale-100"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   ></iframe>
@@ -488,7 +510,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
 
         {/* 2. FULLSCREEN GESTURE LAYER FOR TOUCH SWIPES & TAPS (Z-20) */}
         <div 
-          className="absolute inset-0 z-20 cursor-pointer"
+          className="absolute inset-0 z-20 cursor-pointer bg-transparent"
           style={{ touchAction: 'none' }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -497,15 +519,23 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
         />
 
         {/* 3. FLOATING HUD NOTIFICATIONS & BADGES (Z-30) */}
-        {/* Floating Tap-to-Unmute Pill when sound is muted */}
-        {isMuted && (
+        {/* Floating Tap-to-Unmute Pill when sound is muted (auto-hides after 3.5s so headlines stay visible) */}
+        {isMuted && showMuteHint && (
           <button
             onClick={toggleMute}
             className="absolute top-16 left-1/2 -translate-x-1/2 z-30 bg-black/85 hover:bg-black backdrop-blur-md border border-pink-500/50 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl transition active:scale-95 animate-pulse cursor-pointer pointer-events-auto"
           >
-            <VolumeX size={14} className="text-pink-400" />
-            <span>🔊 टैप करके आवाज़ चालू करें</span>
+            <VolumeX size={14} className="text-pink-400 shrink-0" />
+            <span>आवाज़ के लिए स्क्रीन पर टैप करें</span>
           </button>
+        )}
+
+        {/* 1.2s Audio Unmuted Toast */}
+        {showMuteToast && (
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 bg-black/90 backdrop-blur-md border border-emerald-500/60 text-emerald-300 text-[11px] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 pointer-events-none">
+            <Volume2 size={14} className="text-emerald-400 shrink-0" />
+            <span>आवाज़ चालू</span>
+          </div>
         )}
 
         {/* Floating Swipe Up Hint Badge */}
@@ -566,7 +596,11 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
             {/* Audio Mute/Unmute */}
             <button 
               onClick={toggleMute}
-              className="p-2 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur text-white transition active:scale-90 cursor-pointer"
+              className={`p-2 rounded-full backdrop-blur transition active:scale-90 cursor-pointer ${
+                isMuted 
+                  ? 'bg-pink-600/30 text-pink-400 border border-pink-500/40 animate-pulse' 
+                  : 'bg-black/40 hover:bg-black/60 text-white'
+              }`}
               title={isMuted ? "Unmute" : "Mute"}
             >
               {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -732,10 +766,10 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
           {/* Audio Music Marquee Track */}
           <div className="flex items-center gap-2 text-[11px] text-slate-300 overflow-hidden">
             <Music size={12} className="text-pink-400 shrink-0" />
-            <div className="overflow-hidden whitespace-nowrap flex-1">
-              <div className="audio-ticker text-[11px] font-medium gap-8">
-                <span>{currentReel.audioTrack || 'Ambition News • ओरिजिनल ऑडियो - कवर्धा'}</span>
-                <span>{currentReel.audioTrack || 'Ambition News • ओरिजिनल ऑडियो - कवर्धा'}</span>
+            <div className="overflow-hidden whitespace-nowrap flex-1 [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)]">
+              <div className="audio-ticker text-[11px] font-medium">
+                <span className="pr-10">{currentReel.audioTrack ? (currentReel.audioTrack.includes('Original') ? 'Ambition News • ओरिजिनल ऑडियो - कवर्धा' : currentReel.audioTrack) : 'Ambition News • ओरिजिनल ऑडियो - कवर्धा'}</span>
+                <span className="pr-10">{currentReel.audioTrack ? (currentReel.audioTrack.includes('Original') ? 'Ambition News • ओरिजिनल ऑडियो - कवर्धा' : currentReel.audioTrack) : 'Ambition News • ओरिजिनल ऑडियो - कवर्धा'}</span>
               </div>
             </div>
             <Disc size={13} className="text-pink-400 animate-spin shrink-0" />
