@@ -53,7 +53,8 @@ import {
 } from './data/mockData';
 import { generateStoriesList } from './components/StoriesTray';
 import type { StoryItem } from './components/StoriesTray';
-import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter } from './types';
+import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter, Advertisement } from './types';
+import { AdBanner } from './components/AdBanner';
 import api from './api/client';
 import { syncYouTubeChannelVideos } from './utils/mediaUtils';
 
@@ -69,6 +70,7 @@ export const App: React.FC = () => {
   const [districtsList, setDistrictsList] = useState<DistrictItem[]>(ALL_DISTRICTS_DEMO);
   const [articles, setArticles] = useState<Article[]>([]);
   const [reporters, setReporters] = useState<Reporter[]>([]);
+  const [ads, setAds] = useState<Advertisement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [backendSynced, setBackendSynced] = useState(false);
   
@@ -289,6 +291,13 @@ export const App: React.FC = () => {
       }
       if (res.data?.isConfiguredOnServer !== undefined) {
         setHasYouTubeApiKey(res.data.isConfiguredOnServer);
+      }
+    }).catch(() => {});
+
+    // Fetch active local advertiser campaigns
+    api.get('/ads').then(res => {
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        setAds(res.data.data);
       }
     }).catch(() => {});
   }, []);
@@ -1019,6 +1028,11 @@ export const App: React.FC = () => {
   const gridArticles = displayArticles.length > 1 ? displayArticles.slice(1) : [];
   const breakingList = articles.filter(a => a.isBreaking);
 
+  // Active Monetization / Ad Placements
+  const headerAd = ads.find(a => a.placement === 'header_top' && a.isActive);
+  const inFeedAd = ads.find(a => a.placement === 'in_feed' && a.isActive);
+  const articleAd = ads.find(a => a.placement === 'article_bottom' && a.isActive);
+
   // Progressive Disclosure: visible count & server-side pagination bridge
   const visibleGridArticles = gridArticles.slice(0, visibleCount - 1);
   const hasMoreArticles = gridArticles.length > visibleGridArticles.length || hasMoreBackend;
@@ -1197,6 +1211,18 @@ export const App: React.FC = () => {
           topArticles={displayArticles}
           onSelectArticle={(art) => openArticleModal(art)}
         />
+
+        {/* 2.1 TOP HEADER SPONSORED AD BANNER (IF ACTIVE) */}
+        {headerAd && (
+          <AdBanner 
+            ad={headerAd} 
+            placement="header_top" 
+            isDark={isDark} 
+            onContactWhatsApp={() => {
+              window.open(`https://api.whatsapp.com/send?phone=917000139694&text=${encodeURIComponent('नमस्ते Ambition News, मुझे अपने प्रतिष्ठान का टॉप हेडर बैनर विज्ञापन पोर्टल पर लगवाना है।')}`, '_blank');
+            }}
+          />
+        )}
 
         {/* 3. NATIVE STORIES TRAY (INSTAGRAM / INSHORTS STYLE WEB STORIES) */}
         <div className={`w-full max-w-full overflow-hidden px-3 sm:px-4 pt-3 pb-1 border-b transition-colors ${
@@ -2091,46 +2117,17 @@ export const App: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* SPONSORED LOCAL BUSINESS / COMMUNITY NOTICE CARD AFTER 4TH ARTICLE */}
+                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER (LIVE OR FALLBACK INVITATION) */}
                           {idx === 3 && (
-                            <div className={`col-span-1 sm:col-span-2 p-4 rounded-2xl border ${
-                              isDark 
-                                ? 'bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-900 border-amber-500/40' 
-                                : 'bg-gradient-to-r from-amber-50 via-white to-amber-50/50 border-amber-300'
-                            } flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md my-1`}>
-                              <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-slate-950 flex items-center justify-center font-black text-lg shrink-0 shadow">
-                                  📢
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded font-mono">
-                                      प्रायोजित • स्थानीय व्यापार
-                                    </span>
-                                    <span className="text-xs font-bold text-amber-400">कवर्धा व CG-MP 88 जिला नेटवर्क</span>
-                                  </div>
-                                  <h4 className={`text-xs sm:text-sm font-bold mt-1 leading-snug ${
-                                    isDark ? 'text-white' : 'text-slate-900'
-                                  }`}>
-                                    क्या आप अपने व्यापार, दुकान, हॉस्पिटल या स्कूल का प्रचार लाखों पाठकों तक पहुंचाना चाहते हैं?
-                                  </h4>
-                                  <p className={`text-[11px] mt-0.5 ${
-                                    isDark ? 'text-slate-400' : 'text-slate-600'
-                                  }`}>
-                                    कवर्धा के सबसे लोकप्रिय डिजिटल न्यूज़ पोर्टल पर बैनर विज्ञापन व कवरेज के लिए संपादकीय डेस्क से संपर्क करें।
-                                  </p>
-                                </div>
-                              </div>
-                              <a 
-                                href={`https://api.whatsapp.com/send?phone=917000139694&text=${encodeURIComponent('नमस्ते Ambition News, मुझे अपने प्रतिष्ठान / व्यवसाय का विज्ञापन व कवरेज पोर्टल पर प्रकाशित करवाना है।')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label="विज्ञापन व कवरेज के लिए संपादकीय डेस्क से व्हाट्सएप पर संपर्क करें"
-                                className="shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer whitespace-nowrap"
-                              >
-                                <WhatsAppIcon size={13} />
-                                <span>विज्ञापन दें (WhatsApp)</span>
-                              </a>
+                            <div className="col-span-1 sm:col-span-2 my-1">
+                              <AdBanner 
+                                ad={inFeedAd} 
+                                placement="in_feed" 
+                                isDark={isDark} 
+                                onContactWhatsApp={() => {
+                                  window.open(`https://api.whatsapp.com/send?phone=917000139694&text=${encodeURIComponent('नमस्ते Ambition News, मुझे अपने प्रतिष्ठान / व्यवसाय का विज्ञापन व कवरेज पोर्टल पर प्रकाशित करवाना है।')}`, '_blank');
+                                }}
+                              />
                             </div>
                           )}
                         </React.Fragment>
@@ -2511,6 +2508,7 @@ export const App: React.FC = () => {
             isDark={isDark}
             isBookmarked={savedArticles.some(a => a._id === activeArticle._id)}
             onToggleBookmark={toggleBookmark}
+            ad={articleAd}
           />
         )}
 

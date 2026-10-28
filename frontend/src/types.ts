@@ -102,3 +102,33 @@ export interface PaginationMeta {
   hasPrevPage: boolean;
 }
 
+export type AdPlacement = 'header_top' | 'in_feed' | 'article_bottom' | 'sidebar' | 'popup_interstitial';
+
+export interface Advertisement {
+  _id: string;
+  title: string;
+  clientName: string;
+  clientPhone?: string;
+  imageUrl: string;
+  linkUrl: string;
+  placement: AdPlacement;
+  targetDistrict: string;
+  startDate?: string;
+  expiryDate?: string;
+  isActive: boolean;
+  priority?: number;
+  impressions?: number;
+  clicks?: number;
+  createdAt?: string;
+}
+
+export interface MonetizationSettings {
+  adsenseEnabled: boolean;
+  adsensePublisherId: string;
+  headerSlotId: string;
+  inFeedSlotId: string;
+  articleSlotId: string;
+  whatsappSponsorLine: string;
+  monthlyRevenueGoal: number;
+}
+

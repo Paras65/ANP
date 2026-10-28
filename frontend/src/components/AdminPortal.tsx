@@ -45,11 +45,15 @@ import {
   Phone,
   Printer,
   BadgeCheck,
+  BadgeDollarSign,
+  BarChart3,
+  MousePointerClick,
+  Building2,
   X,
   Sun,
   Moon
 } from 'lucide-react';
-import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter } from '../types';
+import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter, Advertisement, AdPlacement, MonetizationSettings } from '../types';
 import { parseYouTubeUrl, extractYouTubeChannelId, syncYouTubeChannelVideos, parseReelMedia } from '../utils/mediaUtils';
 import { WhatsAppIcon } from './SocialIcons';
 import api, { setAuthToken } from '../api/client';
@@ -126,7 +130,46 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onUpdateReporter,
   onDeleteReporter
 }) => {
-  const [activeTab, setActiveTab] = useState<'create' | 'articles' | 'breaking' | 'reporters' | 'media' | 'mandi'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'articles' | 'breaking' | 'reporters' | 'media' | 'mandi' | 'ads'>('create');
+  
+  // Ad & Monetization Management States
+  const [ads, setAds] = useState<Advertisement[]>([]);
+  const [isLoadingAds, setIsLoadingAds] = useState(false);
+  const [editingAdId, setEditingAdId] = useState<string | null>(null);
+  const [adForm, setAdForm] = useState<{
+    title: string;
+    clientName: string;
+    clientPhone: string;
+    imageUrl: string;
+    linkUrl: string;
+    placement: AdPlacement;
+    targetDistrict: string;
+    expiryDate: string;
+    priority: number;
+    isActive: boolean;
+  }>({
+    title: '',
+    clientName: '',
+    clientPhone: '',
+    imageUrl: '',
+    linkUrl: '',
+    placement: 'in_feed',
+    targetDistrict: 'सभी 88 जिले',
+    expiryDate: '',
+    priority: 0,
+    isActive: true
+  });
+  const [monetizationSettings, setMonetizationSettings] = useState<MonetizationSettings>({
+    adsenseEnabled: false,
+    adsensePublisherId: '',
+    headerSlotId: '',
+    inFeedSlotId: '',
+    articleSlotId: '',
+    whatsappSponsorLine: 'डिजिटल विज्ञापन व कवरेज हेतु संपर्क करें: 7000139694',
+    monthlyRevenueGoal: 50000
+  });
+  const [isSavingMonetization, setIsSavingMonetization] = useState(false);
+  const [adSuccessMsg, setAdSuccessMsg] = useState<string | null>(null);
   // Security & Authentication State (Strict Token-Based State)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const token = sessionStorage.getItem('anp_admin_token') || localStorage.getItem('anp_admin_token');
@@ -470,6 +513,144 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     sessionStorage.removeItem('anp_admin_token');
     setIsAuthenticated(false);
     setAdminPassword('');
+  };
+
+  // Ad & Monetization Handlers
+  const fetchAds = async () => {
+    try {
+      setIsLoadingAds(true);
+      const res = await api.get('/ads?all=true');
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        setAds(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching ads:', err);
+    } finally {
+      setIsLoadingAds(false);
+    }
+  };
+
+  const fetchMonetizationSettings = async () => {
+    try {
+      const res = await api.get('/settings/monetization');
+      if (res.data?.success && res.data.data) {
+        setMonetizationSettings(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching monetization settings:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAds();
+      fetchMonetizationSettings();
+    }
+  }, [isAuthenticated]);
+
+  const handleSaveAd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adForm.title.trim() || !adForm.clientName.trim() || !adForm.imageUrl.trim() || !adForm.linkUrl.trim()) {
+      alert('कृपया शीर्षक, क्लाइंट का नाम, बैनर इमेज URL और रीडायरेक्ट लिंक भरें।');
+      return;
+    }
+
+    try {
+      if (editingAdId) {
+        const res = await api.put(`/ads/${editingAdId}`, adForm);
+        if (res.data?.success) {
+          setAdSuccessMsg('विज्ञापन अभियान सफलतापूर्वक अपडेट किया गया!');
+          fetchAds();
+          handleResetAdForm();
+        }
+      } else {
+        const res = await api.post('/ads', adForm);
+        if (res.data?.success) {
+          setAdSuccessMsg('नया विज्ञापन अभियान लाइव दर्ज हो गया!');
+          fetchAds();
+          handleResetAdForm();
+        }
+      }
+      setTimeout(() => setAdSuccessMsg(null), 4000);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'विज्ञापन सहेजने में त्रुटि आई');
+    }
+  };
+
+  const handleToggleAdStatus = async (ad: Advertisement) => {
+    try {
+      await api.put(`/ads/${ad._id}`, { isActive: !ad.isActive });
+      fetchAds();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'स्थिति बदलने में त्रुटि आई');
+    }
+  };
+
+  const handleDeleteAd = async (id: string, title: string) => {
+    if (!window.confirm(`क्या आप सचमुच "${title}" विज्ञापन हटाना चाहते हैं?`)) return;
+    try {
+      await api.delete(`/ads/${id}`);
+      fetchAds();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'विज्ञापन हटाने में त्रुटि आई');
+    }
+  };
+
+  const handleEditAd = (ad: Advertisement) => {
+    setEditingAdId(ad._id);
+    setAdForm({
+      title: ad.title,
+      clientName: ad.clientName,
+      clientPhone: ad.clientPhone || '',
+      imageUrl: ad.imageUrl,
+      linkUrl: ad.linkUrl,
+      placement: ad.placement,
+      targetDistrict: ad.targetDistrict || 'सभी 88 जिले',
+      expiryDate: ad.expiryDate ? ad.expiryDate.split('T')[0] : '',
+      priority: ad.priority || 0,
+      isActive: ad.isActive
+    });
+    const formEl = document.getElementById('ad-campaign-form');
+    if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleResetAdForm = () => {
+    setEditingAdId(null);
+    setAdForm({
+      title: '',
+      clientName: '',
+      clientPhone: '',
+      imageUrl: '',
+      linkUrl: '',
+      placement: 'in_feed',
+      targetDistrict: 'सभी 88 जिले',
+      expiryDate: '',
+      priority: 0,
+      isActive: true
+    });
+  };
+
+  const handleSaveMonetization = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsSavingMonetization(true);
+      const res = await api.put('/settings/monetization', monetizationSettings);
+      if (res.data?.success) {
+        setAdSuccessMsg('Google AdSense एवं मोनेटाइजेशन सेटिंग्स सुरक्षित हो गईं!');
+        setTimeout(() => setAdSuccessMsg(null), 4000);
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'सेटिंग्स सहेजने में विफल');
+    } finally {
+      setIsSavingMonetization(false);
+    }
+  };
+
+  const handleSendClientReport = (ad: Advertisement) => {
+    const slotLabel = ad.placement === 'header_top' ? 'टॉप हेडर बैनर' : ad.placement === 'article_bottom' ? 'खबर के नीचे' : 'समाचार फ़ीड बैनर';
+    const reportText = `📢 *Ambition News • विज्ञापन प्रदर्शन रिपोर्ट*\n\nप्रिय *${ad.clientName}*,\nAmbition News Portal पर आपके विज्ञापन अभियान का ताज़ा प्रदर्शन विवरण:\n\n📌 *अभियान*: ${ad.title}\n📍 *स्थान*: ${slotLabel}\n🎯 *लक्षित क्षेत्र*: ${ad.targetDistrict}\n\n👁️ *कुल पाठक व्यूज़ (इम्प्रेशन्स)*: ${(ad.impressions || 0).toLocaleString('en-IN')}\n📲 *सीधे WhatsApp/क्लिक्स*: ${(ad.clicks || 0).toLocaleString('en-IN')}\n🟢 *स्थिति*: ${ad.isActive ? 'सक्रिय (Live)' : 'रोकी गई / समाप्त'}\n\nधन्यवाद!\n*Ambition News Portal — कवर्धा (कबीरधाम)*\n🌐 https://ambitionnews.init65.co.in`;
+    const phone = ad.clientPhone ? ad.clientPhone.replace(/\D/g, '') : '';
+    window.open(`https://api.whatsapp.com/send?phone=91${phone}&text=${encodeURIComponent(reportText)}`, '_blank');
   };
 
 
@@ -1184,6 +1365,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           >
             <Wheat size={14} className="text-emerald-500" />
             <span>🌾 दैनिक मंडी भाव ({mandiRates.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ads')}
+            className={`pb-2.5 px-3 flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
+              activeTab === 'ads'
+                ? 'border-amber-500 text-amber-400 font-bold'
+                : isDark ? 'border-transparent text-slate-400 hover:text-white' : 'border-transparent text-slate-600 hover:text-slate-950'
+            }`}
+          >
+            <BadgeDollarSign size={14} className="text-amber-400" />
+            <span>💰 विज्ञापन व मोनेटाइजेशन ({ads.length})</span>
           </button>
         </div>
       </div>
@@ -3925,6 +4118,703 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
         )}
 
+        {/* ========================================================
+            TAB 7: ADS & MONETIZATION DESK (विज्ञापन व कमाई नियंत्रण केंद्र)
+            ======================================================== */}
+        {activeTab === 'ads' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Header / Intro Card */}
+            <div className={`p-6 rounded-3xl border shadow-xl relative overflow-hidden backdrop-blur-xl ${
+              isDark 
+                ? 'bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900 border-amber-500/30' 
+                : 'bg-gradient-to-r from-amber-50/80 via-white to-amber-50/50 border-amber-200'
+            }`}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20 font-black">
+                    <BadgeDollarSign size={32} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h2 className={`text-xl md:text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        विज्ञापन व मोनेटाइजेशन नियंत्रण केंद्र
+                      </h2>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        स्थानीय प्रायोजक + AdSense
+                      </span>
+                    </div>
+                    <p className={`text-xs md:text-sm mt-1 max-w-2xl ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      स्थानीय व्यापारियों के विज्ञापन स्लॉट्स (Header, Feed, Article, Sidebar) लाइव लगाएं, वास्तविक पाठक इम्प्रेशन्स और WhatsApp लीड्स ट्रैक करें, और 1-क्लिक में क्लाइंट को रिपोर्ट भेजें।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+                  <button
+                    onClick={() => {
+                      handleResetAdForm();
+                      const formEl = document.getElementById('ad-campaign-form');
+                      if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-md transition flex items-center gap-1.5"
+                  >
+                    <Plus size={16} />
+                    नया विज्ञापन जोड़ें
+                  </button>
+                  <button
+                    onClick={fetchAds}
+                    disabled={isLoadingAds}
+                    className={`p-2.5 rounded-xl border transition ${
+                      isDark ? 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300' : 'border-slate-300 bg-white hover:bg-slate-100 text-slate-700'
+                    }`}
+                    title="रिफ्रेश करें"
+                  >
+                    <RefreshCw size={16} className={isLoadingAds ? 'animate-spin text-amber-400' : ''} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Success Notification Alert */}
+              {adSuccessMsg && (
+                <div className="mt-4 p-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                  <CheckCircle2 size={16} className="shrink-0" />
+                  <span>{adSuccessMsg}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Performance KPI Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'} shadow-sm`}>
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span>सक्रिय कैंपेन</span>
+                  <Tag size={16} className="text-amber-400" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {ads.filter(a => a.isActive).length}
+                  </span>
+                  <span className="text-xs text-slate-400">/ {ads.length} कुल</span>
+                </div>
+                <div className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  लाइव स्लॉट्स कार्यरत
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'} shadow-sm`}>
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span>कुल पाठक इम्प्रेशन्स</span>
+                  <Eye size={16} className="text-blue-400" />
+                </div>
+                <div className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  {ads.reduce((acc, a) => acc + (a.impressions || 0), 0).toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">पोर्टल पर लाइव दृश्य (Views)</div>
+              </div>
+
+              <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'} shadow-sm`}>
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span>क्लिक्स व लीड्स</span>
+                  <MousePointerClick size={16} className="text-purple-400" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {ads.reduce((acc, a) => acc + (a.clicks || 0), 0).toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-xs font-bold text-amber-400">
+                    CTR: {ads.reduce((acc, a) => acc + (a.impressions || 0), 0) > 0 ? ((ads.reduce((acc, a) => acc + (a.clicks || 0), 0) / ads.reduce((acc, a) => acc + (a.impressions || 0), 0)) * 100).toFixed(1) : '0.0'}%
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">व्यापारी WhatsApp व वेबसाइट पर गए</div>
+              </div>
+
+              <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'} shadow-sm`}>
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span>मासिक कमाई लक्ष्य</span>
+                  <BarChart3 size={16} className="text-emerald-400" />
+                </div>
+                <div className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  ₹{(monetizationSettings.monthlyRevenueGoal || 50000).toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-emerald-400 mt-1">स्थानीय विज्ञापन + स्पॉन्सरशिप्स</div>
+              </div>
+            </div>
+
+            {/* Form & List Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* Form: Add / Edit Ad Campaign (5 cols) */}
+              <div 
+                id="ad-campaign-form"
+                className={`lg:col-span-5 p-6 rounded-3xl border shadow-xl ${
+                  isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
+                }`}
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-slate-700/40 mb-5">
+                  <div className="flex items-center gap-2">
+                    <span className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                      {editingAdId ? <Edit3 size={18} /> : <PlusCircle size={18} />}
+                    </span>
+                    <div>
+                      <h3 className={`font-black text-sm md:text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {editingAdId ? 'विज्ञापन कैंपेन संपादित करें' : 'नया विज्ञापन कैंपेन जोड़ें'}
+                      </h3>
+                      <p className="text-[11px] text-slate-400">क्लाइंट विवरण व बैनर सेट करें</p>
+                    </div>
+                  </div>
+                  {editingAdId && (
+                    <button
+                      onClick={handleResetAdForm}
+                      className="text-xs text-rose-400 hover:text-rose-300 font-bold px-2 py-1 rounded-lg bg-rose-500/10"
+                    >
+                      रद्द करें
+                    </button>
+                  )}
+                </div>
+
+                <form onSubmit={handleSaveAd} className="space-y-4">
+                  {/* Title */}
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      अभियान / ऑफर का शीर्षक *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="उदा: राजस्थानी स्वीट्स कवर्धा - 20% की छूट"
+                      value={adForm.title}
+                      onChange={e => setAdForm({ ...adForm, title: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium outline-none transition ${
+                        isDark ? 'bg-slate-800/80 border-slate-700 text-white focus:border-amber-500' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-amber-500'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Client Name & Phone */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        क्लाइंट / फर्म का नाम *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="उदा: अग्रवाल ज्वेलर्स"
+                        value={adForm.clientName}
+                        onChange={e => setAdForm({ ...adForm, clientName: e.target.value })}
+                        className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium outline-none transition ${
+                          isDark ? 'bg-slate-800/80 border-slate-700 text-white focus:border-amber-500' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-amber-500'
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        क्लाइंट WhatsApp नंबर
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="उदा: 98261XXXXX"
+                        value={adForm.clientPhone}
+                        onChange={e => setAdForm({ ...adForm, clientPhone: e.target.value })}
+                        className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium outline-none transition ${
+                          isDark ? 'bg-slate-800/80 border-slate-700 text-white focus:border-amber-500' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-amber-500'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Placement & Target District */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        विज्ञापन स्लॉट (Placement) *
+                      </label>
+                      <select
+                        value={adForm.placement}
+                        onChange={e => setAdForm({ ...adForm, placement: e.target.value as AdPlacement })}
+                        className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none transition ${
+                          isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                      >
+                        <option value="in_feed">📰 समाचार फ़ीड बैनर (In-Feed)</option>
+                        <option value="header_top">🔝 शीर्ष हेडर बैनर (Header Top)</option>
+                        <option value="article_bottom">📄 पूरी खबर के नीचे (Article Bottom)</option>
+                        <option value="sidebar">📌 साइडबार / डेस्कटॉप (Sidebar)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        लक्षित जिला (Target Area)
+                      </label>
+                      <select
+                        value={adForm.targetDistrict}
+                        onChange={e => setAdForm({ ...adForm, targetDistrict: e.target.value })}
+                        className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none transition ${
+                          isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                      >
+                        <option value="सभी 88 जिले">सभी 88 जिले (छ.ग. + म.प्र.)</option>
+                        <option value="कवर्धा">कवर्धा (कबीरधाम)</option>
+                        <option value="रायपुर">रायपुर</option>
+                        <option value="बिलासपुर">बिलासपुर</option>
+                        <option value="दुर्ग">दुर्ग</option>
+                        <option value="राजनांदगांव">राजनांदगांव</option>
+                        <option value="भोपाल">भोपाल</option>
+                        <option value="इंदौर">इंदौर</option>
+                        <option value="जबलपुर">जबलपुर</option>
+                        {districts
+                          .filter(d => !['कबीरधाम (कवर्धा)', 'कवर्धा', 'रायपुर', 'बिलासपुर', 'दुर्ग', 'राजनांदगांव', 'भोपाल', 'इंदौर', 'जबलपुर'].includes(d.nameHindi || d.name))
+                          .map(d => (
+                            <option key={d._id || d.name} value={d.nameHindi || d.name}>
+                              {d.nameHindi || d.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Banner Image URL */}
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      बैनर इमेज URL *
+                    </label>
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://images.unsplash.com/... या CDN लिंक"
+                      value={adForm.imageUrl}
+                      onChange={e => setAdForm({ ...adForm, imageUrl: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium outline-none transition ${
+                        isDark ? 'bg-slate-800/80 border-slate-700 text-white focus:border-amber-500' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-amber-500'
+                      }`}
+                    />
+                    {adForm.imageUrl && (
+                      <div className="mt-2 p-2 rounded-xl border border-dashed border-slate-700 bg-slate-950/40">
+                        <div className="text-[10px] text-slate-400 mb-1">लाइव बैनर प्रीव्यू:</div>
+                        <img 
+                          src={adForm.imageUrl} 
+                          alt="Banner Preview" 
+                          className="w-full max-h-28 object-cover rounded-lg"
+                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Destination Link */}
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      क्लिक पर रीडायरेक्ट लिंक (WhatsApp या वेबसाइट) *
+                    </label>
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://wa.me/9198261XXXXX?text=नमस्ते या वेबसाइट लिंक"
+                      value={adForm.linkUrl}
+                      onChange={e => setAdForm({ ...adForm, linkUrl: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium outline-none transition ${
+                        isDark ? 'bg-slate-800/80 border-slate-700 text-white focus:border-amber-500' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-amber-500'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Expiry Date, Priority & Active */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        समाप्ति तिथि
+                      </label>
+                      <input
+                        type="date"
+                        value={adForm.expiryDate}
+                        onChange={e => setAdForm({ ...adForm, expiryDate: e.target.value })}
+                        className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none transition ${
+                          isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        प्राथमिकता (0-10)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        value={adForm.priority}
+                        onChange={e => setAdForm({ ...adForm, priority: parseInt(e.target.value) || 0 })}
+                        className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none transition ${
+                          isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="pt-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={adForm.isActive}
+                          onChange={e => setAdForm({ ...adForm, isActive: e.target.checked })}
+                          className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
+                        />
+                        <span className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                          तुरंत लाइव रखें
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-2 flex items-center gap-3">
+                    <button
+                      type="submit"
+                      className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-lg transition active:scale-98 flex items-center justify-center gap-2"
+                    >
+                      <Save size={16} />
+                      {editingAdId ? 'विज्ञापन अपडेट करें' : 'विज्ञापन लाइव प्रकाशित करें'}
+                    </button>
+                    {editingAdId && (
+                      <button
+                        type="button"
+                        onClick={handleResetAdForm}
+                        className={`py-3 px-4 rounded-xl border text-xs font-bold transition ${
+                          isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-300 bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        रद्द करें
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* List of Ads / Campaigns (7 cols) */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-700/40">
+                  <div className="flex items-center gap-2">
+                    <Building2 size={18} className="text-amber-400" />
+                    <h3 className={`font-black text-sm md:text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      लाइव विज्ञापन कैंपेन सूची ({ads.length})
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-slate-400">
+                    {ads.filter(a => a.isActive).length} सक्रिय
+                  </span>
+                </div>
+
+                {isLoadingAds ? (
+                  <div className="p-8 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
+                    <RefreshCw size={16} className="animate-spin text-amber-400" />
+                    विज्ञापन डेटा लोड हो रहा है...
+                  </div>
+                ) : ads.length === 0 ? (
+                  <div className={`p-8 rounded-3xl border text-center ${
+                    isDark ? 'bg-slate-900/40 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'
+                  }`}>
+                    <BadgeDollarSign size={40} className="mx-auto text-amber-400 mb-2 opacity-60" />
+                    <p className="font-bold text-sm">अभी कोई विज्ञापन कैंपेन दर्ज नहीं है</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      बाईं ओर दिए गए फॉर्म से स्थानीय दुकानों, कोचिंग, डॉक्टरों या इवेंट्स के लिए पहला पेड बैनर जोड़ें।
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {ads.map((ad) => {
+                      const ctr = (ad.impressions && ad.impressions > 0)
+                        ? (((ad.clicks || 0) / ad.impressions) * 100).toFixed(1)
+                        : '0.0';
+
+                      return (
+                        <div
+                          key={ad._id}
+                          className={`p-4 rounded-2xl border transition-all ${
+                            isDark 
+                              ? ad.isActive ? 'bg-slate-900/90 border-slate-800 hover:border-amber-500/50' : 'bg-slate-950/40 border-slate-800/50 opacity-60'
+                              : ad.isActive ? 'bg-white border-slate-200 shadow-sm hover:border-amber-300' : 'bg-slate-50 border-slate-200 opacity-60'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            {/* Left: Thumbnail & Details */}
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                              <img
+                                src={ad.imageUrl}
+                                alt={ad.title}
+                                className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-700/60 bg-slate-950"
+                                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                    ad.placement === 'header_top' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                    ad.placement === 'article_bottom' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+                                    'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                  }`}>
+                                    {ad.placement === 'header_top' ? 'शीर्ष हेडर' : ad.placement === 'article_bottom' ? 'खबर के नीचे' : 'समाचार फ़ीड'}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                    <MapPin size={10} />
+                                    {ad.targetDistrict}
+                                  </span>
+                                  {(ad.priority ?? 0) > 0 && (
+                                    <span className="text-[9px] text-yellow-400 font-mono font-bold">
+                                      ★ P{ad.priority}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <h4 className={`text-xs md:text-sm font-bold truncate mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                  {ad.title}
+                                </h4>
+
+                                <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                                  <span className="font-semibold text-slate-300">{ad.clientName}</span>
+                                  {ad.clientPhone && <span>• 📞 {ad.clientPhone}</span>}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Center: Live Metrics */}
+                            <div className="flex items-center gap-3 shrink-0 px-3 py-1.5 rounded-xl bg-slate-950/40 border border-slate-800">
+                              <div className="text-center">
+                                <div className="text-[10px] text-slate-400">व्यूज़</div>
+                                <div className="text-xs font-black font-mono text-blue-400">
+                                  {(ad.impressions || 0).toLocaleString('en-IN')}
+                                </div>
+                              </div>
+                              <div className="h-6 w-px bg-slate-800" />
+                              <div className="text-center">
+                                <div className="text-[10px] text-slate-400">क्लिक्स</div>
+                                <div className="text-xs font-black font-mono text-purple-400">
+                                  {(ad.clicks || 0).toLocaleString('en-IN')}
+                                </div>
+                              </div>
+                              <div className="h-6 w-px bg-slate-800" />
+                              <div className="text-center">
+                                <div className="text-[10px] text-slate-400">CTR</div>
+                                <div className="text-xs font-black font-mono text-amber-400">
+                                  {ctr}%
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Footer Actions */}
+                          <div className="mt-3 pt-2.5 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                            {/* Left: Active Toggle */}
+                            <button
+                              onClick={() => handleToggleAdStatus(ad)}
+                              className={`text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition ${
+                                ad.isActive
+                                  ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                              }`}
+                            >
+                              {ad.isActive ? <Eye size={12} /> : <EyeOff size={12} />}
+                              {ad.isActive ? 'सक्रिय (Live)' : 'रोकी गई (Paused)'}
+                            </button>
+
+                            {/* Right: Actions */}
+                            <div className="flex items-center gap-1.5">
+                              {/* 1-Click WhatsApp Client Report */}
+                              <button
+                                onClick={() => handleSendClientReport(ad)}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm"
+                                title="क्लाइंट को WhatsApp पर प्रदर्शन रिपोर्ट भेजें"
+                              >
+                                <WhatsAppIcon className="w-3 h-3 fill-current" />
+                                1-Click रिपोर्ट
+                              </button>
+
+                              {/* Edit Button */}
+                              <button
+                                onClick={() => handleEditAd(ad)}
+                                className={`p-1.5 rounded-lg border transition ${
+                                  isDark ? 'border-slate-700 hover:bg-slate-800 text-slate-300' : 'border-slate-300 hover:bg-slate-100 text-slate-700'
+                                }`}
+                                title="संपादित करें"
+                              >
+                                <Edit3 size={13} />
+                              </button>
+
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => handleDeleteAd(ad._id, ad.title)}
+                                className="p-1.5 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 transition"
+                                title="हटाएं"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+
+                              {/* Open Link */}
+                              <a
+                                href={ad.linkUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`p-1.5 rounded-lg border transition ${
+                                  isDark ? 'border-slate-700 hover:bg-slate-800 text-slate-400' : 'border-slate-300 hover:bg-slate-100 text-slate-600'
+                                }`}
+                                title="रीडायरेक्ट लिंक खोलें"
+                              >
+                                <ExternalLink size={13} />
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Google AdSense & Global Monetization Settings */}
+            <div className={`p-6 rounded-3xl border shadow-xl ${
+              isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
+            }`}>
+              <div className="flex items-center gap-3 pb-4 border-b border-slate-700/40 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-black">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h3 className={`font-black text-sm md:text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    Google AdSense एवं वैश्विक मोनेटाइजेशन सेटिंग्स
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    जब कोई स्थानीय विज्ञापन न हो, तो Google AdSense स्वतः बैकफिल होगा
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveMonetization} className="space-y-4">
+                <div className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-800 bg-slate-950/40">
+                  <div>
+                    <div className="text-xs font-bold text-white">Google AdSense नेटवर्क सक्षम करें</div>
+                    <div className="text-[10px] text-slate-400">रिक्त स्लॉट्स में Google Ads प्रदर्शित होंगे</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={monetizationSettings.adsenseEnabled}
+                      onChange={e => setMonetizationSettings({ ...monetizationSettings, adsenseEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      AdSense Publisher ID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="ca-pub-XXXXXXXXXXXXXXXX"
+                      value={monetizationSettings.adsensePublisherId || ''}
+                      onChange={e => setMonetizationSettings({ ...monetizationSettings, adsensePublisherId: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl border text-xs font-mono outline-none transition ${
+                        isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      Header Ad Slot ID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="उदा: 1234567890"
+                      value={monetizationSettings.headerSlotId || ''}
+                      onChange={e => setMonetizationSettings({ ...monetizationSettings, headerSlotId: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl border text-xs font-mono outline-none transition ${
+                        isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      Feed Ad Slot ID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="उदा: 2345678901"
+                      value={monetizationSettings.inFeedSlotId || ''}
+                      onChange={e => setMonetizationSettings({ ...monetizationSettings, inFeedSlotId: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl border text-xs font-mono outline-none transition ${
+                        isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      Article Ad Slot ID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="उदा: 3456789012"
+                      value={monetizationSettings.articleSlotId || ''}
+                      onChange={e => setMonetizationSettings({ ...monetizationSettings, articleSlotId: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl border text-xs font-mono outline-none transition ${
+                        isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      WhatsApp बुलेटिन प्रायोजक लाइन (Daily Bulletin Sponsor Footer)
+                    </label>
+                    <input
+                      type="text"
+                      value={monetizationSettings.whatsappSponsorLine || ''}
+                      onChange={e => setMonetizationSettings({ ...monetizationSettings, whatsappSponsorLine: e.target.value })}
+                      placeholder="डिजिटल विज्ञापन व कवरेज हेतु संपर्क करें: 7000139694"
+                      className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none transition ${
+                        isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      मासिक विज्ञापन आय लक्ष्य (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={monetizationSettings.monthlyRevenueGoal || 50000}
+                      onChange={e => setMonetizationSettings({ ...monetizationSettings, monthlyRevenueGoal: parseInt(e.target.value) || 0 })}
+                      className={`w-full px-3 py-2 rounded-xl border text-xs font-mono outline-none transition ${
+                        isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSavingMonetization}
+                    className="py-2.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition flex items-center gap-2"
+                  >
+                    <Save size={15} />
+                    {isSavingMonetization ? 'सहेजा जा रहा है...' : 'मोनेटाइजेशन सेटिंग्स सुरक्षित करें'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+          </div>
+        )}
+
         {/* FLOATING BACK TO TOP BUTTON FOR MOBILE & DESKTOP */}
         {showBackToTop && (
           <button
@@ -4036,12 +4926,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           className="flex-1 flex flex-col items-center justify-center py-1 transition relative group"
         >
           <MoreHorizontal size={18} className={
-            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'mandi'
+            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'mandi' || activeTab === 'ads'
               ? 'text-amber-400 font-bold'
               : 'text-slate-400'
           } />
           <span className={`text-[10px] font-bold mt-0.5 transition ${
-            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'mandi'
+            showMobileMoreDrawer || activeTab === 'reporters' || activeTab === 'mandi' || activeTab === 'ads'
               ? 'text-amber-400 font-black'
               : 'text-slate-400'
           }`}>
@@ -4122,6 +5012,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <div>
                   <div className="font-bold text-[11px] leading-tight">ब्यूरो नेटवर्क</div>
                   <div className="text-[9px] text-slate-400 mt-0.5">88 जिले (CG-MP)</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('ads');
+                  setShowMobileMoreDrawer(false);
+                }}
+                className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
+                  activeTab === 'ads'
+                    ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                    : isDark ? 'border-slate-800 bg-slate-800/60 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-800'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                  <BadgeDollarSign size={16} />
+                </div>
+                <div>
+                  <div className="font-bold text-[11px] leading-tight">विज्ञापन व कमाई</div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">({ads.length} कैंपेन)</div>
                 </div>
               </button>
 

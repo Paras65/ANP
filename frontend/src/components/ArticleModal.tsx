@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, Volume2, VolumeX, Eye, Calendar, UserCheck, MapPin, Heart, Bookmark } from 'lucide-react';
-import type { Article } from '../types';
+import type { Article, Advertisement } from '../types';
 import { WhatsAppIcon } from './SocialIcons';
 import { getSmartCoverImage } from '../utils/categoryTheme';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+import { AdBanner } from './AdBanner';
 
 interface ArticleModalProps {
   article: Article;
@@ -12,6 +13,7 @@ interface ArticleModalProps {
   isDark: boolean;
   isBookmarked?: boolean;
   onToggleBookmark?: (article: Article) => void;
+  ad?: Advertisement | null;
 }
 
 export const ArticleModal: React.FC<ArticleModalProps> = ({
@@ -20,7 +22,8 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   onShareWhatsApp,
   isDark,
   isBookmarked = false,
-  onToggleBookmark
+  onToggleBookmark,
+  ad
 }) => {
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'xl'>('normal');
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -312,6 +315,16 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           } ${getFontSizeClass()}`}>
             {article.content || article.excerpt}
           </div>
+
+          {/* Article Bottom Sponsored Ad Placement */}
+          <AdBanner 
+            ad={ad} 
+            placement="article_bottom" 
+            isDark={isDark} 
+            onContactWhatsApp={() => {
+              window.open(`https://api.whatsapp.com/send?phone=917000139694&text=${encodeURIComponent(`नमस्ते Ambition News, मुझे अपने प्रतिष्ठान का विज्ञापन खबर के नीचे प्रकाशित करवाना है। (संदर्भ: ${article.title})`)}`, '_blank');
+            }}
+          />
 
         </div>
 
