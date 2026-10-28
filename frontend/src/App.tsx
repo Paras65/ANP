@@ -26,6 +26,7 @@ import { StoriesTray } from './components/StoriesTray';
 import { StoryViewerModal } from './components/StoryViewerModal';
 import { ReelsViewerModal } from './components/ReelsViewerModal';
 import { DistrictPickerModal } from './components/DistrictPickerModal';
+import { ReporterModal } from './components/ReporterModal';
 import { BottomNav } from './components/BottomNav';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import type { TabType } from './components/BottomNav';
@@ -74,6 +75,7 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [showDistrictModal, setShowDistrictModal] = useState(false);
+  const [showReporterModal, setShowReporterModal] = useState(false);
 
   // Voice Search Hook for Public Portal
   const {
@@ -293,6 +295,18 @@ export const App: React.FC = () => {
     try {
       await api.delete(`/reels/${id}`);
     } catch {}
+  };
+
+  // Citizen Journalist Scoop / News Submission
+  const handleScoopSubmit = async (scoopData: Partial<Article>) => {
+    try {
+      const res = await api.post('/articles/scoop', scoopData);
+      showToast(res.data?.message || 'आपकी खबर सफलतापूर्वक समीक्षा के लिए भेज दी गई है!');
+      setShowReporterModal(false);
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || 'खबर भेजने में विफल, कृपया पुनः प्रयास करें';
+      showToast(errMsg);
+    }
   };
 
   // Toggle Dark / White (Light) Mode
@@ -946,6 +960,7 @@ export const App: React.FC = () => {
           setActiveTab={setActiveTab}
           onToggleSearch={() => setIsSearching(prev => !prev)}
           onOpenDistrictPicker={openDistrictModal}
+          onOpenReporterModal={() => setShowReporterModal(true)}
           whatsappLink={whatsappLink}
         />
 
@@ -1563,6 +1578,7 @@ export const App: React.FC = () => {
         <Footer 
           isDark={isDark} 
           onOpenAdminPortal={handleOpenAdmin}
+          onOpenReporterModal={() => setShowReporterModal(true)}
           whatsappLink={whatsappLink}
         />
 
@@ -1632,6 +1648,17 @@ export const App: React.FC = () => {
               setCurrentDistrict(dist);
               closeDistrictModal();
             }}
+            isDark={isDark}
+          />
+        )}
+
+        {/* 11. CITIZEN JOURNALIST / FIELD REPORTER SCOOP SUBMISSION MODAL */}
+        {showReporterModal && (
+          <ReporterModal 
+            districts={districts}
+            selectedState={selectedState}
+            onSubmit={handleScoopSubmit}
+            onClose={() => setShowReporterModal(false)}
             isDark={isDark}
           />
         )}

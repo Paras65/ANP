@@ -6,12 +6,14 @@ import { SOCIAL_LINKS } from '../data/mockData';
 interface FooterProps {
   isDark: boolean;
   onOpenAdminPortal?: () => void;
+  onOpenReporterModal?: () => void;
   whatsappLink?: string;
 }
 
 export const Footer: React.FC<FooterProps> = ({ 
   isDark, 
   onOpenAdminPortal, 
+  onOpenReporterModal,
   whatsappLink 
 }) => {
   return (
@@ -166,6 +168,17 @@ export const Footer: React.FC<FooterProps> = ({
             <span>•</span>
             <span className="hover:text-white cursor-pointer">गोपनीयता नीति</span>
             <span>•</span>
+            {onOpenReporterModal && (
+              <>
+                <button
+                  onClick={onOpenReporterModal}
+                  className="text-red-400 hover:text-red-300 font-bold hover:underline transition flex items-center gap-1"
+                >
+                  📢 खबर भेजें (नागरिक रिपोर्टर)
+                </button>
+                <span>•</span>
+              </>
+            )}
             <button
               onClick={onOpenAdminPortal}
               className="text-amber-400 hover:text-amber-300 font-bold hover:underline transition"

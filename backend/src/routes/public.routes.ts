@@ -98,8 +98,13 @@ router.get('/breaking', async (req: Request, res: Response) => {
 // 3. GET /api/articles - List published articles filtered live from MongoDB Atlas
 router.get('/articles', async (req: Request, res: Response) => {
   try {
-    const { district, state, category, search } = req.query;
-    let filter: any = { deletedAt: null, status: 'PUBLISHED' };
+    const { district, state, category, search, includeReview } = req.query;
+    let filter: any = { deletedAt: null };
+    if (includeReview === 'true') {
+      filter.status = { $in: ['PUBLISHED', 'REVIEW'] };
+    } else {
+      filter.status = 'PUBLISHED';
+    }
 
     if (state) {
       const stateDoc = await State.findOne({ slug: String(state).toLowerCase() });
@@ -161,6 +166,7 @@ router.get('/articles', async (req: Request, res: Response) => {
       isBreaking: a.isBreaking,
       isFeatured: a.isFeatured,
       views: a.views || 1,
+      status: a.status || 'PUBLISHED',
       publishedAt: a.publishedAt ? new Date(a.publishedAt).toISOString() : new Date().toISOString()
     }));
 
@@ -268,6 +274,89 @@ router.post('/articles', requireAdminAuth, contentCreationLimiter, async (req: R
         isFeatured: createdArticle.isFeatured,
         views: createdArticle.views,
         publishedAt: createdArticle.publishedAt?.toISOString()
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4b. POST /api/articles/scoop - Citizen Journalism & Field Reporter Scoop Submission (Rate-Limited, Zero-Auth Required)
+router.post('/articles/scoop', contentCreationLimiter, async (req: Request, res: Response) => {
+  try {
+    const { title, excerpt, content, district, state, author, coverImage } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, message: 'समाचार का शीर्षक आवश्यक है' });
+    }
+    if (!excerpt && !content) {
+      return res.status(400).json({ success: false, message: 'समाचार का विवरण आवश्यक है' });
+    }
+
+    // Resolve State
+    let stateDoc = await State.findOne({ slug: (state || 'chhattisgarh').toLowerCase() });
+    if (!stateDoc) {
+      stateDoc = await State.findOne({ slug: 'chhattisgarh' });
+    }
+
+    // Resolve District
+    let districtDoc = null;
+    if (district) {
+      const cleanDistrict = String(district).replace(/[()]/g, '').trim();
+      const safeDistrict = escapeRegex(cleanDistrict);
+      districtDoc = await District.findOne({
+        $or: [
+          { nameHindi: new RegExp(safeDistrict, 'i') },
+          { name: new RegExp(safeDistrict, 'i') }
+        ]
+      });
+    }
+    if (!districtDoc && stateDoc) {
+      districtDoc = await District.findOne({ stateId: stateDoc._id });
+    }
+
+    // Resolve Category
+    const catDoc = await Category.findOne({ name: /कवर्धा स्पेशल|ताज़ा|नागरिक/i }) || await Category.findOne();
+
+    // Resolve or Create Reporter User
+    let authorUser = await User.findOne({ name: author }) || await User.findOne({ role: 'ADMIN' });
+    if (!authorUser) {
+      authorUser = await User.create({
+        phone: '9888888888',
+        name: author || 'नागरिक पत्रकार',
+        nameHindi: author || 'नागरिक पत्रकार',
+        role: 'REPORTER',
+        isActive: true
+      });
+    }
+
+    const slug = `scoop-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+
+    const createdArticle = await Article.create({
+      title: title.trim(),
+      slug,
+      excerpt: (excerpt || content || '').trim().slice(0, 500),
+      content: content || excerpt,
+      coverImage: coverImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1000&auto=format&fit=crop&q=80',
+      stateId: stateDoc?._id,
+      districtId: districtDoc?._id,
+      categoryId: catDoc?._id,
+      authorId: authorUser._id,
+      tags: [districtDoc?.nameHindi || 'कवर्धा', 'नागरिक पत्रकारिता', 'ग्राउंड रिपोर्ट'],
+      status: 'REVIEW',
+      isBreaking: false,
+      isFeatured: false,
+      views: 0,
+      publishedAt: new Date()
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'आपकी खबर सफलतापूर्वक समीक्षा के लिए भेज दी गई है! संपादक द्वारा स्वीकृति मिलते ही यह पोर्टल पर प्रकाशित हो जाएगी।',
+      data: {
+        id: createdArticle._id.toString(),
+        title: createdArticle.title,
+        status: createdArticle.status
       }
     });
   } catch (err: any) {

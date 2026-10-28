@@ -20,6 +20,7 @@ interface HeaderProps {
   setActiveTab?: (tab: TabType) => void;
   onToggleSearch?: () => void;
   onOpenDistrictPicker?: () => void;
+  onOpenReporterModal?: () => void;
   whatsappLink?: string;
 }
 
@@ -51,6 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   onToggleSearch,
   onOpenDistrictPicker,
+  onOpenReporterModal,
   whatsappLink
 }) => {
   const handleLogoClick = () => {
@@ -259,6 +261,18 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">मध्यप्रदेश (55)</span>
             </button>
           </div>
+
+          {/* Citizen Reporter / Send News Button */}
+          {onOpenReporterModal && (
+            <button 
+              onClick={onOpenReporterModal}
+              className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-bold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl flex items-center gap-1 transition active:scale-95 shadow-md shadow-red-950/40 shrink-0"
+              title="नागरिक व फ़ील्ड रिपोर्टर • तुरंत खबर भेजें"
+            >
+              <span>📢</span>
+              <span className="hidden sm:inline text-xs">खबर भेजें</span>
+            </button>
+          )}
 
           {/* Admin Desk Button */}
           <button 

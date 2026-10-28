@@ -294,7 +294,7 @@ export const ReporterModal: React.FC<ReporterModalProps> = ({
               className="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-white font-bold flex items-center justify-center gap-1.5 shadow-lg transition active:scale-95 disabled:opacity-50"
             >
               <Send size={13} />
-              <span>{isSubmitting ? 'प्रकाशित कर रहे हैं...' : 'लाइव सबमिट करें'}</span>
+              <span>{isSubmitting ? 'भेज रहे हैं...' : 'संपादक को खबर भेजें'}</span>
             </button>
           </div>
 

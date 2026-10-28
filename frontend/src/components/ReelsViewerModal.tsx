@@ -383,6 +383,35 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
         <div className="absolute inset-0 bg-black overflow-hidden pointer-events-none select-none z-0">
           {/* Video, YouTube Shorts, Instagram Embed, or Image Background */}
           {(() => {
+            // 1. Direct HTML5 MP4 / WebM Video takes top priority (Zero-latency, hardware accelerated, native sound)
+            if (currentReel.videoUrl) {
+              return (
+                <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
+                  {currentReel.imageUrl && (
+                    <img 
+                      src={currentReel.imageUrl} 
+                      alt="" 
+                      className="absolute inset-0 w-full h-full object-cover opacity-80" 
+                    />
+                  )}
+                  <video
+                    ref={videoRef}
+                    key={currentReel.videoUrl}
+                    src={currentReel.videoUrl}
+                    autoPlay
+                    loop={!isAutoScroll}
+                    onEnded={() => {
+                      if (isAutoScroll) handleNext();
+                    }}
+                    muted={isMuted}
+                    playsInline
+                    className="w-full h-full object-cover pointer-events-none relative z-10"
+                  />
+                </div>
+              );
+            }
+
+            // 2. YouTube Shorts (Controlled via nocookie embed API with multi-stage auto-unmute)
             const ytId = currentReel.youtubeId || (currentReel.embedUrl?.includes('/embed/') ? currentReel.embedUrl.split('/embed/')[1]?.split('?')[0] : null);
             if (ytId) {
               return (
@@ -403,11 +432,15 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                     onLoad={() => {
                       iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), '*');
                       sendYouTubeCommand('addEventListener', ['onStateChange']);
+                      // Multi-stage unmute retry to ensure sound plays even if player takes 400ms to mount
                       if (!isMuted) {
-                        setTimeout(() => {
-                          sendYouTubeCommand('unMute');
-                          sendYouTubeCommand('setVolume', [100]);
-                        }, 150);
+                        [150, 450, 950].forEach((delay) => {
+                          setTimeout(() => {
+                            sendYouTubeCommand('unMute');
+                            sendYouTubeCommand('setVolume', [100]);
+                            sendYouTubeCommand('playVideo');
+                          }, delay);
+                        });
                       }
                     }}
                     className="w-[170%] h-[120%] -ml-[35%] -mt-[10%] object-cover border-0 pointer-events-none relative z-10"
@@ -417,6 +450,8 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                 </div>
               );
             }
+
+            // 3. Instagram Embed Fallback with poster backup
             if (currentReel.postUrl && currentReel.postUrl.includes('instagram.com/reel/')) {
               return (
                 <div className="w-full h-full flex items-center justify-center bg-black relative">
@@ -436,22 +471,6 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                     allow="autoplay; encrypted-media"
                   ></iframe>
                 </div>
-              );
-            }
-            if (currentReel.videoUrl) {
-              return (
-                <video
-                  ref={videoRef}
-                  src={currentReel.videoUrl}
-                  autoPlay
-                  loop={!isAutoScroll}
-                  onEnded={() => {
-                    if (isAutoScroll) handleNext();
-                  }}
-                  muted={isMuted}
-                  playsInline
-                  className="w-full h-full object-cover pointer-events-none"
-                />
               );
             }
             return (
