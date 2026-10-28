@@ -7,6 +7,7 @@ interface FooterProps {
   isDark: boolean;
   onOpenAdminPortal?: () => void;
   onOpenReporterModal?: () => void;
+  onOpenCompliance?: (tab: 'editorial' | 'factcheck' | 'grievance' | 'privacy') => void;
   whatsappLink?: string;
 }
 
@@ -14,6 +15,7 @@ export const Footer: React.FC<FooterProps> = ({
   isDark, 
   onOpenAdminPortal, 
   onOpenReporterModal,
+  onOpenCompliance,
   whatsappLink 
 }) => {
   return (
@@ -175,15 +177,22 @@ export const Footer: React.FC<FooterProps> = ({
 
           {/* Col 4: IT Rules 2021 Redressal */}
           <div className="space-y-2">
-            <h4 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}>
-              <ShieldCheck size={14} className="text-emerald-500" />
+            <button
+              type="button"
+              onClick={() => onOpenCompliance?.('grievance')}
+              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 hover:underline text-left ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}
+            >
+              <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
               <span>IT Rules 2021 अनुपालन</span>
-            </h4>
-            <div className={`p-3 rounded-xl border text-[11px] space-y-1.5 ${
-              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-300 shadow-sm'
-            }`}>
+            </button>
+            <div 
+              onClick={() => onOpenCompliance?.('grievance')}
+              className={`p-3 rounded-xl border text-[11px] space-y-1.5 cursor-pointer transition ${
+                isDark ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-300 shadow-sm hover:border-slate-400'
+              }`}
+            >
               <div className={isDark ? 'text-slate-300 font-semibold' : 'text-slate-700 font-semibold'}>
                 शिकायत निवारण अधिकारी (Grievance Officer):
               </div>
@@ -194,7 +203,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <Mail size={11} /> grievance@ambition.news
               </div>
               <div className={`text-[10px] pt-1 border-t ${isDark ? 'text-slate-500 border-slate-800' : 'text-slate-400 border-slate-200'}`}>
-                24 घंटे में acknowledgment और 15 दिन में समाधान अनिवार्य।
+                24 घंटे में acknowledgment और 15 दिन में समाधान अनिवार्य। विवरण देखें ↗
               </div>
             </div>
           </div>
@@ -207,15 +216,34 @@ export const Footer: React.FC<FooterProps> = ({
             © 2026 Ambition News Portal. सर्वाधिकार सुरक्षित • कवर्धा (कबीरधाम), छत्तीसगढ़।
           </div>
           <div className="flex flex-wrap justify-center items-center gap-3 text-slate-400">
-            <span className="hover:text-white cursor-pointer">संपादकीय नीति</span>
+            <button
+              type="button"
+              onClick={() => onOpenCompliance?.('editorial')}
+              className="hover:text-white hover:underline transition"
+            >
+              संपादकीय नीति
+            </button>
             <span>•</span>
-            <span className="hover:text-white cursor-pointer">तथ्य जांच</span>
+            <button
+              type="button"
+              onClick={() => onOpenCompliance?.('factcheck')}
+              className="hover:text-white hover:underline transition"
+            >
+              तथ्य जांच
+            </button>
             <span>•</span>
-            <span className="hover:text-white cursor-pointer">गोपनीयता नीति</span>
+            <button
+              type="button"
+              onClick={() => onOpenCompliance?.('privacy')}
+              className="hover:text-white hover:underline transition"
+            >
+              गोपनीयता नीति
+            </button>
             <span>•</span>
             {onOpenReporterModal && (
               <>
                 <button
+                  type="button"
                   onClick={onOpenReporterModal}
                   className="text-red-400 hover:text-red-300 font-bold hover:underline transition flex items-center gap-1"
                 >
@@ -225,6 +253,7 @@ export const Footer: React.FC<FooterProps> = ({
               </>
             )}
             <button
+              type="button"
               onClick={onOpenAdminPortal}
               className="text-amber-400 hover:text-amber-300 font-bold hover:underline transition"
             >

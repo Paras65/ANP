@@ -36,6 +36,7 @@ import { StoryViewerModal } from './components/StoryViewerModal';
 import { ReelsViewerModal } from './components/ReelsViewerModal';
 import { DistrictPickerModal } from './components/DistrictPickerModal';
 import { ReporterModal } from './components/ReporterModal';
+import { ComplianceModal, type ComplianceTab } from './components/ComplianceModal';
 import { BottomNav } from './components/BottomNav';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import type { TabType } from './components/BottomNav';
@@ -104,6 +105,7 @@ export const App: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showDistrictModal, setShowDistrictModal] = useState(false);
   const [showReporterModal, setShowReporterModal] = useState(false);
+  const [complianceModalTab, setComplianceModalTab] = useState<ComplianceTab | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(7);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [hasMoreBackend, setHasMoreBackend] = useState<boolean>(true);
@@ -2433,6 +2435,7 @@ export const App: React.FC = () => {
           isDark={isDark} 
           onOpenAdminPortal={handleOpenAdmin}
           onOpenReporterModal={() => setShowReporterModal(true)}
+          onOpenCompliance={setComplianceModalTab}
           whatsappLink={whatsappLink}
         />
 
@@ -2528,6 +2531,15 @@ export const App: React.FC = () => {
             onSubmit={handleScoopSubmit}
             onClose={() => setShowReporterModal(false)}
             isDark={isDark}
+          />
+        )}
+
+        {/* 12. DIGITAL MEDIA COMPLIANCE & LEGAL DISCLOSURES MODAL */}
+        {complianceModalTab && (
+          <ComplianceModal 
+            initialTab={complianceModalTab}
+            isDark={isDark}
+            onClose={() => setComplianceModalTab(null)}
           />
         )}
 

@@ -169,6 +169,72 @@ router.get('/breaking', async (req: Request, res: Response) => {
   }
 });
 
+// 2b. GET /api/rss & /api/rss.xml - RSS 2.0 News Syndication Feed (Google News & Media Standards)
+router.get(['/rss', '/rss.xml', '/feed.xml'], async (_req: Request, res: Response) => {
+  try {
+    res.set({
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=600, stale-while-revalidate=1800'
+    });
+
+    const articles = await Article.find({ status: 'PUBLISHED', deletedAt: null })
+      .sort({ publishedAt: -1, createdAt: -1 })
+      .limit(35)
+      .populate('districtId')
+      .populate('categoryId')
+      .lean();
+
+    const baseUrl = process.env.FRONTEND_URL || 'https://ambition-news-portal.vercel.app';
+    const buildDate = new Date().toUTCString();
+
+    let itemsXml = '';
+    for (const art of articles) {
+      const artId = (art as any)._id?.toString() || '';
+      const title = (art as any).titleHindi || (art as any).title || 'समाचार';
+      const summary = (art as any).summaryHindi || (art as any).summary || (art as any).excerpt || '';
+      const pubDate = (art as any).publishedAt ? new Date((art as any).publishedAt).toUTCString() : buildDate;
+      const district = (art as any).districtId?.nameHindi || (art as any).districtId?.name || 'कवर्धा';
+      const category = (art as any).categoryId?.nameHindi || (art as any).categoryId?.name || 'ताज़ा खबर';
+      const imageUrl = (art as any).coverImage || `${baseUrl}/logo-512.png`;
+      const link = `${baseUrl}/?article=${artId}`;
+
+      itemsXml += `
+    <item>
+      <title><![CDATA[${title}]]></title>
+      <link>${link}</link>
+      <guid isPermaLink="false">${artId}</guid>
+      <pubDate>${pubDate}</pubDate>
+      <category><![CDATA[${category}]]></category>
+      <category><![CDATA[${district}]]></category>
+      <description><![CDATA[${summary}]]></description>
+      ${imageUrl ? `<enclosure url="${imageUrl.replace(/&/g, '&amp;')}" type="image/jpeg" length="0" />` : ''}
+    </item>`;
+    }
+
+    const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश न्यूज़</title>
+    <link>${baseUrl}</link>
+    <description>कवर्धा (कबीरधाम), छत्तीसगढ़ के 33 और मध्यप्रदेश के 55 जिलों की ताज़ा ब्रेकिंग खबरें, वीडियो बुलेटिन और लाइव मंडी भाव। निष्पक्ष एवं निर्भीक पत्रकारिता।</description>
+    <language>hi</language>
+    <lastBuildDate>${buildDate}</lastBuildDate>
+    <atom:link href="${baseUrl}/api/rss" rel="self" type="application/rss+xml" />
+    <image>
+      <url>${baseUrl}/logo-512.png</url>
+      <title>एम्बिशन न्यूज़</title>
+      <link>${baseUrl}</link>
+    </image>${itemsXml}
+  </channel>
+</rss>`;
+
+    res.send(rssXml.trim());
+  } catch (err: any) {
+    logger.error('Failed to generate RSS feed:', err);
+    res.status(500).send('<?xml version="1.0"?><error>Failed to generate RSS feed</error>');
+  }
+});
+
 // 3. GET /api/articles - List published articles filtered live from MongoDB Atlas (with In-Memory Master Cache & Edge Acceleration)
 router.get('/articles', async (req: Request, res: Response) => {
   try {
