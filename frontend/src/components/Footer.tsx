@@ -7,7 +7,7 @@ interface FooterProps {
   isDark: boolean;
   onOpenAdminPortal?: () => void;
   onOpenReporterModal?: () => void;
-  onOpenCompliance?: (tab: 'editorial' | 'factcheck' | 'grievance' | 'privacy') => void;
+  onOpenCompliance?: (tab: 'editorial' | 'factcheck' | 'grievance' | 'privacy' | 'terms' | 'disclaimer') => void;
   whatsappLink?: string;
 }
 
@@ -218,6 +218,30 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="flex flex-wrap justify-center items-center gap-3 text-slate-400">
             <button
               type="button"
+              onClick={() => onOpenCompliance?.('privacy')}
+              className="hover:text-white hover:underline transition"
+            >
+              गोपनीयता नीति
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => onOpenCompliance?.('terms')}
+              className="hover:text-white hover:underline transition"
+            >
+              उपयोग की शर्तें
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => onOpenCompliance?.('disclaimer')}
+              className="hover:text-white hover:underline transition"
+            >
+              अस्वीकरण
+            </button>
+            <span>•</span>
+            <button
+              type="button"
               onClick={() => onOpenCompliance?.('editorial')}
               className="hover:text-white hover:underline transition"
             >
@@ -230,14 +254,6 @@ export const Footer: React.FC<FooterProps> = ({
               className="hover:text-white hover:underline transition"
             >
               तथ्य जांच
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => onOpenCompliance?.('privacy')}
-              className="hover:text-white hover:underline transition"
-            >
-              गोपनीयता नीति
             </button>
             <span>•</span>
             {onOpenReporterModal && (
