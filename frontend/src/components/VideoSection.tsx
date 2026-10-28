@@ -38,9 +38,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 }) => {
   const [activeVideo, setActiveVideo] = useState<VideoBulletin | null>(null);
 
-  // Filters & Expansion
+  // Filters & Progressive Load More
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [visibleVideoCount, setVisibleVideoCount] = useState<number>(8);
 
   // Autoplay & Playlist Continuous Playback State
   const [isAutoPlay, setIsAutoPlay] = useState<boolean>(true);
@@ -84,6 +84,11 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
     }
   }, [activeVideo]);
 
+  // Reset visible video count when category changes
+  useEffect(() => {
+    setVisibleVideoCount(8);
+  }, [selectedCategory]);
+
   // Filter bulletins based on selected category tag
   const filteredBulletins = useMemo(() => {
     if (selectedCategory === 'all') return bulletins;
@@ -98,7 +103,8 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   const displayList = filteredBulletins;
   const featuredVideo = displayList[0] || null;
   const remainingBulletins = displayList.slice(1);
-  const visibleRemaining = isExpanded ? remainingBulletins : remainingBulletins.slice(0, 8);
+  const visibleRemaining = remainingBulletins.slice(0, visibleVideoCount);
+  const hasMoreVideos = visibleVideoCount < remainingBulletins.length;
 
   // Find index of currently playing video in displayList
   const currentIndex = activeVideo ? displayList.findIndex(v => v.youtubeId === activeVideo.youtubeId) : -1;
@@ -259,7 +265,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             key={cat.id}
             onClick={() => {
               setSelectedCategory(cat.id);
-              setIsExpanded(false);
+              setVisibleVideoCount(8);
             }}
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap active:scale-95 cursor-pointer flex items-center gap-1.5 ${
               selectedCategory === cat.id
@@ -532,19 +538,24 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
         </div>
       )}
 
-      {/* 5. EXPAND / COLLAPSE CONTROLS */}
+      {/* 5. PROGRESSIVE LOAD MORE / COLLAPSE CONTROLS */}
       {remainingBulletins.length > 8 && (
-        <div className="mt-5 pt-4 border-t border-red-950/30 flex items-center justify-center">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-gradient-to-r from-red-950/60 to-slate-900/80 hover:from-red-900/80 hover:to-slate-800 border border-red-600/40 text-red-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-lg cursor-pointer"
-          >
-            {isExpanded ? (
-              <span>▲ कम वीडियो बुलेटिन दिखाएं (कम करें)</span>
-            ) : (
-              <span>▼ और {remainingBulletins.length - 8} वीडियो बुलेटिन देखें (कुल {displayList.length} वीडियो)</span>
-            )}
-          </button>
+        <div className="mt-5 pt-4 border-t border-red-950/30 flex flex-wrap items-center justify-center gap-3">
+          {hasMoreVideos ? (
+            <button
+              onClick={() => setVisibleVideoCount(prev => prev + 8)}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-gradient-to-r from-red-950/60 to-slate-900/80 hover:from-red-900/80 hover:to-slate-800 border border-red-600/40 text-red-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-lg cursor-pointer"
+            >
+              <span>▼ और वीडियो बुलेटिन लोड करें (+{Math.min(8, remainingBulletins.length - visibleVideoCount)} और देखें • {remainingBulletins.length - visibleVideoCount} शेष)</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setVisibleVideoCount(8)}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+            >
+              <span>▲ कम वीडियो दिखाएं (आरंभिक 8 वीडियो पर जाएं)</span>
+            </button>
+          )}
         </div>
       )}
 

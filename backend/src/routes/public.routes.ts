@@ -440,13 +440,39 @@ router.put('/articles/:id', requireAdminAuth, contentCreationLimiter, async (req
   }
 });
 
-// 5. GET /api/videos - List YouTube Bulletins live from MongoDB Atlas
+// 5. GET /api/videos - List YouTube Bulletins live from MongoDB Atlas with Server-side Pagination
 router.get('/videos', async (req: Request, res: Response) => {
   try {
-    const videos = await Video.find({ isShort: false }).sort({ publishedAt: -1, createdAt: -1 }).lean();
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const isAll = req.query.all === 'true';
+    const limit = isAll 
+      ? 200 
+      : Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 12));
+    const skip = (page - 1) * limit;
+
+    const filter = { isShort: false };
+    const [totalVideos, videos] = await Promise.all([
+      Video.countDocuments(filter),
+      Video.find(filter)
+        .sort({ publishedAt: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+    ]);
+
+    const totalPages = Math.ceil(totalVideos / limit) || 1;
+
     res.json({
       success: true,
       count: videos.length,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalVideos,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      },
       data: videos.map((v: any) => ({
         id: v._id.toString(),
         title: v.title,
@@ -739,13 +765,38 @@ router.delete('/videos/:id', requireAdminAuth, contentCreationLimiter, async (re
   }
 });
 
-// 7. GET /api/reels - List Reels / Shorts live from MongoDB Atlas
+// 7. GET /api/reels - List Reels / Shorts live from MongoDB Atlas with Server-side Pagination
 router.get('/reels', async (req: Request, res: Response) => {
   try {
-    const reels = await Reel.find().sort({ createdAt: -1 }).lean();
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const isAll = req.query.all === 'true';
+    const limit = isAll 
+      ? 200 
+      : Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
+    const skip = (page - 1) * limit;
+
+    const [totalReels, reels] = await Promise.all([
+      Reel.countDocuments({}),
+      Reel.find({})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+    ]);
+
+    const totalPages = Math.ceil(totalReels / limit) || 1;
+
     res.json({
       success: true,
       count: reels.length,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalReels,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      },
       data: reels.map((r: any) => ({
         id: r._id.toString(),
         caption: r.caption,

@@ -153,6 +153,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Reporters Management States (Tab 4)
   const [reporterSearch, setReporterSearch] = useState('');
   const [reporterDistrictFilter, setReporterDistrictFilter] = useState('सभी');
+  const [adminReporterPage, setAdminReporterPage] = useState<number>(1);
+  const REPORTERS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setAdminReporterPage(1);
+  }, [reporterSearch, reporterDistrictFilter]);
   const [showReporterModal, setShowReporterModal] = useState(false);
   const [editingReporter, setEditingReporter] = useState<Reporter | null>(null);
   const [idCardReporter, setIdCardReporter] = useState<Reporter | null>(null);
@@ -558,6 +564,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [reelDistrict, setReelDistrict] = useState('कवर्धा');
   const [reelAudio, setReelAudio] = useState('Ambition News Original');
   const [parsedReel, setParsedReel] = useState<ReturnType<typeof parseReelMedia>>(null);
+
+  // Reels Pagination State
+  const [adminReelsPage, setAdminReelsPage] = useState<number>(1);
+  const REELS_PER_PAGE = 8;
 
   // Edit Reel States
   const [editingReel, setEditingReel] = useState<InstagramPost | null>(null);
@@ -2269,6 +2279,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             return matchesSearch && matchesDistrict;
           });
 
+          const totalReporterPages = Math.ceil(filteredReporters.length / REPORTERS_PER_PAGE) || 1;
+          const currentRepPage = Math.min(adminReporterPage, totalReporterPages);
+          const paginatedReporters = filteredReporters.slice(
+            (currentRepPage - 1) * REPORTERS_PER_PAGE,
+            currentRepPage * REPORTERS_PER_PAGE
+          );
+
           const activeCount = reporters.filter(r => r.isActive).length;
           const totalPublishedNews = reporters.reduce((sum, r) => sum + (r.articlesCount || 0), 0);
           const distinctDistricts = new Set(reporters.map(r => r.district).filter(Boolean)).size;
@@ -2403,7 +2420,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     कोई संवाददाता नहीं मिला। कृपया अलग खोज शब्द दर्ज करें या नया जोड़ें।
                   </div>
                 ) : (
-                  filteredReporters.map((rep) => (
+                  paginatedReporters.map((rep) => (
                     <div 
                       key={rep._id} 
                       className={`p-4 rounded-2xl border transition-colors flex flex-col justify-between space-y-3 ${
@@ -2547,6 +2564,69 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   ))
                 )}
               </div>
+
+              {/* REPORTER PAGINATION TOOLBAR */}
+              {totalReporterPages > 1 && (
+                <div className={`mt-4 pt-3.5 border-t flex flex-wrap items-center justify-between gap-3 text-xs ${
+                  isDark ? 'border-slate-800' : 'border-slate-200'
+                }`}>
+                  <div className={isDark ? 'text-slate-400' : 'text-slate-600'}>
+                    दिख रहे हैं <span className="font-bold text-blue-500 font-mono">{(currentRepPage - 1) * REPORTERS_PER_PAGE + 1} - {Math.min(currentRepPage * REPORTERS_PER_PAGE, filteredReporters.length)}</span> (कुल <span className="font-bold font-mono">{filteredReporters.length}</span> संवाददाता)
+                  </div>
+
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button
+                      onClick={() => setAdminReporterPage(p => Math.max(1, p - 1))}
+                      disabled={currentRepPage === 1}
+                      className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                        isDark 
+                          ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' 
+                          : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
+                      }`}
+                    >
+                      <ChevronLeft size={14} />
+                      <span>पिछला</span>
+                    </button>
+
+                    {Array.from({ length: totalReporterPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalReporterPages || Math.abs(p - currentRepPage) <= 1)
+                      .map((p, idx, arr) => {
+                        const prev = arr[idx - 1];
+                        const showEllipsis = prev && p - prev > 1;
+                        return (
+                          <React.Fragment key={p}>
+                            {showEllipsis && <span className="px-1 text-slate-500">...</span>}
+                            <button
+                              onClick={() => setAdminReporterPage(p)}
+                              className={`w-8 h-8 rounded-xl font-bold text-xs transition font-mono ${
+                                currentRepPage === p
+                                  ? 'bg-blue-600 text-white shadow-md'
+                                  : isDark
+                                    ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                    : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 shadow-sm'
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          </React.Fragment>
+                        );
+                      })}
+
+                    <button
+                      onClick={() => setAdminReporterPage(p => Math.min(totalReporterPages, p + 1))}
+                      disabled={currentRepPage === totalReporterPages}
+                      className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                        isDark 
+                          ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' 
+                          : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
+                      }`}
+                    >
+                      <span>अगला</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Citizen Journalism / Scoop Inbox */}
               <div className={`mt-6 pt-5 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
@@ -3294,56 +3374,123 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 }`}>
                   लाइव रील्स सूची ({reels.length})
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {reels.map((reel) => (
-                    <div key={reel.id} className={`p-2.5 rounded-2xl border flex flex-col justify-between ${
-                      isDark ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200 shadow-sm'
-                    }`}>
-                      <div className="aspect-[9/14] rounded-xl overflow-hidden relative bg-slate-900 mb-2">
-                        <img src={reel.imageUrl} alt={reel.caption} className="w-full h-full object-cover" />
-                        <span className="absolute top-1 left-1 bg-black/80 text-[9px] px-1.5 py-0.5 rounded text-pink-400 font-bold">
-                          {reel.district}
-                        </span>
+                {(() => {
+                  const totalReelsPages = Math.ceil(reels.length / REELS_PER_PAGE) || 1;
+                  const currentReelPage = Math.min(adminReelsPage, totalReelsPages);
+                  const paginatedReels = reels.slice(
+                    (currentReelPage - 1) * REELS_PER_PAGE,
+                    currentReelPage * REELS_PER_PAGE
+                  );
+
+                  return (
+                    <>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {paginatedReels.map((reel) => (
+                          <div key={reel.id} className={`p-2.5 rounded-2xl border flex flex-col justify-between ${
+                            isDark ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200 shadow-sm'
+                          }`}>
+                            <div className="aspect-[9/14] rounded-xl overflow-hidden relative bg-slate-900 mb-2">
+                              <img src={reel.imageUrl} alt={reel.caption} className="w-full h-full object-cover" />
+                              <span className="absolute top-1 left-1 bg-black/80 text-[9px] px-1.5 py-0.5 rounded text-pink-400 font-bold">
+                                {reel.district}
+                              </span>
+                            </div>
+                            <p className={`text-[10px] font-medium line-clamp-2 leading-snug ${
+                              isDark ? 'text-white' : 'text-slate-900'
+                            }`}>{reel.caption}</p>
+                            <div className={`flex items-center justify-between pt-2 mt-1 border-t ${
+                              isDark ? 'border-white/10' : 'border-slate-200'
+                            }`}>
+                              <a 
+                                href={reel.postUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-[10px] text-pink-500 hover:underline flex items-center gap-0.5"
+                              >
+                                <span>लिंक</span>
+                                <ExternalLink size={10} />
+                              </a>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditReel(reel)}
+                                  className="text-amber-500 hover:text-amber-600 p-1 rounded hover:bg-amber-500/10 transition"
+                                  title="संपादित करें (Edit Reel)"
+                                >
+                                  <Edit3 size={13} />
+                                </button>
+                                {onDeleteReel && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onDeleteReel(reel.id)}
+                                    className="text-red-500 hover:text-red-600 p-1 rounded hover:bg-red-500/10 transition"
+                                    title="हटाएं"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <p className={`text-[10px] font-medium line-clamp-2 leading-snug ${
-                        isDark ? 'text-white' : 'text-slate-900'
-                      }`}>{reel.caption}</p>
-                      <div className={`flex items-center justify-between pt-2 mt-1 border-t ${
-                        isDark ? 'border-white/10' : 'border-slate-200'
-                      }`}>
-                        <a 
-                          href={reel.postUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-[10px] text-pink-500 hover:underline flex items-center gap-0.5"
-                        >
-                          <span>लिंक</span>
-                          <ExternalLink size={10} />
-                        </a>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleStartEditReel(reel)}
-                            className="text-amber-500 hover:text-amber-600 p-1 rounded hover:bg-amber-500/10 transition"
-                            title="संपादित करें (Edit Reel)"
-                          >
-                            <Edit3 size={13} />
-                          </button>
-                          {onDeleteReel && (
+
+                      {totalReelsPages > 1 && (
+                        <div className={`mt-3 pt-3 border-t flex flex-wrap items-center justify-between gap-3 text-xs ${
+                          isDark ? 'border-white/10' : 'border-slate-200'
+                        }`}>
+                          <div className={isDark ? 'text-slate-400' : 'text-slate-600'}>
+                            दिख रहे हैं <span className="font-bold text-pink-500 font-mono">{(currentReelPage - 1) * REELS_PER_PAGE + 1} - {Math.min(currentReelPage * REELS_PER_PAGE, reels.length)}</span> (कुल <span className="font-bold font-mono">{reels.length}</span> रील्स)
+                          </div>
+
+                          <div className="flex items-center gap-1.5 ml-auto">
                             <button
-                              type="button"
-                              onClick={() => onDeleteReel(reel.id)}
-                              className="text-red-500 hover:text-red-600 p-1 rounded hover:bg-red-500/10 transition"
-                              title="हटाएं"
+                              onClick={() => setAdminReelsPage(p => Math.max(1, p - 1))}
+                              disabled={currentReelPage === 1}
+                              className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                                isDark 
+                                  ? 'bg-slate-800 border-white/10 text-slate-200 hover:bg-slate-700' 
+                                  : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
+                              }`}
                             >
-                              <Trash2 size={13} />
+                              <ChevronLeft size={13} />
+                              <span>पिछला</span>
                             </button>
-                          )}
+
+                            {Array.from({ length: totalReelsPages }, (_, i) => i + 1).map((p) => (
+                              <button
+                                key={p}
+                                onClick={() => setAdminReelsPage(p)}
+                                className={`w-7 h-7 rounded-xl font-bold text-xs transition font-mono ${
+                                  currentReelPage === p
+                                    ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md'
+                                    : isDark
+                                      ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                      : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 shadow-sm'
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            ))}
+
+                            <button
+                              onClick={() => setAdminReelsPage(p => Math.min(totalReelsPages, p + 1))}
+                              disabled={currentReelPage === totalReelsPages}
+                              className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 border transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                                isDark 
+                                  ? 'bg-slate-800 border-white/10 text-slate-200 hover:bg-slate-700' 
+                                  : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
+                              }`}
+                            >
+                              <span>अगला</span>
+                              <ChevronRight size={13} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Edit Reel Modal Popup */}

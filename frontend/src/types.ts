@@ -93,7 +93,10 @@ export interface Reporter {
 export interface PaginationMeta {
   currentPage: number;
   totalPages: number;
-  totalArticles: number;
+  totalArticles?: number;
+  totalVideos?: number;
+  totalReels?: number;
+  totalItems?: number;
   limit: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
