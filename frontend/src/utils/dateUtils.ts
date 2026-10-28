@@ -80,3 +80,4 @@ export function formatHindiViews(views?: number): string {
   }
   return `${views} व्यूज`;
 }
+

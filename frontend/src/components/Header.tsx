@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Sun, Moon, MapPin, Smartphone, Monitor, Search } from 'lucide-react';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './SocialIcons';
 import { SOCIAL_LINKS } from '../data/mockData';
@@ -79,6 +79,16 @@ export const Header: React.FC<HeaderProps> = ({
     return { icon: '🌙', temp: '22°C', label: 'रात' };
   })();
 
+  // Smart sticky header scroll detector
+  const [isScrolled, setIsScrolled] = useState(false);
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleCategoryClick = (cat: string) => {
     setSelectedCategory(cat);
     if (setActiveTab && activeTab !== 'home') {
@@ -90,15 +100,23 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
   return (
-    <header className={`w-full max-w-full sticky top-0 z-40 border-b backdrop-blur-md will-change-transform transition-colors ${
-      isDark ? 'bg-[#080c14]/98 border-red-950/40 text-slate-100 shadow-xl shadow-black/50' : 'bg-white/98 border-red-100 text-slate-900 shadow-md'
+    <header className={`w-full max-w-full sticky top-0 z-40 border-b backdrop-blur-xl will-change-transform transition-all duration-300 ${
+      isScrolled 
+        ? isDark 
+          ? 'bg-[#080c14]/98 border-red-900/60 text-slate-100 shadow-2xl shadow-black/80 ring-1 ring-red-900/20' 
+          : 'bg-white/98 border-red-200 text-slate-900 shadow-xl shadow-slate-900/10'
+        : isDark 
+          ? 'bg-[#080c14]/95 border-red-950/40 text-slate-100 shadow-md shadow-black/40' 
+          : 'bg-white/95 border-red-100 text-slate-900 shadow-sm'
     }`}>
       
       {/* Signature Red News Accent Stripe */}
       <div className="h-[3px] w-full bg-gradient-to-r from-red-700 via-red-500 to-rose-600 shadow-sm" />
 
-      {/* 1. TOP UTILITY STRIP (COMPACT ON MOBILE) */}
-      <div className={`border-b text-[11px] py-1 px-3 sm:px-4 transition-colors ${
+      {/* 1. TOP UTILITY STRIP (Smoothly collapses on mobile scroll to save valuable reading area) */}
+      <div className={`border-b text-[11px] transition-all duration-300 overflow-hidden ${
+        isScrolled ? 'hidden sm:block py-0.5' : 'py-1'
+      } px-3 sm:px-4 ${
         isDark ? 'bg-[#04060c] border-white/5 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'
       }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
@@ -202,7 +220,9 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 2. MAIN NATIVE APP BAR */}
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4">
+      <div className={`max-w-7xl mx-auto px-2.5 sm:px-4 transition-all duration-300 flex items-center justify-between gap-2 sm:gap-4 ${
+        isScrolled ? 'py-1.5 sm:py-2' : 'py-2 sm:py-2.5'
+      }`}>
         
         {/* Brand Logo & Headquarters Tag */}
         <div 
@@ -215,7 +235,9 @@ export const Header: React.FC<HeaderProps> = ({
             <img 
               src="/logo.png" 
               alt="एम्बिशन न्यूज़ Logo" 
-              className="w-10 h-10 sm:w-14 sm:h-14 md:w-15 md:h-15 object-contain rounded-full filter drop-shadow-[0_4px_16px_rgba(220,38,38,0.55)] transition-transform duration-300 group-hover:scale-105" 
+              className={`object-contain rounded-full filter drop-shadow-[0_4px_16px_rgba(220,38,38,0.55)] transition-all duration-300 group-hover:scale-105 ${
+                isScrolled ? 'w-8 h-8 sm:w-11 sm:h-11' : 'w-10 h-10 sm:w-14 sm:h-14 md:w-15 md:h-15'
+              }`} 
             />
             <span 
               className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-[#080c14] shadow-sm animate-pulse" 
@@ -226,10 +248,16 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex flex-col justify-center">
             {/* Sleek Hindi Channel Title */}
             <div className="flex items-center gap-1 sm:gap-2">
-              <span className="font-black text-base sm:text-2xl tracking-tight leading-none text-red-500 drop-shadow-sm">
+              <span className={`font-black tracking-tight leading-none text-red-500 drop-shadow-sm transition-all duration-300 ${
+                isScrolled ? 'text-sm sm:text-xl' : 'text-base sm:text-2xl'
+              }`}>
                 एम्बिशन
               </span>
-              <span className={`font-black text-base sm:text-2xl tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'} drop-shadow-sm`}>
+              <span className={`font-black tracking-tight leading-none drop-shadow-sm transition-all duration-300 ${
+                isDark ? 'text-white' : 'text-slate-900'
+              } ${
+                isScrolled ? 'text-sm sm:text-xl' : 'text-base sm:text-2xl'
+              }`}>
                 न्यूज़
               </span>
               <span className="flex items-center gap-0.5 bg-red-600 text-white text-[8px] sm:text-[10px] font-black px-1 sm:px-1.5 py-0.5 rounded shadow-sm shadow-red-600/40 tracking-wider shrink-0">
