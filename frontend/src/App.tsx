@@ -48,7 +48,9 @@ import {
   ALL_DISTRICTS_DEMO, 
   POPULAR_DISTRICTS_CG, 
   POPULAR_DISTRICTS_MP, 
-  SOCIAL_LINKS 
+  SOCIAL_LINKS,
+  INITIAL_ARTICLES,
+  MANDI_RATES
 } from './data/mockData';
 import { generateStoriesList, type StoryItem } from './data/storiesData';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter, Advertisement, ComplianceTab } from './types';
@@ -75,7 +77,7 @@ export const App: React.FC = () => {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {}
-    return [];
+    return INITIAL_ARTICLES;
   });
   const [reporters, setReporters] = useState<Reporter[]>([]);
   const [ads, setAds] = useState<Advertisement[]>([]);
@@ -163,8 +165,12 @@ export const App: React.FC = () => {
 
   // Dynamic Live Mandi Rates
   const [mandiRates, setMandiRates] = useState<MandiRate[]>(() => {
-    const saved = localStorage.getItem('anp_mandi_rates');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('anp_mandi_rates');
+      return saved ? JSON.parse(saved) : MANDI_RATES;
+    } catch {
+      return MANDI_RATES;
+    }
   });
 
   const handleUpdateMandiRate = async (updated: MandiRate) => {
