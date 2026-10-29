@@ -33,6 +33,7 @@ import {
   PlusCircle,
   Lock,
   Unlock,
+  KeyRound,
   Search,
   LogOut,
   ShieldCheck,
@@ -185,6 +186,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  // 2FA Admin States
+  const [is2FARequiredAdmin, setIs2FARequiredAdmin] = useState(false);
+  const [adminTemp2FAToken, setAdminTemp2FAToken] = useState<string | null>(null);
+  const [admin2FACode, setAdmin2FACode] = useState('');
 
   // Articles Search, Filter & Pagination State (Tab 2)
   const [articleSearchQuery, setArticleSearchQuery] = useState('');
@@ -526,6 +531,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     try {
       const res = await api.post('/auth/verify-admin', { pin });
       if (res.data?.success) {
+        if (res.data?.require2FA) {
+          setIs2FARequiredAdmin(true);
+          setAdminTemp2FAToken(res.data.tempToken);
+          return;
+        }
+
         if (res.data?.token) {
           setAuthToken(res.data.token);
           if (rememberMe) {
@@ -547,6 +558,50 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   };
 
+  // Verify 2FA TOTP or Emergency Recovery Code for Admin
+  const handleVerify2FAAdmin = async () => {
+    const code = admin2FACode.trim();
+    if (!code) {
+      setPasswordError('कृपया 6-अंकों का TOTP या बैकअप कोड दर्ज करें');
+      return;
+    }
+    if (!adminTemp2FAToken) {
+      setIs2FARequiredAdmin(false);
+      setPasswordError('2FA सत्र समाप्त। कृपया पुनः पासवर्ड दर्ज करें।');
+      return;
+    }
+
+    setIsVerifying(true);
+    setPasswordError(null);
+
+    try {
+      const res = await api.post('/auth/verify-2fa', {
+        tempToken: adminTemp2FAToken,
+        code
+      });
+
+      if (res.data?.success && res.data?.token) {
+        setAuthToken(res.data.token);
+        if (rememberMe) {
+          localStorage.setItem('anp_admin_token', res.data.token);
+          localStorage.setItem('anp_admin_auth', 'true');
+        } else {
+          sessionStorage.setItem('anp_admin_token', res.data.token);
+          sessionStorage.setItem('anp_admin_auth', 'true');
+        }
+        setIsAuthenticated(true);
+        setIs2FARequiredAdmin(false);
+        setAdminTemp2FAToken(null);
+        setAdmin2FACode('');
+        setAdminPassword('');
+      }
+    } catch (err: any) {
+      setPasswordError(err?.response?.data?.message || 'अमान्य 2FA या बैकअप कोड');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const handleLogout = () => {
     setAuthToken(null);
     localStorage.removeItem('anp_admin_auth');
@@ -554,6 +609,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     localStorage.removeItem('anp_admin_token');
     sessionStorage.removeItem('anp_admin_token');
     setIsAuthenticated(false);
+    setIs2FARequiredAdmin(false);
+    setAdminTemp2FAToken(null);
+    setAdmin2FACode('');
     setAdminPassword('');
   };
 
@@ -1140,82 +1198,157 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
           </div>
 
-          {/* Secure Admin Password Input Form */}
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleVerifyPassword();
-            }}
-            className="space-y-4 text-left"
-          >
-            <div>
-              <label className={`text-xs font-bold block mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
-                एडमिन पासवर्ड (Admin Password / Master Passkey)
-              </label>
-              <div className="relative">
+          {/* Conditional: Step 1 (Password) vs Step 2 (2FA TOTP / Backup Code) */}
+          {is2FARequiredAdmin ? (
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleVerify2FAAdmin();
+              }}
+              className="space-y-4 text-left"
+            >
+              <div className="text-center pb-1">
+                <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 text-amber-500 mb-2 ring-1 ring-amber-500/30">
+                  <KeyRound size={26} />
+                </div>
+                <h3 className="font-bold text-sm text-amber-400">2-स्टेप सत्यापन (2FA Active)</h3>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Google / Microsoft Authenticator का 6-अंकों का कोड अथवा 8-अंकों का इमरजेंसी बैकअप कोड दर्ज करें:
+                </p>
+              </div>
+
+              <div>
                 <input 
-                  type={showPassword ? 'text' : 'password'}
-                  value={adminPassword}
+                  type="text"
+                  value={admin2FACode}
                   onChange={(e) => {
-                    setAdminPassword(e.target.value);
+                    setAdmin2FACode(e.target.value);
                     if (passwordError) setPasswordError(null);
                   }}
-                  placeholder="अपना गुप्त एडमिन पासवर्ड दर्ज करें"
-                  className={`w-full rounded-2xl py-3.5 pl-4 pr-11 text-sm font-mono tracking-wider outline-none shadow-inner transition border ${
+                  placeholder="उदा. 482910 या ANP-XXXX-XXXX"
+                  className={`w-full text-center rounded-2xl py-3.5 px-4 text-lg font-mono font-bold tracking-widest uppercase outline-none shadow-inner transition border ${
                     isDark 
-                      ? 'bg-[#05070e] border-white/20 text-white focus:border-red-500' 
-                      : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+                      ? 'bg-[#05070e] border-amber-500/40 text-amber-400 focus:border-amber-400' 
+                      : 'bg-amber-50/50 border-amber-300 text-slate-900 focus:border-amber-600'
                   }`}
                   autoFocus
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
-                    isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                  title={showPassword ? 'पासवर्ड छुपाएं' : 'पासवर्ड देखें'}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+
+                {passwordError && (
+                  <div className={`mt-2 text-xs font-bold p-2.5 rounded-xl animate-in fade-in flex items-center gap-1.5 border ${
+                    isDark 
+                      ? 'text-rose-400 bg-rose-950/50 border-rose-800/60' 
+                      : 'text-rose-700 bg-rose-50 border-rose-200'
+                  }`}>
+                    <span>⚠️</span>
+                    <span>{passwordError}</span>
+                  </div>
+                )}
               </div>
 
-              {passwordError && (
-                <div className={`mt-2 text-xs font-bold p-2.5 rounded-xl animate-in fade-in flex items-center gap-1.5 border ${
-                  isDark 
-                    ? 'text-rose-400 bg-rose-950/50 border-rose-800/60' 
-                    : 'text-rose-700 bg-rose-50 border-rose-200'
-                }`}>
-                  <span>⚠️</span>
-                  <span>{passwordError}</span>
-                </div>
-              )}
-            </div>
+              {/* Submit 2FA */}
+              <button
+                type="submit"
+                disabled={isVerifying || !admin2FACode.trim()}
+                className="w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 disabled:opacity-50 text-white font-bold text-sm py-3.5 rounded-2xl transition shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <Unlock size={16} />
+                <span>{isVerifying ? '2FA सत्यापित हो रहा है...' : 'सुरक्षित प्रवेश की पुष्टि करें'}</span>
+              </button>
 
-            {/* Remember Me Toggle */}
-            <div className={`flex items-center justify-between text-xs pt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input 
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded accent-red-600 w-4 h-4 cursor-pointer"
-                />
-                <span>इस डिवाइस पर लॉगिन याद रखें</span>
-              </label>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isVerifying || !adminPassword.trim()}
-              className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold text-sm py-3.5 rounded-2xl transition shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              <button
+                type="button"
+                onClick={() => {
+                  setIs2FARequiredAdmin(false);
+                  setAdminTemp2FAToken(null);
+                  setAdmin2FACode('');
+                  setPasswordError(null);
+                }}
+                className={`w-full py-1 text-xs font-medium text-center transition ${
+                  isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                ← वापस पासवर्ड पर जाएं
+              </button>
+            </form>
+          ) : (
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleVerifyPassword();
+              }}
+              className="space-y-4 text-left"
             >
-              <Unlock size={16} />
-              <span>{isVerifying ? 'प्रमाणीकरण हो रहा है...' : 'सुरक्षित एडमिन प्रवेश (Login to Desk)'}</span>
-            </button>
-          </form>
+              <div>
+                <label className={`text-xs font-bold block mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+                  एडमिन पासवर्ड (Admin Password / Master Passkey)
+                </label>
+                <div className="relative">
+                  <input 
+                    type={showPassword ? 'text' : 'password'}
+                    value={adminPassword}
+                    onChange={(e) => {
+                      setAdminPassword(e.target.value);
+                      if (passwordError) setPasswordError(null);
+                    }}
+                    placeholder="अपना गुप्त एडमिन पासवर्ड दर्ज करें"
+                    className={`w-full rounded-2xl py-3.5 pl-4 pr-11 text-sm font-mono tracking-wider outline-none shadow-inner transition border ${
+                      isDark 
+                        ? 'bg-[#05070e] border-white/20 text-white focus:border-red-500' 
+                        : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-red-600 focus:bg-white'
+                    }`}
+                    autoFocus
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
+                      isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                    title={showPassword ? 'पासवर्ड छुपाएं' : 'पासवर्ड देखें'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                {passwordError && (
+                  <div className={`mt-2 text-xs font-bold p-2.5 rounded-xl animate-in fade-in flex items-center gap-1.5 border ${
+                    isDark 
+                      ? 'text-rose-400 bg-rose-950/50 border-rose-800/60' 
+                      : 'text-rose-700 bg-rose-50 border-rose-200'
+                  }`}>
+                    <span>⚠️</span>
+                    <span>{passwordError}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Remember Me Toggle */}
+              <div className={`flex items-center justify-between text-xs pt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input 
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="rounded accent-red-600 w-4 h-4 cursor-pointer"
+                  />
+                  <span>इस डिवाइस पर लॉगिन याद रखें</span>
+                </label>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isVerifying || !adminPassword.trim()}
+                className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold text-sm py-3.5 rounded-2xl transition shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <Unlock size={16} />
+                <span>{isVerifying ? 'प्रमाणीकरण हो रहा है...' : 'सुरक्षित एडमिन प्रवेश (Login to Desk)'}</span>
+              </button>
+            </form>
+          )}
 
           {/* Bottom Back Button & Hint */}
           <div className={`pt-2 border-t flex items-center justify-between text-xs ${

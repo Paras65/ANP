@@ -13,6 +13,7 @@ import { sanitizeInputs } from './middleware/sanitizeInput.middleware.js';
 import { antiBloatGuard } from './middleware/antiBloat.middleware.js';
 import { apiLimiter } from './middleware/rateLimiter.middleware.js';
 import { recordSecurityIncident } from './services/securityAudit.service.js';
+import { initAutomatedDailyBackupScheduler } from './services/backup.service.js';
 
 dotenv.config();
 
@@ -162,6 +163,7 @@ const startServer = async () => {
     console.log(`🚀 [Server] Ambition News Portal active on port ${PORT}`);
   });
   await connectDB();
+  initAutomatedDailyBackupScheduler();
 };
 
 startServer();

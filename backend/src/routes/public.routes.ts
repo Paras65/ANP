@@ -16,6 +16,7 @@ import { requireAdminAuth } from '../middleware/auth.middleware.js';
 import { authLimiter, aiLimiter, contentCreationLimiter } from '../middleware/rateLimiter.middleware.js';
 import { syncFromYouTubeDataAPI, getLiveChannelStats } from '../services/youtubeSync.js';
 import { processGeminiNewsTask } from '../services/gemini.service.js';
+import { verifyTOTP, verifyAndConsumeBackupCode } from '../utils/totp.js';
 import { 
   recordSecurityIncident, 
   getSecurityDashboardStats, 
@@ -1587,6 +1588,22 @@ router.post('/auth/verify-admin', authLimiter, async (req: Request, res: Respons
     const isMatch = bufInput.length === bufExpected.length && crypto.timingSafeEqual(bufInput, bufExpected);
 
     if (isMatch) {
+      // Check if 2FA is active on Editorial Admin
+      const admin2fa = await Setting.findOne({ key: 'admin_2fa' }).lean();
+      if (admin2fa?.value?.enabled && admin2fa.value.secret) {
+        const tempToken = jwt.sign(
+          { role: 'admin_temp_2fa', desk: 'editorial' },
+          PIN_SALT,
+          { expiresIn: '5m' }
+        );
+        return res.json({
+          success: true,
+          require2FA: true,
+          tempToken,
+          message: 'पिन सत्यापित। कृपया 6-अंकों का 2FA या बैकअप कोड दर्ज करें।'
+        });
+      }
+
       return res.json({ 
         success: true, 
         message: 'प्रमाणीकरण सफल (ENV Validated)',
@@ -1609,6 +1626,62 @@ router.post('/auth/verify-admin', authLimiter, async (req: Request, res: Respons
 
       return res.status(401).json({ success: false, message: 'गलत एडमिन पिन दर्ज किया गया' });
     }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10c. POST /api/auth/verify-2fa - Admin Desk 2FA Verification (TOTP or Single-Use Emergency Code)
+router.post('/auth/verify-2fa', authLimiter, async (req: Request, res: Response) => {
+  try {
+    const { tempToken, code } = req.body;
+    if (!tempToken || !code) {
+      return res.status(400).json({ success: false, message: 'टोकन और 2FA कोड आवश्यक हैं' });
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(tempToken, PIN_SALT);
+      if (decoded.role !== 'admin_temp_2fa') throw new Error('Invalid token');
+    } catch {
+      return res.status(401).json({ success: false, message: '2FA सत्र समाप्त या अमान्य है। कृपया पुनः पिन दर्ज करें।' });
+    }
+
+    const admin2fa = await Setting.findOne({ key: 'admin_2fa' });
+    if (!admin2fa?.value?.enabled || !admin2fa.value.secret) {
+      return res.status(400).json({ success: false, message: '2FA सक्रिय नहीं है' });
+    }
+
+    const inputCode = String(code).trim();
+
+    // 1. Check TOTP 6-digit code
+    if (verifyTOTP(inputCode, admin2fa.value.secret)) {
+      return res.json({
+        success: true,
+        message: '2FA सत्यापन सफल! स्वागत है।',
+        token: generateAdminJwt()
+      });
+    }
+
+    // 2. Check emergency recovery code
+    const hashedCodes = admin2fa.value.hashedBackupCodes || [];
+    const usedIndex = verifyAndConsumeBackupCode(inputCode, hashedCodes);
+    if (usedIndex !== -1) {
+      hashedCodes.splice(usedIndex, 1);
+      admin2fa.value.hashedBackupCodes = hashedCodes;
+      admin2fa.markModified('value');
+      await admin2fa.save();
+
+      return res.json({
+        success: true,
+        message: `आपातकालीन बैकअप कोड स्वीकृत! शेष बैकअप कोड: ${hashedCodes.length}`,
+        token: generateAdminJwt(),
+        backupCodeUsed: true,
+        remainingBackupCodes: hashedCodes.length
+      });
+    }
+
+    return res.status(401).json({ success: false, message: 'अमान्य 2FA कोड या समाप्त बैकअप कोड' });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
