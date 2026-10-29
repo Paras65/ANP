@@ -77,10 +77,10 @@ export const aiLimiter = rateLimit({
   }
 });
 
-// 3. General Public API Rate Limiter
+// 3. General Public API Rate Limiter (Hardened for high-density Indian CGNAT Mobile Networks - Jio / Airtel in CG & MP)
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // 300 requests per 15 minutes
+  max: 600, // 600 requests per 15 minutes to prevent false positives on shared cellular NAT IPs
   standardHeaders: true,
   legacyHeaders: false,
   validate: { xForwardedForHeader: false },

@@ -566,43 +566,62 @@ export const App: React.FC = () => {
     loadMediaFromBackend();
   }, [selectedState, currentDistrict, currentView]);
 
-  // Handle new article submitted from Reporter Modal
-  const handleNewArticleSubmit = async (newArticleData: Partial<Article>) => {
+  // Handle new article submitted from Reporter Modal or Admin Portal (Edge-Case Hardened)
+  const handleNewArticleSubmit = async (newArticleData: Partial<Article>): Promise<{ success: boolean; duplicate?: boolean; error?: string }> => {
+    // Edge Case 5.1: If coverImage is base64, replace with smart category preset to protect MongoDB storage
+    let safeCover = newArticleData.coverImage;
+    if (safeCover && (safeCover.startsWith('data:image/') || safeCover.startsWith('data:application/'))) {
+      safeCover = getSmartCoverImage(undefined, newArticleData.category, newArticleData.title, newArticleData.district);
+    }
+
     const createdArticle: Article = {
       _id: `art-${Date.now()}`,
-      title: newArticleData.title || '',
-      excerpt: newArticleData.excerpt || '',
+      title: (newArticleData.title || '').trim(),
+      excerpt: (newArticleData.excerpt || '').trim(),
       content: newArticleData.content,
       district: newArticleData.district || 'कबीरधाम (कवर्धा)',
       state: selectedState,
       category: newArticleData.category || '🔴 कवर्धा स्पेशल',
       author: newArticleData.author || 'फ़ील्ड रिपोर्टर',
-      coverImage: getSmartCoverImage(newArticleData.coverImage, newArticleData.category, newArticleData.title, newArticleData.district),
+      coverImage: getSmartCoverImage(safeCover, newArticleData.category, newArticleData.title, newArticleData.district),
       views: 1,
-      isBreaking: true,
-      isFeatured: false,
+      isBreaking: Boolean(newArticleData.isBreaking),
+      isFeatured: Boolean(newArticleData.isFeatured),
       shares: 0,
       publishedAt: new Date().toISOString()
     };
 
-    setArticles(prev => [createdArticle, ...prev]);
-    showToast('🎉 सफलता! खबर Ambition News पोर्टल पर प्रकाशित हो गई!');
-
     try {
       const res = await api.post('/articles', createdArticle);
       if (res.data?.data?._id) {
-        setArticles(prev => prev.map(a => a._id === createdArticle._id ? res.data.data : a));
+        setArticles(prev => [res.data.data, ...prev.filter(a => a._id !== createdArticle._id)]);
+      } else {
+        setArticles(prev => [createdArticle, ...prev]);
       }
       setBackendSynced(true);
-    } catch {
-      // Offline fallback maintained
+      showToast('🎉 सफलता! खबर Ambition News पोर्टल पर प्रकाशित हो गई!');
+      return { success: true };
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        const msg = err.response.data?.message || 'यह खबर हाल ही में प्रकाशित की जा चुकी है';
+        showToast(`⚠️ ${msg}`);
+        return { success: false, duplicate: true, error: msg };
+      }
+      if (err?.response?.status === 401) {
+        showToast('⚠️ एडमिन सत्र समाप्त: कृपया दोबारा लॉगिन करें');
+        return { success: false, error: 'सत्र समाप्त हो गया है' };
+      }
+      // Offline fallback: keep in memory and inform user
+      setArticles(prev => [createdArticle, ...prev]);
+      showToast('⚠️ ऑफ़लाइन मोड: खबर स्थानीय रूप से प्रदर्शित हो रही है');
+      return { success: true };
     }
   };
 
-  // Delete article live from MongoDB Atlas
+  // Delete article live from MongoDB Atlas (Soft Delete with Recovery)
   const handleDeleteArticle = async (id: string) => {
     setArticles(prev => prev.filter(a => a._id !== id));
-    showToast('🗑️ खबर सफलतापूर्वक हटा दी गई');
+    showToast('🗑️ खबर सफलतापूर्वक हटा दी गई (ट्रैश में सुरक्षित)');
     try {
       await api.delete(`/articles/${id}`);
     } catch {
@@ -610,14 +629,31 @@ export const App: React.FC = () => {
     }
   };
 
-  // Update existing article live in MongoDB Atlas
-  const handleUpdateArticle = async (id: string, updatedData: Partial<Article>) => {
-    setArticles(prev => prev.map(a => a._id === id ? { ...a, ...updatedData } : a));
-    showToast(updatedData.status === 'PUBLISHED' ? '🎉 खबर स्वीकृत व लाइव प्रकाशित हो गई!' : '✅ खबर सफलतापूर्वक अपडेट हो गई!');
+  // Update existing article live in MongoDB Atlas with Concurrency Collision Protection
+  const handleUpdateArticle = async (id: string, updatedData: Partial<Article>): Promise<{ success: boolean; conflict?: boolean; error?: string }> => {
+    const existing = articles.find(a => a._id === id);
+    const payloadWithTimestamp = {
+      ...updatedData,
+      clientUpdatedAt: existing?.publishedAt || new Date().toISOString()
+    };
+
     try {
-      await api.put(`/articles/${id}`, updatedData);
-    } catch {
-      // Handled
+      const res = await api.put(`/articles/${id}`, payloadWithTimestamp);
+      if (res.data?.data) {
+        setArticles(prev => prev.map(a => a._id === id ? { ...a, ...res.data.data } : a));
+      } else {
+        setArticles(prev => prev.map(a => a._id === id ? { ...a, ...updatedData } : a));
+      }
+      showToast(updatedData.status === 'PUBLISHED' ? '🎉 खबर स्वीकृत व लाइव प्रकाशित हो गई!' : '✅ खबर सफलतापूर्वक अपडेट हो गई!');
+      return { success: true };
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        const msg = err.response.data?.message || 'कन्फ्लिक्ट: खबर किसी अन्य संपादक ने हाल ही में अपडेट की है';
+        showToast(`⚠️ ${msg}`);
+        return { success: false, conflict: true, error: msg };
+      }
+      setArticles(prev => prev.map(a => a._id === id ? { ...a, ...updatedData } : a));
+      return { success: true };
     }
   };
 

@@ -355,6 +355,25 @@ router.post('/articles', requireAdminAuth, contentCreationLimiter, async (req: R
       return res.status(400).json({ success: false, message: 'शीर्षक और विवरण आवश्यक है' });
     }
 
+    const cleanTitle = title.trim();
+
+    // Edge Case 2.1: Double-Click / Duplicate Submission Guard (Anti-Replay)
+    // Rejects rapid duplicate submissions of the exact same title within 60 seconds
+    const recentDuplicate = await Article.findOne({
+      title: cleanTitle,
+      deletedAt: null,
+      createdAt: { $gte: new Date(Date.now() - 60 * 1000) }
+    }).select('_id title publishedAt').lean();
+
+    if (recentDuplicate) {
+      return res.status(409).json({
+        success: false,
+        duplicate: true,
+        message: 'यह समाचार हाल ही में (पिछले 60 सेकंड में) प्रकाशित किया जा चुका है। दोहराव (डबल-क्लिक) से सुरक्षा हेतु अनुरोध अस्वीकृत किया गया।',
+        data: recentDuplicate
+      });
+    }
+
     // Resolve District
     let districtDoc = null;
     if (district) {
@@ -544,17 +563,63 @@ router.delete('/articles/:id', requireAdminAuth, contentCreationLimiter, async (
   try {
     const { id } = req.params;
     await Article.findByIdAndUpdate(id, { deletedAt: new Date() });
-    res.json({ success: true, message: 'आर्टिकल सफलतापूर्वक हटा दिया गया' });
+    res.json({ success: true, message: 'आर्टिकल सफलतापूर्वक ट्रैश (हटा दिया) में भेज दिया गया' });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 4c. PUT /api/articles/:id - Update existing article live in MongoDB Atlas
+// 4c. POST /api/articles/:id/restore - Restore soft-deleted article from Trash (Accidental Deletion Recovery)
+router.post('/articles/:id/restore', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const restored = await Article.findByIdAndUpdate(id, { deletedAt: null }, { new: true });
+    if (!restored) {
+      return res.status(404).json({ success: false, message: 'ट्रैश में खबर नहीं मिली' });
+    }
+    res.json({ success: true, message: 'खबर सफलतापूर्वक ट्रैश से पुनः सक्रिय कर दी गई', data: restored });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4d. GET /api/articles/trash - List soft-deleted articles for Trash & Recovery Desk
+router.get('/articles/trash', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const deletedArticles = await Article.find({ deletedAt: { $ne: null } })
+      .sort({ deletedAt: -1 })
+      .limit(50)
+      .lean();
+    res.json({ success: true, count: deletedArticles.length, data: deletedArticles });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4e. PUT /api/articles/:id - Update existing article live in MongoDB Atlas with Concurrency Conflict Detection
 router.put('/articles/:id', requireAdminAuth, contentCreationLimiter, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, excerpt, content, district, category, author, state, isBreaking, isFeatured, coverImage, status } = req.body;
+    const { title, excerpt, content, district, category, author, state, isBreaking, isFeatured, coverImage, status, clientUpdatedAt } = req.body;
+
+    // Edge Case 4.1: Concurrency Conflict Detection (Two Editors Editing Same Article)
+    if (clientUpdatedAt) {
+      const existing = await Article.findById(id).select('updatedAt title').lean();
+      if (existing && existing.updatedAt) {
+        const serverTime = new Date(existing.updatedAt).getTime();
+        const clientTime = new Date(clientUpdatedAt).getTime();
+        // If server was updated more than 3 seconds after client loaded it, flag a conflict
+        if (serverTime - clientTime > 3000) {
+          return res.status(409).json({
+            success: false,
+            conflict: true,
+            message: 'संपादन टकराव (Concurrency Conflict): किसी अन्य संपादक ने हाल ही में यह खबर अपडेट की है। आपका पुराना ड्राफ्ट नए बदलावों को ओवरराइट करने से रोका गया है। कृपया पेज रिफ्रेश करें।',
+            serverUpdatedAt: existing.updatedAt
+          });
+        }
+      }
+    }
+
     const updatePayload: any = {
       ...(title && { title: title.trim() }),
       ...(excerpt && { excerpt: excerpt.trim() }),

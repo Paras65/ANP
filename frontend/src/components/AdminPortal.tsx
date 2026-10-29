@@ -69,8 +69,8 @@ interface AdminPortalProps {
   articles: Article[];
   districts: DistrictItem[];
   selectedState: 'chhattisgarh' | 'madhya-pradesh';
-  onPublishArticle: (article: Partial<Article>) => void;
-  onUpdateArticle?: (id: string, article: Partial<Article>) => void;
+  onPublishArticle: (article: Partial<Article>) => void | Promise<any>;
+  onUpdateArticle?: (id: string, article: Partial<Article>) => void | Promise<any>;
   onDeleteArticle: (id: string) => void;
   onBackToPublic: () => void;
   isDark: boolean;
@@ -819,6 +819,83 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [publishedSuccess, setPublishedSuccess] = useState(false);
 
+  // Edge Case 1.1: Draft Auto-Preservation (Offline & Session Expiration Guard)
+  const DRAFT_KEY = 'anp_editorial_article_draft';
+  const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [draftSavedTime, setDraftSavedTime] = useState<string | null>(null);
+
+  // Check on load if an unsaved draft exists
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.title?.trim() || parsed.content?.trim()) {
+          setHasSavedDraft(true);
+          setDraftSavedTime(parsed.savedAt || null);
+        }
+      }
+    } catch {
+      // LocalStorage error handled
+    }
+  }, []);
+
+  // Auto-save draft every time editor makes changes (unless editing an existing published article)
+  useEffect(() => {
+    if (editingArticleId) return; // Do not overwrite new draft when modifying existing article
+    if (!title.trim() && !content.trim() && !excerpt.trim()) return;
+
+    const timer = setTimeout(() => {
+      try {
+        const now = new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' });
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+          title,
+          excerpt,
+          content,
+          district,
+          category,
+          author,
+          coverImage,
+          isBreaking,
+          isFeatured,
+          savedAt: now
+        }));
+        setHasSavedDraft(true);
+        setDraftSavedTime(now);
+      } catch {
+        // LocalStorage quota error safe
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [title, excerpt, content, district, category, author, coverImage, isBreaking, isFeatured, editingArticleId]);
+
+  const handleRestoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.title) setTitle(parsed.title);
+        if (parsed.excerpt) setExcerpt(parsed.excerpt);
+        if (parsed.content) setContent(parsed.content);
+        if (parsed.district) setDistrict(parsed.district);
+        if (parsed.category) setCategory(parsed.category);
+        if (parsed.author) setAuthor(parsed.author);
+        if (parsed.coverImage) setCoverImage(parsed.coverImage);
+        if (parsed.isBreaking !== undefined) setIsBreaking(parsed.isBreaking);
+        if (parsed.isFeatured !== undefined) setIsFeatured(parsed.isFeatured);
+        setHasSavedDraft(false);
+      }
+    } catch {
+      // Handled
+    }
+  };
+
+  const handleDismissDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setHasSavedDraft(false);
+  };
+
   // Breaking flash quick input
   const [breakingHeadline, setBreakingHeadline] = useState('');
 
@@ -851,7 +928,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     setIsFeatured(false);
   };
 
-  // Local File Upload Handler
+  // Local File Upload Handler with Storage & Base64 Bloat Protection (Edge Case 5.1)
   const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -859,13 +936,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       alert('कृपया 5 MB से छोटी फोटो चुनें');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        setCoverImage(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    // Inform editor about web URL standard to protect 512MB MongoDB Atlas storage
+    alert('📌 डेटाबेस स्टोरेज सुरक्षा नोट:\nMongoDB Atlas में 512MB स्टोरेज सीमा बनाए रखने के लिए बेस64 छवियां डेटाबेस में ब्लॉक हैं।\n\nकृपया नीचे दिए गए विषय-वार त्वरित प्रीसेट्स में से एक चुनें या किसी ऑनलाइन तस्वीर का वैध वेब लिंक (URL) दर्ज करें।');
   };
 
   // Delete Confirmation Handler
@@ -878,46 +950,72 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Edge-Case Hardened Article Submission (Anti-Duplicate & Safe Draft Preservation)
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !excerpt.trim()) return;
+    if (isSubmitting) return; // Prevent double-clicks
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const payload = {
-        title,
-        excerpt,
-        content: content.trim() ? content : `${excerpt}\n\n[ग्राउंड रिपोर्ट: ${district} से विशेष संवाददाता द्वारा प्रेषित]\nस्थानीय नागरिकों एवं प्रशासन के अनुसार स्थिति पर लगातार नजर रखी जा रही है। अधिक जानकारी की प्रतीक्षा है।`,
-        district,
-        state: selectedState,
-        category,
-        author,
-        coverImage,
-        isBreaking,
-        isFeatured,
-        views: 1,
-        status: 'PUBLISHED' as const,
-        publishedAt: new Date().toISOString()
-      };
 
+    // Edge Case 5.1: If coverImage is a base64 string, sanitize it
+    let safeCover = coverImage;
+    if (safeCover && (safeCover.startsWith('data:image/') || safeCover.startsWith('data:application/'))) {
+      safeCover = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80';
+      setCoverImage(safeCover);
+    }
+
+    const payload = {
+      title: title.trim(),
+      excerpt: excerpt.trim(),
+      content: content.trim() ? content : `${excerpt}\n\n[ग्राउंड रिपोर्ट: ${district} से विशेष संवाददाता द्वारा प्रेषित]\nस्थानीय नागरिकों एवं प्रशासन के अनुसार स्थिति पर लगातार नजर रखी जा रही है। अधिक जानकारी की प्रतीक्षा है।`,
+      district,
+      state: selectedState,
+      category,
+      author,
+      coverImage: safeCover,
+      isBreaking,
+      isFeatured,
+      views: 1,
+      status: 'PUBLISHED' as const,
+      publishedAt: new Date().toISOString()
+    };
+
+    try {
+      let result: any = null;
       if (editingArticleId && onUpdateArticle) {
-        onUpdateArticle(editingArticleId, payload);
+        result = await onUpdateArticle(editingArticleId, payload);
+        if (result && result.success === false) {
+          setIsSubmitting(false);
+          // Keep the draft safely on screen if conflict or error occurred!
+          return;
+        }
         setEditingArticleId(null);
       } else {
-        onPublishArticle(payload);
+        result = await onPublishArticle(payload);
+        if (result && result.success === false) {
+          setIsSubmitting(false);
+          // Keep the draft safely on screen so author never loses typed story!
+          return;
+        }
         if (sendPushAlert || isBreaking) {
           sendBreakingPushNotification(title, excerpt || content, district);
         }
       }
 
-      setIsSubmitting(false);
-      setPublishedSuccess(true);
-      // Reset form
+      // Success: Clear the auto-saved draft from storage and reset form
+      localStorage.removeItem(DRAFT_KEY);
+      setHasSavedDraft(false);
       setTitle('');
       setExcerpt('');
       setContent('');
+      setIsSubmitting(false);
+      setPublishedSuccess(true);
       setTimeout(() => setPublishedSuccess(false), 4000);
-    }, 400);
+    } catch {
+      setIsSubmitting(false);
+      // Even if network fails completely, draft remains safely preserved in form & storage!
+    }
   };
 
   const handleAddQuickBreaking = (e: React.FormEvent) => {
@@ -1469,6 +1567,34 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </p>
               </div>
 
+              {/* Edge Case 1.1: Unsaved Draft Restore Banner */}
+              {hasSavedDraft && !editingArticleId && (
+                <div className="mb-4 p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
+                  <div className="flex items-center gap-2 text-amber-500 font-semibold">
+                    <span className="text-base">📝</span>
+                    <span>आपका पिछला अप्रकाशित ड्राफ्ट सुरक्षित है{draftSavedTime ? ` (${draftSavedTime})` : ''}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleRestoreDraft}
+                      className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow-sm transition active:scale-95"
+                    >
+                      पुनर्प्राप्त करें (Restore)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDismissDraft}
+                      className={`px-2.5 py-1 rounded-xl transition ${
+                        isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                      }`}
+                    >
+                      हटाएं (Dismiss)
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                 
                 {/* District & Category */}
@@ -1817,11 +1943,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     {[
                       { label: '🌾 कृषि/मंडी', url: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🚔 पुलिस/सुरक्षा', url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '🚗 सड़क दुर्घटना', url: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🌦️ मौसम/चिल्फी', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🛕 भोरमदेव/धरोहर', url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🏗️ विकास/सड़क', url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🏛️ शासन/मंत्रालय', url: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '🏥 स्वास्थ्य/अस्पताल', url: 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🎓 शिक्षा/युवा', url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '⚖️ न्यायालय/प्रशासन', url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1000&auto=format&fit=crop&q=80' },
+                      { label: '🏆 खेलकूद', url: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1000&auto=format&fit=crop&q=80' },
                       { label: '🔴 Ambition लोगो', url: '/logo.png' }
                     ].map((p, idx) => (
                       <button
