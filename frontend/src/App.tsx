@@ -1450,43 +1450,6 @@ export const App: React.FC = () => {
           {/* TAB: VIDEOS ONLY VIEW */}
           {activeTab === 'videos' && (
             <div className="space-y-4 animate-in fade-in duration-300">
-              {/* Broadcast Channel Header Banner */}
-              <div className={`p-4 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
-                isDark 
-                  ? 'bg-gradient-to-r from-red-950/60 via-slate-900 to-black border-red-900/40 shadow-lg' 
-                  : 'bg-gradient-to-r from-red-50 via-white to-red-50 border-red-200 shadow-sm'
-              }`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-red-600 flex items-center justify-center text-white shadow-lg shadow-red-600/30 shrink-0">
-                    <YoutubeIcon size={24} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className={`text-base sm:text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        Ambition TV Digital
-                      </h2>
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded-full animate-pulse">
-                        LIVE
-                      </span>
-                    </div>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      कवर्धा व मध्य प्रदेश-छत्तीसगढ़ का विश्वसनीय वीडियो न्यूज़ नेटवर्क • {SOCIAL_LINKS.youtubeSubs}
-                    </p>
-                  </div>
-                </div>
-
-                <a 
-                  href={SOCIAL_LINKS.youtube}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="एम्बिशन न्यूज़ आधिकारिक यूट्यूब चैनल खोलें"
-                  className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md transition active:scale-95 shrink-0"
-                >
-                  <YoutubeIcon size={16} />
-                  <span>यूट्यूब चैनल खोलें</span>
-                </a>
-              </div>
-
               <React.Suspense fallback={
                 <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400">
                   <Loader2 className="animate-spin text-red-600" size={32} />

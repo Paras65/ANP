@@ -46,17 +46,19 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [visibleVideoCount, setVisibleVideoCount] = useState<number>(8);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const hasAutoPlayedRef = useRef<boolean>(false);
 
   // Auto-play latest video immediately when entering dedicated videos tab
   useEffect(() => {
-    if (autoPlayOnMount && bulletins && bulletins.length > 0 && !activeVideo) {
+    if (autoPlayOnMount && bulletins && bulletins.length > 0 && !hasAutoPlayedRef.current) {
+      hasAutoPlayedRef.current = true;
       const topVideo = bulletins[0];
       if (topVideo) {
         setIsAutoPlay(true);
         setActiveVideo(topVideo);
       }
     }
-  }, [autoPlayOnMount, bulletins, activeVideo]);
+  }, [autoPlayOnMount, bulletins]);
 
   // Helper to resolve realistic video thumbnail (Real YouTube frame instead of generic logo)
   const getVideoThumbnail = (video: VideoBulletin): string => {
@@ -223,24 +225,28 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
     }`}>
       
       {/* 1. SECTION HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-red-950/30">
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b ${
+        isDark ? 'border-red-950/30' : 'border-slate-200'
+      }`}>
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-red-600 via-rose-600 to-red-700 flex items-center justify-center text-white shadow-lg shadow-red-600/30">
             <Tv size={20} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black text-white tracking-wide flex items-center gap-2">
+              <h2 className={`text-base sm:text-lg font-black tracking-wide flex items-center gap-2 ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}>
                 <span>AMBITION TV</span>
                 <span className="text-xs text-red-500 font-bold">•</span>
-                <span className="text-sm sm:text-base font-bold text-slate-200">वीडियो बुलेटिन</span>
+                <span className={`text-sm sm:text-base font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>वीडियो बुलेटिन</span>
               </h2>
               <span className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
                 LIVE
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               यूट्यूब चैनल ({SOCIAL_LINKS.youtubeHandle}) से सीधे ग्राउंड रिपोर्ट्स, जनआंदोलन व खास इंटरव्यू
             </p>
           </div>
@@ -269,11 +275,15 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             target="_blank" 
             rel="noopener noreferrer"
             aria-label="एम्बिशन टीवी यूट्यूब चैनल सब्सक्राइब करें"
-            className="flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition active:scale-95 shrink-0"
+            className={`flex items-center justify-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition active:scale-95 shrink-0 ${
+              isDark 
+                ? 'bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700' 
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300'
+            }`}
           >
             <YoutubeIcon size={15} />
             <span className="hidden sm:inline">सब्सक्राइब</span>
-            <ExternalLink size={11} className="text-slate-400" />
+            <ExternalLink size={11} className={isDark ? "text-slate-400" : "text-slate-500"} />
           </a>
         </div>
       </div>
@@ -297,8 +307,12 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
           >
             <span>{cat.icon}</span>
             <span>{cat.label}</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-              selectedCategory === cat.id ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+              selectedCategory === cat.id 
+                ? 'bg-white/25 text-white' 
+                : isDark 
+                  ? 'bg-slate-800 text-slate-400' 
+                  : 'bg-slate-200 text-slate-600'
             }`}>
               {cat.count}
             </span>
@@ -367,10 +381,14 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             <div className="lg:col-span-5 p-4 sm:p-6 flex flex-col justify-between">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-red-500 bg-red-950/40 border border-red-800/60 px-2.5 py-0.5 rounded-full">
+                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                    isDark 
+                      ? 'text-red-400 bg-red-950/40 border-red-800/60' 
+                      : 'text-red-700 bg-red-50 border-red-200'
+                  }`}>
                     {featuredVideo.category || 'कवर्धा विशेष'}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {featuredVideo.timeAgo}
                   </span>
                 </div>
@@ -387,8 +405,8 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   {featuredVideo.title}
                 </h3>
 
-                <div className="flex items-center gap-3 text-xs text-slate-400">
-                  <span className="flex items-center gap-1 text-slate-300 font-semibold">
+                <div className={`flex items-center gap-3 text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  <span className={`flex items-center gap-1 font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                     <Eye size={13} className="text-red-500" /> {featuredVideo.views}
                   </span>
                   <span>•</span>
@@ -397,7 +415,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2.5 pt-4 mt-3 border-t border-red-950/30">
+              <div className={`flex flex-wrap items-center gap-2.5 pt-4 mt-3 border-t ${
+                isDark ? 'border-red-950/30' : 'border-slate-200'
+              }`}>
                 <button
                   onClick={() => {
                     setCountdown(null);
@@ -437,7 +457,11 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="यूट्यूब पर वीडियो देखें"
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs p-2.5 rounded-xl transition cursor-pointer"
+                  className={`font-bold text-xs p-2.5 rounded-xl transition cursor-pointer ${
+                    isDark 
+                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white' 
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-300'
+                  }`}
                   title="YouTube पर देखें"
                 >
                   <ExternalLink size={15} />
@@ -504,7 +528,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   {video.title}
                 </h3>
 
-                <div className="mt-2.5 pt-2 border-t border-slate-800/40 flex items-center justify-between text-[11px] text-slate-400">
+                <div className={`mt-2.5 pt-2 border-t flex items-center justify-between text-[11px] ${
+                  isDark ? 'border-slate-800/40 text-slate-400' : 'border-slate-200 text-slate-600'
+                }`}>
                   <span className="flex items-center gap-1 font-medium">
                     <Eye size={11} className="text-red-500" /> {video.views}
                   </span>
@@ -551,12 +577,14 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     Ambition TV पर 500+ वीडियो बुलेटिन उपलब्ध
                   </h3>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">
+                <p className={`text-[11px] leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   कवर्धा व CG-MP की ताज़ा खबरें, लाइव डिबेट व ग्राउंड रिपोर्ट्स सीधे यूट्यूब पर देखें।
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-red-900/30 flex items-center justify-between text-xs font-bold text-red-500 group-hover:text-red-400">
+              <div className={`pt-3 border-t flex items-center justify-between text-xs font-bold text-red-500 group-hover:text-red-400 ${
+                isDark ? 'border-red-900/30' : 'border-red-200'
+              }`}>
                 <span>चैनल सब्सक्राइब करें</span>
                 <span>➔</span>
               </div>
@@ -567,18 +595,28 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 
       {/* 5. PROGRESSIVE LOAD MORE / COLLAPSE CONTROLS */}
       {remainingBulletins.length > 8 && (
-        <div className="mt-5 pt-4 border-t border-red-950/30 flex flex-wrap items-center justify-center gap-3">
+        <div className={`mt-5 pt-4 border-t flex flex-wrap items-center justify-center gap-3 ${
+          isDark ? 'border-red-950/30' : 'border-slate-200'
+        }`}>
           {hasMoreVideos ? (
             <button
               onClick={() => setVisibleVideoCount(prev => prev + 8)}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-gradient-to-r from-red-950/60 to-slate-900/80 hover:from-red-900/80 hover:to-slate-800 border border-red-600/40 text-red-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-lg cursor-pointer"
+              className={`w-full sm:w-auto px-6 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-lg cursor-pointer border ${
+                isDark 
+                  ? 'bg-gradient-to-r from-red-950/60 to-slate-900/80 hover:from-red-900/80 hover:to-slate-800 border-red-600/40 text-red-300' 
+                  : 'bg-white hover:bg-red-50/50 border-red-200 text-red-700 shadow-sm'
+              }`}
             >
               <span>▼ और वीडियो बुलेटिन लोड करें (+{Math.min(8, remainingBulletins.length - visibleVideoCount)} और देखें • {remainingBulletins.length - visibleVideoCount} शेष)</span>
             </button>
           ) : (
             <button
               onClick={() => setVisibleVideoCount(8)}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+              className={`w-full sm:w-auto px-6 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border ${
+                isDark 
+                  ? 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300' 
+                  : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-700'
+              }`}
             >
               <span>▲ कम वीडियो दिखाएं (आरंभिक 8 वीडियो पर जाएं)</span>
             </button>
@@ -672,7 +710,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 {isDirectVideoUrl(activeVideo.youtubeUrl || activeVideo.youtubeId) ? (
                   <video 
                     src={activeVideo.youtubeUrl || activeVideo.youtubeId}
+                    poster={getVideoThumbnail(activeVideo)}
+                    preload="metadata"
                     controls
+                    controlsList="nodownload"
                     autoPlay
                     playsInline
                     className="w-full h-full object-contain relative z-10 bg-black"

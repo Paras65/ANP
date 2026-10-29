@@ -417,6 +417,8 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                     ref={videoRef}
                     key={currentReel.videoUrl}
                     src={currentReel.videoUrl}
+                    poster={currentReel.imageUrl ? getOptimizedImageUrl(currentReel.imageUrl, 'card') : undefined}
+                    preload="metadata"
                     autoPlay
                     loop={!isAutoScroll}
                     onEnded={() => {
