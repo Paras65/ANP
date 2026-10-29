@@ -4,6 +4,7 @@ import { InstagramIcon } from './SocialIcons';
 import type { InstagramPost } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
 import { sortMediaLatestFirst } from '../utils/mediaUtils';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 interface InstagramSectionProps {
   posts: InstagramPost[];
@@ -132,10 +133,12 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
             {/* Image Thumbnail with Reel Play Badge */}
             <div className="relative aspect-[9/14] w-full overflow-hidden bg-slate-900">
               <img 
-                src={post.imageUrl} 
+                src={getOptimizedImageUrl(post.imageUrl, 'card')} 
                 alt={post.caption}
                 loading="lazy"
                 decoding="async"
+                width="360"
+                height="560"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
               />
               

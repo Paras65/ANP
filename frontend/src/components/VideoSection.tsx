@@ -20,6 +20,7 @@ interface VideoSectionProps {
   isDark: boolean;
   onShareWhatsApp?: (title: string, videoUrl?: string) => void;
   youtubeSubs?: string;
+  autoPlayOnMount?: boolean;
 }
 
 const PRESET_CATEGORIES = [
@@ -36,12 +37,24 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   bulletins, 
   isDark, 
   onShareWhatsApp,
-  youtubeSubs
+  youtubeSubs,
+  autoPlayOnMount = false
 }) => {
   // Pure real data: do not render video section if no live bulletins exist
   if (!bulletins || bulletins.length === 0) return null;
 
   const [activeVideo, setActiveVideo] = useState<VideoBulletin | null>(null);
+
+  // Auto-play latest video immediately when entering dedicated videos tab
+  useEffect(() => {
+    if (autoPlayOnMount && bulletins && bulletins.length > 0 && !activeVideo) {
+      const topVideo = bulletins[0];
+      if (topVideo) {
+        setIsAutoPlay(true);
+        setActiveVideo(topVideo);
+      }
+    }
+  }, [autoPlayOnMount, bulletins]);
 
   // Filters & Progressive Load More
   const [selectedCategory, setSelectedCategory] = useState<string>('all');

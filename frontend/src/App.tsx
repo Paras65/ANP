@@ -146,7 +146,21 @@ export const App: React.FC = () => {
   // Dynamic Live YouTube Videos & Instagram Reels (Strictly latest-first)
   const [videoBulletins, setVideoBulletins] = useState<VideoBulletin[]>(() => {
     const saved = localStorage.getItem('anp_video_bulletins');
-    return saved ? sortMediaLatestFirst(JSON.parse(saved)) : [];
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      // Cleanse any legacy bloated maxresdefault thumbnails from localStorage cache
+      const sanitized = parsed.map((v: VideoBulletin) => ({
+        ...v,
+        thumbnail: (v.thumbnail || '')
+          .replace('maxresdefault.jpg', 'hqdefault.jpg')
+          .replace('sddefault.jpg', 'hqdefault.jpg')
+          .replace('img.youtube.com', 'i.ytimg.com')
+      }));
+      return sortMediaLatestFirst<VideoBulletin>(sanitized);
+    } catch {
+      return [];
+    }
   });
 
   // Dynamic Live Mandi Rates
@@ -220,7 +234,21 @@ export const App: React.FC = () => {
 
   const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(() => {
     const saved = localStorage.getItem('anp_instagram_posts');
-    return saved ? sortMediaLatestFirst(JSON.parse(saved)) : [];
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      // Cleanse any legacy bloated maxresdefault thumbnails from localStorage cache
+      const sanitized = parsed.map((p: InstagramPost) => ({
+        ...p,
+        imageUrl: (p.imageUrl || '')
+          .replace('maxresdefault.jpg', 'hqdefault.jpg')
+          .replace('sddefault.jpg', 'hqdefault.jpg')
+          .replace('img.youtube.com', 'i.ytimg.com')
+      }));
+      return sortMediaLatestFirst<InstagramPost>(sanitized);
+    } catch {
+      return [];
+    }
   });
 
   // Dynamic WhatsApp Group / Channel Link
@@ -1637,8 +1665,10 @@ export const App: React.FC = () => {
                           >
                             {/* Background Image / Thumbnail */}
                             <img
-                              src={reel.imageUrl}
+                              src={getOptimizedImageUrl(reel.imageUrl, 'card')}
                               alt={reel.caption}
+                              loading="lazy"
+                              decoding="async"
                               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src = '/logo-96.webp';
@@ -1747,9 +1777,11 @@ export const App: React.FC = () => {
               </div>
 
               <VideoSection 
+                key={`videos-tab-player-${videoBulletins[0]?.youtubeId || 'latest'}`}
                 bulletins={videoBulletins} 
                 isDark={isDark} 
                 youtubeSubs={youtubeSubs}
+                autoPlayOnMount={true}
                 onShareWhatsApp={(title, url) => {
                   const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');

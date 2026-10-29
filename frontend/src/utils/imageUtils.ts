@@ -44,12 +44,16 @@ export function getOptimizedImageUrl(
     return url.replace('/upload/', `/upload/w_${width},q_auto,f_auto,c_fill/`);
   }
 
-  // YouTube thumbnail optimization: route to fast Google edge CDN & replace bloated maxresdefault (380KB) with hqdefault (18KB)
+  // YouTube thumbnail optimization: route to fast Google edge CDN & replace bloated maxresdefault (380KB) with hqdefault (18KB) or mqdefault (6KB)
   if (url.includes('youtube.com') || url.includes('ytimg.com')) {
-    return url
+    let optimized = url
       .replace('img.youtube.com', 'i.ytimg.com')
       .replace('maxresdefault.jpg', 'hqdefault.jpg')
       .replace('sddefault.jpg', 'hqdefault.jpg');
+    if (preset === 'thumbnail' || preset === 'avatar') {
+      optimized = optimized.replace('hqdefault.jpg', 'mqdefault.jpg');
+    }
+    return optimized;
   }
 
   return url;

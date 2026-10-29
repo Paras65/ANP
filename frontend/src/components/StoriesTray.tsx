@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { Article, VideoBulletin, MandiRate } from '../types';
 import { getCategoryTheme, getSmartCoverImage } from '../utils/categoryTheme';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 export interface StoryItem {
   id: string;
@@ -106,7 +107,9 @@ export function generateStoriesList(
     id: 's-live',
     label: 'लाइव टीवी',
     title: latestVideo?.title || 'Ambition News लाइव बुलेटिन: कवर्धा व प्रदेश की आज की बड़ी खबरें',
-    image: latestVideo?.thumbnail && !latestVideo.thumbnail.includes('photo-1585829365295') ? latestVideo.thumbnail : '/logo-96.webp',
+    image: latestVideo?.thumbnail && !latestVideo.thumbnail.includes('photo-1585829365295') 
+      ? getOptimizedImageUrl(latestVideo.thumbnail, 'thumbnail') 
+      : '/logo-96.webp',
     category: '🔴 LIVE',
     district: 'कवर्धा HQ',
     excerpt: 'कवर्धा स्टूडियो से सीधा प्रसारण: भोरमदेव, किसान अंतर राशि व मौसम का ताजा हाल।',

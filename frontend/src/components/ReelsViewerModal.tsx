@@ -17,6 +17,7 @@ import type { InstagramPost } from '../types';
 import { InstagramIcon, WhatsAppIcon } from './SocialIcons';
 import { SOCIAL_LINKS } from '../data/mockData';
 import api from '../api/client';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 interface ReelsViewerModalProps {
   initialPostId: string;
@@ -407,7 +408,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                 <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
                   {currentReel.imageUrl && (
                     <img 
-                      src={currentReel.imageUrl} 
+                      src={getOptimizedImageUrl(currentReel.imageUrl, 'card')} 
                       alt="" 
                       className="absolute inset-0 w-full h-full object-cover opacity-80" 
                     />
@@ -437,7 +438,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                   {/* Poster Thumbnail behind IFrame eliminates black flash during buffer/transition */}
                   {currentReel.imageUrl && (
                     <img 
-                      src={currentReel.imageUrl} 
+                      src={getOptimizedImageUrl(currentReel.imageUrl, 'card')} 
                       alt="" 
                       className="absolute inset-0 w-full h-full object-cover" 
                     />
@@ -475,7 +476,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
                 <div className="w-full h-full flex items-center justify-center bg-black relative">
                   {currentReel.imageUrl && (
                     <img 
-                      src={currentReel.imageUrl} 
+                      src={getOptimizedImageUrl(currentReel.imageUrl, 'card')} 
                       alt="" 
                       className="absolute inset-0 w-full h-full object-cover" 
                     />
@@ -493,7 +494,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
             }
             return (
               <img 
-                src={currentReel.imageUrl} 
+                src={getOptimizedImageUrl(currentReel.imageUrl, 'card')} 
                 alt={currentReel.caption}
                 className="w-full h-full object-cover animate-in fade-in duration-500 pointer-events-none" 
               />
