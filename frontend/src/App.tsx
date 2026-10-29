@@ -71,6 +71,9 @@ export const App: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [reporters, setReporters] = useState<Reporter[]>([]);
   const [ads, setAds] = useState<Advertisement[]>([]);
+  const [youtubeSubs, setYoutubeSubs] = useState<string>(() => {
+    return localStorage.getItem('anp_yt_subs') || SOCIAL_LINKS.youtubeSubs || '4.56K+';
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [backendSynced, setBackendSynced] = useState(false);
   
@@ -228,6 +231,11 @@ export const App: React.FC = () => {
 
     try {
       const res = await syncYouTubeChannelVideos(targetId);
+      if (res.subscribers) {
+        setYoutubeSubs(res.subscribers);
+        localStorage.setItem('anp_yt_subs', res.subscribers);
+        SOCIAL_LINKS.youtubeSubs = res.subscribers;
+      }
       if (res.success && res.videos.length > 0) {
         let addedCount = 0;
 
@@ -276,6 +284,12 @@ export const App: React.FC = () => {
       if (res.data?.isConfiguredOnServer !== undefined) {
         setHasYouTubeApiKey(res.data.isConfiguredOnServer);
       }
+      if (res.data?.subscribers || res.data?.stats?.subscriberCount) {
+        const liveSubs = res.data.subscribers || res.data.stats.subscriberCount;
+        setYoutubeSubs(liveSubs);
+        localStorage.setItem('anp_yt_subs', liveSubs);
+        SOCIAL_LINKS.youtubeSubs = liveSubs;
+      }
       showToast('✅ यूट्यूब चैनल आईडी MongoDB Atlas में सुरक्षित हो गई!');
     } catch (err) {
       console.warn('Config save error:', err);
@@ -291,6 +305,12 @@ export const App: React.FC = () => {
       }
       if (res.data?.isConfiguredOnServer !== undefined) {
         setHasYouTubeApiKey(res.data.isConfiguredOnServer);
+      }
+      if (res.data?.subscribers || res.data?.stats?.subscriberCount) {
+        const liveSubs = res.data.subscribers || res.data.stats.subscriberCount;
+        setYoutubeSubs(liveSubs);
+        localStorage.setItem('anp_yt_subs', liveSubs);
+        SOCIAL_LINKS.youtubeSubs = liveSubs;
       }
     }).catch(() => {});
 
@@ -1136,6 +1156,7 @@ export const App: React.FC = () => {
           onAddReporter={handleAddReporter}
           onUpdateReporter={handleUpdateReporter}
           onDeleteReporter={handleDeleteReporter}
+          youtubeSubs={youtubeSubs}
         />
       </React.Suspense>
     );
@@ -1203,6 +1224,7 @@ export const App: React.FC = () => {
           onOpenDistrictPicker={openDistrictModal}
           onOpenReporterModal={() => setShowReporterModal(true)}
           whatsappLink={whatsappLink}
+          youtubeSubs={youtubeSubs}
         />
 
         {/* 2. BREAKING NEWS & SURKHIYAN TICKER (NEVER DISAPPEARS) */}
@@ -1607,6 +1629,7 @@ export const App: React.FC = () => {
               <VideoSection 
                 bulletins={videoBulletins} 
                 isDark={isDark} 
+                youtubeSubs={youtubeSubs}
                 onShareWhatsApp={(title, url) => {
                   const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2454,6 +2477,7 @@ export const App: React.FC = () => {
               <VideoSection 
                 bulletins={videoBulletins} 
                 isDark={isDark} 
+                youtubeSubs={youtubeSubs}
                 onShareWhatsApp={(title, url) => {
                   const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2478,6 +2502,7 @@ export const App: React.FC = () => {
           onOpenReporterModal={() => setShowReporterModal(true)}
           onOpenCompliance={setComplianceModalTab}
           whatsappLink={whatsappLink}
+          youtubeSubs={youtubeSubs}
         />
 
         {/* 6. NATIVE BOTTOM NAVIGATION BAR */}

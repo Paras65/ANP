@@ -96,6 +96,7 @@ interface AdminPortalProps {
   onAddReporter?: (reporter: Partial<Reporter>) => void | Promise<void>;
   onUpdateReporter?: (id: string, reporter: Partial<Reporter>) => void | Promise<void>;
   onDeleteReporter?: (id: string) => void | Promise<void>;
+  youtubeSubs?: string;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
@@ -128,7 +129,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   reporters = [],
   onAddReporter,
   onUpdateReporter,
-  onDeleteReporter
+  onDeleteReporter,
+  youtubeSubs
 }) => {
   const [activeTab, setActiveTab] = useState<'create' | 'articles' | 'breaking' | 'reporters' | 'media' | 'mandi' | 'ads'>('create');
   
@@ -2832,6 +2834,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       }`}>
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         सक्रिय
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-600/20 text-red-400 border border-red-500/30 flex items-center gap-1 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                        🔴 लाइव सब्सक्राइबर्स: {youtubeSubs || '4.56K+'}
                       </span>
                     </div>
                     <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>

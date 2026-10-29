@@ -9,6 +9,7 @@ interface FooterProps {
   onOpenReporterModal?: () => void;
   onOpenCompliance?: (tab: 'editorial' | 'factcheck' | 'grievance' | 'privacy' | 'terms' | 'disclaimer') => void;
   whatsappLink?: string;
+  youtubeSubs?: string;
 }
 
 export const Footer: React.FC<FooterProps> = ({ 
@@ -16,7 +17,8 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenAdminPortal, 
   onOpenReporterModal,
   onOpenCompliance,
-  whatsappLink 
+  whatsappLink,
+  youtubeSubs
 }) => {
   return (
     <footer className={`border-t pt-10 pb-32 sm:pb-16 transition-colors text-xs ${
@@ -92,7 +94,7 @@ export const Footer: React.FC<FooterProps> = ({
                 </div>
                 <div>
                   <div className="font-bold">YouTube Official</div>
-                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{SOCIAL_LINKS.youtubeHandle} • {SOCIAL_LINKS.youtubeSubs}</div>
+                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{SOCIAL_LINKS.youtubeHandle} • {youtubeSubs || SOCIAL_LINKS.youtubeSubs}</div>
                 </div>
               </a>
 

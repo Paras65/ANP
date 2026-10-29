@@ -23,6 +23,7 @@ interface HeaderProps {
   onOpenReporterModal?: () => void;
   whatsappLink?: string;
   savedCount?: number;
+  youtubeSubs?: string;
 }
 
 const CATEGORIES = [
@@ -55,7 +56,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenDistrictPicker,
   onOpenReporterModal,
   whatsappLink,
-  savedCount
+  savedCount,
+  youtubeSubs
 }) => {
   const handleLogoClick = () => {
     if (setActiveTab) setActiveTab('home');
@@ -207,7 +209,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <YoutubeIcon size={12} />
               <span>YouTube</span>
-              <span className="hidden md:inline text-[9px]">({SOCIAL_LINKS.youtubeSubs})</span>
+              <span className="hidden md:inline text-[9px]">({youtubeSubs || SOCIAL_LINKS.youtubeSubs})</span>
             </a>
 
             {/* Facebook Link (Desktop) */}

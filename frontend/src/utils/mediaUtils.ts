@@ -252,7 +252,7 @@ export function parseYouTubeRssXml(xmlText: string): { videos: VideoBulletin[]; 
 export async function syncYouTubeChannelVideos(
   channelId: string,
   backendApiUrl = import.meta.env.VITE_API_URL || 'https://anp-n2e6.onrender.com/api'
-): Promise<{ success: boolean; videos: VideoBulletin[]; reels: InstagramPost[]; count: number; error?: string }> {
+): Promise<{ success: boolean; videos: VideoBulletin[]; reels: InstagramPost[]; count: number; subscribers?: string; error?: string }> {
   const cleanId = extractYouTubeChannelId(channelId) || channelId.trim();
   if (!cleanId || !cleanId.startsWith('UC')) {
     return {
@@ -274,7 +274,8 @@ export async function syncYouTubeChannelVideos(
           success: true,
           videos: data.videos,
           reels: data.reels || [],
-          count: data.totalFetched || data.videos.length
+          count: data.totalFetched || data.videos.length,
+          subscribers: data.subscribers || data.stats?.subscriberCount
         };
       }
     }

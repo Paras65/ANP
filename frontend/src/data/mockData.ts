@@ -21,7 +21,7 @@ export const SOCIAL_LINKS = {
   instagramBio: 'Ambition news ( कवर्धा ) • निष्पक्ष एवं निर्भीक क्षेत्रीय पत्रकारिता',
   youtube: 'https://www.youtube.com/@ambition_news',
   youtubeHandle: '@ambition_news',
-  youtubeSubs: '4.2K+',
+  youtubeSubs: '4.56K+',
   facebook: 'https://www.facebook.com/people/Ambitionnews-Kawardha/61585264107649/',
   facebookHandle: 'Ambitionnews Kawardha',
   whatsappShare: 'https://wa.me/?text=',

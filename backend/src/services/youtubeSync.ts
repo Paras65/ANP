@@ -163,13 +163,113 @@ function parseISO8601Duration(iso: string): { totalSeconds: number; formatted: s
 }
 
 // Helper to format numeric view and like counts
-function formatViews(countStr?: string): string {
+function formatViews(countStr?: string | number): string {
   if (!countStr) return 'ताज़ा कवरेज';
-  const num = parseInt(countStr, 10);
-  if (isNaN(num)) return countStr;
+  const num = typeof countStr === 'number' ? countStr : parseInt(countStr, 10);
+  if (isNaN(num)) return String(countStr);
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  if (num >= 1000) return (num / 1000).toFixed(2).replace(/\.?0+$/, '') + 'K';
   return num.toString();
+}
+
+export interface ChannelStats {
+  subscriberCount: string;
+  subscriberCountRaw?: number;
+  videoCount?: string;
+  viewCount?: string;
+  channelTitle?: string;
+  updatedAt: string;
+}
+
+let cachedStats: ChannelStats | null = null;
+let lastStatsFetchTime = 0;
+const STATS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes cache
+
+/**
+ * Real-time YouTube Subscriber & Channel Statistics Engine.
+ * Supports both Official YouTube Data API v3 and Zero-Key Public Channel Scraper.
+ */
+export async function getLiveChannelStats(
+  channelIdOrHandle = 'UC8mIipC7suPuBJ_n8kUzkCg',
+  forceRefresh = false
+): Promise<ChannelStats> {
+  const now = Date.now();
+  if (!forceRefresh && cachedStats && now - lastStatsFetchTime < STATS_CACHE_TTL) {
+    return cachedStats;
+  }
+
+  const apiKey = (process.env.YOUTUBE_API_KEY || '').trim();
+  const cleanId = channelIdOrHandle.trim() || 'UC8mIipC7suPuBJ_n8kUzkCg';
+
+  // 1. Try official YouTube Data API v3 if API key is configured
+  if (apiKey) {
+    try {
+      const isHandle = cleanId.startsWith('@') || !cleanId.startsWith('UC');
+      const param = isHandle
+        ? `forHandle=${encodeURIComponent(cleanId.replace(/^@/, ''))}`
+        : `id=${encodeURIComponent(cleanId)}`;
+      const url = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&${param}&key=${apiKey}`;
+      const res = await fetch(url);
+      const data: any = await res.json();
+      const item = data?.items?.[0];
+      if (item && item.statistics) {
+        const rawSubs = parseInt(item.statistics.subscriberCount, 10);
+        const formattedSubs = isNaN(rawSubs) ? '4.56K+' : formatViews(rawSubs) + '+';
+        cachedStats = {
+          subscriberCount: formattedSubs,
+          subscriberCountRaw: rawSubs,
+          videoCount: item.statistics.videoCount,
+          viewCount: item.statistics.viewCount,
+          channelTitle: item.snippet?.title || 'Ambition News',
+          updatedAt: new Date().toISOString()
+        };
+        lastStatsFetchTime = now;
+        return cachedStats;
+      }
+    } catch (err: any) {
+      logger.warn('[YouTube API Stats Fallback]:', err?.message);
+    }
+  }
+
+  // 2. Direct Public Channel Fetch (Zero API key / Zero Quota)
+  try {
+    const channelUrl = cleanId.startsWith('UC')
+      ? `https://www.youtube.com/channel/${cleanId}`
+      : `https://www.youtube.com/${cleanId.startsWith('@') ? cleanId : '@' + cleanId}`;
+
+    const res = await fetch(channelUrl, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+
+    const html = await res.text();
+
+    // Pattern 1: e.g. "4.56K subscribers"
+    const m1 = html.match(/([0-9.]+[KMBkmb]?)\s+(?:subscribers|सदस्य)/i);
+    // Pattern 2: subtitle content
+    const m2 = html.match(/"subtitle":\{"content":"[^"]*?([0-9.]+[KMBkmb]?)\s+subscribers/i);
+
+    const matchedCount = (m1 && m1[1]) || (m2 && m2[1]);
+    const finalSubs = matchedCount ? matchedCount.toUpperCase() + '+' : (cachedStats?.subscriberCount || '4.56K+');
+
+    cachedStats = {
+      subscriberCount: finalSubs,
+      channelTitle: 'Ambition News',
+      updatedAt: new Date().toISOString()
+    };
+    lastStatsFetchTime = now;
+    return cachedStats;
+  } catch (err: any) {
+    logger.warn('[Live YouTube Scraper Stats Fallback]:', err?.message);
+    return cachedStats || {
+      subscriberCount: '4.56K+',
+      channelTitle: 'Ambition News',
+      updatedAt: new Date().toISOString()
+    };
+  }
 }
 
 /**

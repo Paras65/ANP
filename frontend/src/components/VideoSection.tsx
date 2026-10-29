@@ -19,6 +19,7 @@ interface VideoSectionProps {
   bulletins: VideoBulletin[];
   isDark: boolean;
   onShareWhatsApp?: (title: string, videoUrl?: string) => void;
+  youtubeSubs?: string;
 }
 
 const PRESET_CATEGORIES = [
@@ -34,7 +35,8 @@ const PRESET_CATEGORIES = [
 export const VideoSection: React.FC<VideoSectionProps> = ({ 
   bulletins, 
   isDark, 
-  onShareWhatsApp
+  onShareWhatsApp,
+  youtubeSubs
 }) => {
   // Pure real data: do not render video section if no live bulletins exist
   if (!bulletins || bulletins.length === 0) return null;
@@ -522,7 +524,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     <YoutubeIcon size={20} />
                   </div>
                   <span className="text-[10px] font-bold text-red-400 bg-red-950/60 border border-red-800/60 px-2 py-0.5 rounded-full">
-                    {SOCIAL_LINKS.youtubeSubs}
+                    {youtubeSubs || SOCIAL_LINKS.youtubeSubs}
                   </span>
                 </div>
                 <div>
