@@ -748,7 +748,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   const handleSendClientReport = (ad: Advertisement) => {
     const slotLabel = ad.placement === 'header_top' ? 'टॉप हेडर बैनर' : ad.placement === 'article_bottom' ? 'खबर के नीचे' : 'समाचार फ़ीड बैनर';
-    const reportText = `📢 *Ambition News • विज्ञापन प्रदर्शन रिपोर्ट*\n\nप्रिय *${ad.clientName}*,\nAmbition News Portal पर आपके विज्ञापन अभियान का ताज़ा प्रदर्शन विवरण:\n\n📌 *अभियान*: ${ad.title}\n📍 *स्थान*: ${slotLabel}\n🎯 *लक्षित क्षेत्र*: ${ad.targetDistrict}\n\n👁️ *कुल पाठक व्यूज़ (इम्प्रेशन्स)*: ${(ad.impressions || 0).toLocaleString('en-IN')}\n📲 *सीधे WhatsApp/क्लिक्स*: ${(ad.clicks || 0).toLocaleString('en-IN')}\n🟢 *स्थिति*: ${ad.isActive ? 'सक्रिय (Live)' : 'रोकी गई / समाप्त'}\n\nधन्यवाद!\n*Ambition News Portal — कवर्धा (कबीरधाम)*\n🌐 https://ambitionnews.init65.co.in`;
+    const reportText = `📢 *Ambition News • विज्ञापन प्रदर्शन रिपोर्ट*\n\nप्रिय *${ad.clientName}*,\nAmbition News Portal पर आपके विज्ञापन अभियान का ताज़ा प्रदर्शन विवरण:\n\n📌 *अभियान*: ${ad.title}\n📍 *स्थान*: ${slotLabel}\n🎯 *लक्षित क्षेत्र*: ${ad.targetDistrict}\n\n👁️ *कुल पाठक व्यूज़ (इम्प्रेशन्स)*: ${(ad.impressions || 0).toLocaleString('en-IN')}\n📲 *सीधे WhatsApp/क्लिक्स*: ${(ad.clicks || 0).toLocaleString('en-IN')}\n🟢 *स्थिति*: ${ad.isActive ? 'सक्रिय (Live)' : 'रोकी गई / समाप्त'}\n\nधन्यवाद!\n*Ambition News Portal — कवर्धा (कबीरधाम)*\n🌐 ${SOCIAL_LINKS.website}`;
     const phone = ad.clientPhone ? ad.clientPhone.replace(/\D/g, '') : '';
     window.open(`https://api.whatsapp.com/send?phone=91${phone}&text=${encodeURIComponent(reportText)}`, '_blank');
   };

@@ -809,9 +809,10 @@ export const App: React.FC = () => {
 
   // Dynamic SEO & Structured Data updater for Google Search & Social Media Cards
   useEffect(() => {
+    const siteUrl = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://ambitionnews.init65.co.in');
     const defaultTitle = "एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश का अग्रणी डिजिटल न्यूज़ नेटवर्क | Ambition News";
     const defaultDesc = "एम्बिशन न्यूज़ (Ambition News Kawardha) — कबीरधाम (कवर्धा), छत्तीसगढ़ के 33 और मध्यप्रदेश के 55 जिलों की ताज़ा ब्रेकिंग खबरें, भोरमदेव समाचार, मंडी भाव, राजनीति, अपराध और वीडियो बुलेटिन।";
-    const defaultImage = "https://ambition-news-portal.vercel.app/logo-512.png";
+    const defaultImage = `${siteUrl}/logo-512.png`;
 
     if (activeArticle) {
       document.title = `${activeArticle.title} | एम्बिशन न्यूज़ कवर्धा`;
@@ -829,7 +830,7 @@ export const App: React.FC = () => {
       if (ogImage) ogImage.setAttribute('content', activeArticle.coverImage || defaultImage);
 
       const ogUrl = document.querySelector('meta[property="og:url"]');
-      if (ogUrl) ogUrl.setAttribute('content', `https://ambition-news-portal.vercel.app/?article=${activeArticle._id}`);
+      if (ogUrl) ogUrl.setAttribute('content', `${siteUrl}/?article=${activeArticle._id}`);
 
       // Inject dynamic NewsArticle schema for Google News & Rich Snippets
       let script = document.getElementById('dynamic-article-schema') as HTMLScriptElement | null;
@@ -861,7 +862,7 @@ export const App: React.FC = () => {
         },
         'mainEntityOfPage': {
           '@type': 'WebPage',
-          '@id': `https://ambition-news-portal.vercel.app/?article=${activeArticle._id}`
+          '@id': `${siteUrl}/?article=${activeArticle._id}`
         }
       });
     } else {
@@ -879,7 +880,7 @@ export const App: React.FC = () => {
       if (ogImage) ogImage.setAttribute('content', defaultImage);
 
       const ogUrl = document.querySelector('meta[property="og:url"]');
-      if (ogUrl) ogUrl.setAttribute('content', 'https://ambition-news-portal.vercel.app/');
+      if (ogUrl) ogUrl.setAttribute('content', `${siteUrl}/`);
 
       const existingScript = document.getElementById('dynamic-article-schema');
       if (existingScript) existingScript.remove();

@@ -182,7 +182,7 @@ export const ComplianceModal: React.FC<ComplianceModalProps> = ({
                 <p className="text-xs text-slate-400">पोर्टल का उपयोग करने पर इन विधिक शर्तों की सहमति अनिवार्य है</p>
               </div>
               <p>
-                एम्बिशन न्यूज़ पोर्टल (ambitionnews.com / ambition-news-portal.vercel.app) का उपयोग करके आप निम्नलिखित शर्तों से कानूनी रूप से बाध्य होने की सहमति देते हैं:
+                एम्बिशन न्यूज़ पोर्टल ({SOCIAL_LINKS.domain || 'ambitionnews.init65.co.in'}) का उपयोग करके आप निम्नलिखित शर्तों से कानूनी रूप से बाध्य होने की सहमति देते हैं:
               </p>
               <div className={`p-4 rounded-2xl border space-y-2.5 text-xs ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <h4 className="font-bold text-blue-400">उपयोग के नियम:</h4>

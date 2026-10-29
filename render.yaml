@@ -17,7 +17,7 @@ services:
       - key: FRONTEND_URL
         value: https://ambitionnews.init65.co.in
       - key: ALLOWED_ORIGINS
-        value: https://ambitionnews.init65.co.in,https://ambition-news-portal.vercel.app
+        value: https://ambitionnews.init65.co.in
       - key: ALLOWED_DOMAIN_PATTERNS
         value: .init65.co.in,.vercel.app,.pages.dev
       - key: MONGODB_URI
