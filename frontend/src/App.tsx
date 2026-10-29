@@ -629,6 +629,22 @@ export const App: React.FC = () => {
     }
   };
 
+  // Restore soft-deleted article from Trash back to live portal
+  const handleRestoreArticle = async (id: string): Promise<boolean> => {
+    try {
+      const res = await api.post(`/articles/${id}/restore`);
+      if (res.data?.data) {
+        setArticles(prev => [res.data.data, ...prev.filter(a => a._id !== id)]);
+        showToast('🎉 खबर सफलतापूर्वक ट्रैश से पुनः लाइव प्रकाशित हो गई!');
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'खबर रीस्टोर करने में विफल');
+      return false;
+    }
+  };
+
   // Update existing article live in MongoDB Atlas with Concurrency Collision Protection
   const handleUpdateArticle = async (id: string, updatedData: Partial<Article>): Promise<{ success: boolean; conflict?: boolean; error?: string }> => {
     const existing = articles.find(a => a._id === id);
@@ -1168,6 +1184,7 @@ export const App: React.FC = () => {
           onPublishArticle={handleNewArticleSubmit}
           onUpdateArticle={handleUpdateArticle}
           onDeleteArticle={handleDeleteArticle}
+          onRestoreArticle={handleRestoreArticle}
           onBackToPublic={handleBackToPublic}
           isDark={isDark}
           toggleTheme={toggleTheme}

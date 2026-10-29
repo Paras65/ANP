@@ -20,6 +20,7 @@ import {
   Tv,
   Film,
   RefreshCw,
+  RotateCcw,
   Zap,
   Check,
   HelpCircle,
@@ -72,6 +73,7 @@ interface AdminPortalProps {
   onPublishArticle: (article: Partial<Article>) => void | Promise<any>;
   onUpdateArticle?: (id: string, article: Partial<Article>) => void | Promise<any>;
   onDeleteArticle: (id: string) => void;
+  onRestoreArticle?: (id: string) => Promise<boolean> | void;
   onBackToPublic: () => void;
   isDark: boolean;
   toggleTheme?: () => void;
@@ -106,6 +108,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onPublishArticle,
   onUpdateArticle,
   onDeleteArticle,
+  onRestoreArticle,
   onBackToPublic,
   isDark,
   toggleTheme,
@@ -186,8 +189,45 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Articles Search, Filter & Pagination State (Tab 2)
   const [articleSearchQuery, setArticleSearchQuery] = useState('');
   const [articleDistrictFilter, setArticleDistrictFilter] = useState('सभी');
-  const [articleStatusFilter, setArticleStatusFilter] = useState<'all' | 'PUBLISHED' | 'REVIEW'>('all');
+  const [articleStatusFilter, setArticleStatusFilter] = useState<'all' | 'PUBLISHED' | 'REVIEW' | 'TRASH'>('all');
   const [adminArticlePage, setAdminArticlePage] = useState(1);
+
+  // Trash & Recovery Desk State (Soft-Delete Recovery)
+  const [trashArticles, setTrashArticles] = useState<Article[]>([]);
+  const [isLoadingTrash, setIsLoadingTrash] = useState(false);
+
+  const fetchTrashArticles = async () => {
+    setIsLoadingTrash(true);
+    try {
+      const res = await api.get('/articles/trash');
+      if (res.data?.success && Array.isArray(res.data?.data)) {
+        setTrashArticles(res.data.data);
+      }
+    } catch {
+      // Local error handled
+    } finally {
+      setIsLoadingTrash(false);
+    }
+  };
+
+  useEffect(() => {
+    if (articleStatusFilter === 'TRASH') {
+      fetchTrashArticles();
+    }
+  }, [articleStatusFilter]);
+
+  const handleRestoreTrashArticle = async (id: string) => {
+    try {
+      if (onRestoreArticle) {
+        await onRestoreArticle(id);
+      } else {
+        await api.post(`/articles/${id}/restore`);
+      }
+      setTrashArticles(prev => prev.filter(a => a._id !== id));
+    } catch {
+      alert('खबर रीस्टोर नहीं हो सकी');
+    }
+  };
 
   // Reset pagination to page 1 on filter/search change
   useEffect(() => {
@@ -2137,15 +2177,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
         {/* TAB 2: MANAGE PUBLISHED ARTICLES */}
         {activeTab === 'articles' && (() => {
+          const sourceArticles = articleStatusFilter === 'TRASH' ? trashArticles : articles;
           const pendingScoops = articles.filter(art => art.status === 'REVIEW');
           const publishedCount = articles.filter(art => art.status !== 'REVIEW').length;
 
-          const filteredManagedArticles = articles.filter(art => {
+          const filteredManagedArticles = sourceArticles.filter(art => {
             const matchesSearch = !articleSearchQuery.trim() || 
               art.title?.toLowerCase().includes(articleSearchQuery.toLowerCase()) || 
               art.author?.toLowerCase().includes(articleSearchQuery.toLowerCase());
             const matchesDistrict = articleDistrictFilter === 'सभी' || (art.district && art.district.includes(articleDistrictFilter));
-            const matchesStatus = articleStatusFilter === 'all'
+            const matchesStatus = articleStatusFilter === 'TRASH'
+              ? true
+              : articleStatusFilter === 'all'
               ? true
               : articleStatusFilter === 'REVIEW'
                 ? art.status === 'REVIEW'
@@ -2260,6 +2303,25 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     {pendingScoops.length}
                   </span>
                 </button>
+
+                {/* Edge Case 4.2: Trash & Soft-Delete Recovery Desk Pill */}
+                <button
+                  type="button"
+                  onClick={() => setArticleStatusFilter('TRASH')}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 border ${
+                    articleStatusFilter === 'TRASH'
+                      ? 'bg-rose-600 text-white border-transparent shadow'
+                      : isDark ? 'bg-slate-950/60 text-slate-400 hover:text-white border-slate-800' : 'bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-300'
+                  }`}
+                >
+                  <Trash2 size={12} />
+                  <span>🗑️ ट्रैश (Deleted)</span>
+                  {trashArticles.length > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>
+                      {trashArticles.length}
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* Real-time Search and Filter Bar */}
@@ -2315,11 +2377,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
 
               <div className="space-y-3">
-                {filteredManagedArticles.length === 0 ? (
+                {isLoadingTrash && articleStatusFilter === 'TRASH' ? (
+                  <div className={`p-8 text-center text-xs border rounded-2xl flex items-center justify-center gap-2 ${
+                    isDark ? 'text-slate-400 border-dashed border-white/10' : 'text-slate-600 border-dashed border-slate-300'
+                  }`}>
+                    <RefreshCw size={14} className="animate-spin text-red-500" />
+                    <span>ट्रैश से हटाए गए समाचार लोड हो रहे हैं...</span>
+                  </div>
+                ) : filteredManagedArticles.length === 0 ? (
                   <div className={`p-8 text-center text-xs border rounded-2xl ${
                     isDark ? 'text-slate-400 border-dashed border-white/10' : 'text-slate-600 border-dashed border-slate-300'
                   }`}>
-                    कोई खबर नहीं मिली। कृपया अलग कीवर्ड या जिला चुनें।
+                    {articleStatusFilter === 'TRASH' 
+                      ? '🎉 ट्रैश बिल्कुल खाली है! कोई भी हटाई गई खबर मौजूद नहीं है।' 
+                      : 'कोई खबर नहीं मिली। कृपया अलग कीवर्ड या जिला चुनें।'}
                   </div>
                 ) : paginatedArticles.map((art) => (
                   <div
@@ -2341,7 +2412,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                           <span className="text-red-500">{art.category}</span>
                           <span className="text-slate-500">•</span>
                           <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>📍 {art.district}</span>
-                          {art.status === 'REVIEW' ? (
+                          {articleStatusFilter === 'TRASH' ? (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold border bg-rose-950/80 text-rose-300 border-rose-800">
+                              🗑️ हटाया गया (In Trash)
+                            </span>
+                          ) : art.status === 'REVIEW' ? (
                             <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${
                               isDark ? 'bg-amber-950 text-amber-300 border-amber-800' : 'bg-amber-100 text-amber-800 border-amber-300'
                             }`}>
@@ -2363,63 +2438,76 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5 self-end sm:self-center">
-                      {art.status === 'REVIEW' && (
+                      {articleStatusFilter === 'TRASH' ? (
                         <button
-                          onClick={() => {
-                            if (onUpdateArticle) {
-                              onUpdateArticle(art._id, { status: 'PUBLISHED' });
-                            }
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-900/30 transition active:scale-95 shrink-0"
-                          title="तुरंत स्वीकृत कर पोर्टल पर लाइव प्रकाशित करें"
+                          onClick={() => handleRestoreTrashArticle(art._id)}
+                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-900/30 transition active:scale-95 shrink-0"
+                          title="खबर को ट्रैश से पुनः पोर्टल पर लाइव प्रकाशित करें"
                         >
-                          <Check size={13} />
-                          <span>स्वीकृत करें</span>
+                          <RotateCcw size={13} />
+                          <span>पुनर्स्थापित करें (Restore)</span>
                         </button>
+                      ) : (
+                        <>
+                          {art.status === 'REVIEW' && (
+                            <button
+                              onClick={() => {
+                                if (onUpdateArticle) {
+                                  onUpdateArticle(art._id, { status: 'PUBLISHED' });
+                                }
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-900/30 transition active:scale-95 shrink-0"
+                              title="तुरंत स्वीकृत कर पोर्टल पर लाइव प्रकाशित करें"
+                            >
+                              <Check size={13} />
+                              <span>स्वीकृत करें</span>
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleStartEdit(art)}
+                            className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
+                              isDark 
+                                ? 'bg-blue-950/50 hover:bg-blue-900 text-blue-300 border border-blue-800/60' 
+                                : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                            }`}
+                            title="खबर संपादित करें (Edit Article)"
+                          >
+                            <Edit3 size={13} />
+                            <span>एडिट</span>
+                          </button>
+
+                          <button
+                            onClick={() => setWhatsAppArticle(art)}
+                            className={`p-1.5 rounded-xl transition border ${
+                              isDark ? 'text-emerald-400 hover:bg-emerald-950/60 border-emerald-800/40 hover:border-emerald-600' : 'text-emerald-700 hover:bg-emerald-50 border-emerald-300 hover:border-emerald-400'
+                            }`}
+                            title="1-क्लिक WhatsApp बुलेटिन"
+                          >
+                            <MessageCircle size={14} />
+                          </button>
+
+                          <button
+                            onClick={() => setCardArticle(art)}
+                            className={`p-1.5 rounded-xl transition border ${
+                              isDark ? 'text-rose-400 hover:bg-rose-950/60 border-rose-800/40 hover:border-rose-600' : 'text-rose-700 hover:bg-rose-50 border-rose-300 hover:border-rose-400'
+                            }`}
+                            title="सोशल मीडिया फोटो कार्ड बनाएं"
+                          >
+                            <ImageIcon size={14} />
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteArticleConfirmed(art._id, art.title)}
+                            className={`p-1.5 rounded-xl transition border ${
+                              isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-950/40 border-transparent hover:border-red-900/40' : 'text-slate-400 hover:text-red-600 hover:bg-red-50 border-transparent hover:border-red-200'
+                            }`}
+                            title="खबर हटाएं (Delete)"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
                       )}
-
-                      <button
-                        onClick={() => handleStartEdit(art)}
-                        className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1 text-xs font-bold ${
-                          isDark 
-                            ? 'bg-blue-950/50 hover:bg-blue-900 text-blue-300 border border-blue-800/60' 
-                            : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
-                        }`}
-                        title="खबर संपादित करें (Edit Article)"
-                      >
-                        <Edit3 size={13} />
-                        <span>एडिट</span>
-                      </button>
-
-                      <button
-                        onClick={() => setWhatsAppArticle(art)}
-                        className={`p-1.5 rounded-xl transition border ${
-                          isDark ? 'text-emerald-400 hover:bg-emerald-950/60 border-emerald-800/40 hover:border-emerald-600' : 'text-emerald-700 hover:bg-emerald-50 border-emerald-300 hover:border-emerald-400'
-                        }`}
-                        title="1-क्लिक WhatsApp बुलेटिन"
-                      >
-                        <MessageCircle size={14} />
-                      </button>
-
-                      <button
-                        onClick={() => setCardArticle(art)}
-                        className={`p-1.5 rounded-xl transition border ${
-                          isDark ? 'text-rose-400 hover:bg-rose-950/60 border-rose-800/40 hover:border-rose-600' : 'text-rose-700 hover:bg-rose-50 border-rose-300 hover:border-rose-400'
-                        }`}
-                        title="सोशल मीडिया फोटो कार्ड बनाएं"
-                      >
-                        <ImageIcon size={14} />
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteArticleConfirmed(art._id, art.title)}
-                        className={`p-1.5 rounded-xl transition border ${
-                          isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-950/40 border-transparent hover:border-red-900/40' : 'text-slate-400 hover:text-red-600 hover:bg-red-50 border-transparent hover:border-red-200'
-                        }`}
-                        title="खबर हटाएं (Delete)"
-                      >
-                        <Trash2 size={14} />
-                      </button>
                     </div>
                   </div>
                 ))}
