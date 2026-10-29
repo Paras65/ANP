@@ -52,7 +52,7 @@ export const BreakingTicker: React.FC<BreakingTickerProps> = ({
 
   return (
     <div 
-      className={`text-white text-xs font-medium flex items-center overflow-hidden border-t border-b shadow-sm relative z-20 w-full max-w-full select-none transition-colors duration-300 ${
+      className={`text-white text-xs font-medium flex items-center overflow-hidden border-t border-b shadow-sm relative z-20 w-full max-w-full select-none ${
         isBreakingActive 
           ? 'bg-red-600 border-red-700' 
           : 'bg-gradient-to-r from-red-700 via-rose-700 to-red-800 border-red-800/80'

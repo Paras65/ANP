@@ -87,6 +87,19 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
     }).filter(cat => cat.id === 'all' || cat.count > 0);
   }, [bulletins]);
 
+  // Close video modal on Escape key
+  useEffect(() => {
+    if (!activeVideo) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setCountdown(null);
+        setActiveVideo(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeVideo]);
+
   // Lock body scroll while video modal is active to prevent background rubber-band jerks
   useEffect(() => {
     if (activeVideo) {
@@ -220,7 +233,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   if (!bulletins || bulletins.length === 0) return null;
 
   return (
-    <section className={`rounded-3xl border p-4 sm:p-5 transition-colors ${
+    <section className={`rounded-3xl border p-4 sm:p-5 ${
       isDark ? 'bg-[#090d18]/95 border-red-950/40 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
     }`}>
       
@@ -339,7 +352,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 
       {/* 3. HERO SPOTLIGHT BROADCAST (Lead Featured Video) */}
       {featuredVideo && (
-        <div className={`mb-6 rounded-2xl sm:rounded-3xl border overflow-hidden transition-colors duration-200 shadow-xl ${
+        <div className={`mb-6 rounded-2xl sm:rounded-3xl border overflow-hidden shadow-xl ${
           isDark ? 'bg-gradient-to-br from-slate-900/90 via-slate-950 to-red-950/20 border-red-950/60' : 'bg-gradient-to-br from-red-50/50 via-white to-slate-50 border-red-200'
         }`}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
@@ -435,7 +448,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     setCountdown(null);
                     setActiveVideo(featuredVideo);
                   }}
-                  className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+                  className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-transform duration-150 active:scale-95 cursor-pointer"
                   title="एक के बाद एक लगातार ऑटो-प्ले चलाएं"
                 >
                   <RefreshCw size={13} className="animate-spin text-white" />
@@ -626,8 +639,17 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 
       {/* 6. INTERACTIVE VIDEO PLAYER MODAL WITH CONTINUOUS AUTOPLAY & 'UP NEXT' */}
       {activeVideo && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-[#0b0f19] border border-red-500/30 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh]">
+        <div 
+          onClick={() => {
+            setCountdown(null);
+            setActiveVideo(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#0b0f19] border border-red-500/30 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh] cursor-default"
+          >
             
             {/* Modal Header */}
             <div className="p-3 sm:p-4 bg-[#070a12] flex items-center justify-between border-b border-white/10 shrink-0">

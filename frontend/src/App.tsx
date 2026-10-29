@@ -1760,7 +1760,7 @@ export const App: React.FC = () => {
                     {heroArticle && (
                       <div 
                         onClick={() => openArticleModal(heroArticle)}
-                        className={`rounded-3xl border overflow-hidden cursor-pointer group shadow-xl transition-colors duration-150 ${
+                        className={`rounded-3xl border overflow-hidden cursor-pointer group shadow-xl ${
                           isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/70' : 'bg-white border-slate-200'
                         }`}
                       >
@@ -1917,7 +1917,7 @@ export const App: React.FC = () => {
                         <React.Fragment key={art._id}>
                           <div 
                             onClick={() => openArticleModal(art)}
-                            className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer group transition-colors duration-150 ${
+                            className={`p-3.5 rounded-2xl border flex flex-col justify-between cursor-pointer group ${
                               isDark ? 'bg-slate-900 border-slate-800 hover:border-red-600/60' : 'bg-white border-slate-200 shadow-sm'
                             }`}
                           >
@@ -2099,7 +2099,7 @@ export const App: React.FC = () => {
                     </div>
 
                     {/* 2. WhatsApp News Group & Community Join Card (High Conversion CTA) */}
-                    <div className={`p-3.5 rounded-2xl border transition-colors duration-200 ${
+                    <div className={`p-3.5 rounded-2xl border ${
                       isDark 
                         ? 'bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-900 border-emerald-800/60 shadow-lg shadow-emerald-950/20' 
                         : 'bg-emerald-50/80 border-emerald-200 shadow-sm'

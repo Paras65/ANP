@@ -19,7 +19,7 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
   if (!rates || rates.length === 0) {
     if (compact) {
       return (
-        <div className={`h-11 rounded-2xl border p-2 sm:p-2.5 transition-colors animate-pulse flex items-center gap-2 ${
+        <div className={`h-11 rounded-2xl border p-2 sm:p-2.5 flex items-center gap-2 ${
           isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-100 border-slate-200'
         }`}>
           <div className="w-20 h-6 rounded-lg bg-emerald-500/20 shrink-0"></div>
@@ -34,7 +34,7 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
   // 1. Compact 1-line horizontal momentum strip for Homepage
   if (compact) {
     return (
-      <div className={`rounded-2xl border p-2 sm:p-2.5 transition-colors ${
+      <div className={`rounded-2xl border p-2 sm:p-2.5 ${
         isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-emerald-50/70 border-emerald-200 shadow-sm'
       }`}>
         <div className="flex items-center justify-between gap-2 overflow-hidden">
@@ -42,7 +42,7 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
           {/* Left Live Badge */}
           <button 
             onClick={onViewFull}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-400 text-[11px] font-black shrink-0 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-400 text-[11px] font-black shrink-0 transition-transform active:scale-95 cursor-pointer"
             title="सभी मंडी भाव देखें"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -107,7 +107,7 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
 
   // 2. Full 6-Card Grid for dedicated Mandi Tab view
   return (
-    <div className={`rounded-2xl border p-4 transition-colors ${
+    <div className={`rounded-2xl border p-4 ${
       isDark ? 'bg-slate-900 border-slate-800' : 'bg-emerald-50/50 border-emerald-200 shadow-sm'
     }`}>
       

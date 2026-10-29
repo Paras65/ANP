@@ -141,15 +141,22 @@ body.modal-open {
    Ensures 60fps/120fps smooth rendering without main-thread paint/layout reflows.
    ======================================================== */
 .animate-spin,
-.animate-pulse,
 .animate-ping,
 .animate-bounce,
 .ticker-seamless,
 .audio-ticker,
 .story-active {
-  will-change: transform, opacity;
+  will-change: transform;
   transform: translateZ(0);
   backface-visibility: hidden;
+  isolation: isolate;
+}
+
+.animate-pulse {
+  will-change: opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  isolation: isolate;
 }
 
 /* Composited Bounce (Pure 3D translate with zero layer de-promotion) */
