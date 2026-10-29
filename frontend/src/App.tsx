@@ -1045,6 +1045,12 @@ export const App: React.FC = () => {
         const found = articles.find(a => a._id === artId);
         if (found) {
           setActiveArticle(found);
+        } else {
+          api.get(`/articles/${artId}`).then(res => {
+            if (res.data?.data) {
+              setActiveArticle(res.data.data);
+            }
+          }).catch(() => {});
         }
       }
       const reelId = params.get('reel');
@@ -1074,6 +1080,21 @@ export const App: React.FC = () => {
       }
     } catch {}
   }, [articles]);
+
+  // Dynamic SEO page title for Googlebot & Browser Tabs
+  useEffect(() => {
+    if (activeArticle) {
+      document.title = `${activeArticle.title} — एम्बिशन न्यूज़ कवर्धा`;
+    } else if (activeTab === 'videos') {
+      document.title = 'वीडियो बुलेटिन & लाइव टीवी — एम्बिशन न्यूज़ (Ambition TV)';
+    } else if (activeTab === 'mandi') {
+      document.title = 'आज के कृषि उपज मंडी भाव — एम्बिशन न्यूज़ कवर्धा';
+    } else if (activeTab === 'saved') {
+      document.title = 'सहेजी गई खबरें व रील्स — एम्बिशन न्यूज़';
+    } else {
+      document.title = 'एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश का अग्रणी डिजिटल न्यूज़ नेटवर्क | Ambition News';
+    }
+  }, [activeArticle, activeTab]);
 
   // WhatsApp Share Helper for single article with direct deep-link URL
   const shareWhatsApp = (title: string, articleId?: string) => {

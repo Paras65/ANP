@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/sitemap-news.xml",
+      "destination": "https://anp-n2e6.onrender.com/api/sitemap-news.xml"
+    },
+    {
+      "source": "/api/rss",
+      "destination": "https://anp-n2e6.onrender.com/api/rss"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

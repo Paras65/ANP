@@ -239,6 +239,79 @@ router.get(['/rss', '/rss.xml', '/feed.xml'], async (_req: Request, res: Respons
   }
 });
 
+// 2c. GET /api/sitemap-news.xml - Dynamic Google News XML Sitemap for rapid Google indexing
+router.get(['/sitemap-news.xml', '/sitemap-news'], async (_req: Request, res: Response) => {
+  try {
+    res.set({
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=600, stale-while-revalidate=1800'
+    });
+
+    // Google News sitemap standard: articles published in the last 48 hours
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const recentArticles = await Article.find({
+      status: 'PUBLISHED',
+      deletedAt: null,
+      publishedAt: { $gte: twoDaysAgo }
+    })
+      .sort({ publishedAt: -1 })
+      .limit(100)
+      .lean();
+
+    const baseUrl = process.env.FRONTEND_URL 
+      || (_req.headers.origin as string) 
+      || 'https://ambitionnews.init65.co.in';
+
+    let urlsXml = '';
+    for (const art of recentArticles) {
+      const artId = (art as any)._id?.toString() || '';
+      const title = (art as any).titleHindi || (art as any).title || 'समाचार';
+      const pubDate = (art as any).publishedAt ? new Date((art as any).publishedAt).toISOString() : new Date().toISOString();
+      const imageUrl = (art as any).coverImage;
+
+      urlsXml += `
+  <url>
+    <loc>${baseUrl}/?article=${artId}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>एम्बिशन न्यूज़</news:name>
+        <news:language>hi</news:language>
+      </news:publication>
+      <news:publication_date>${pubDate}</news:publication_date>
+      <news:title><![CDATA[${title}]]></news:title>
+    </news:news>
+    ${imageUrl ? `<image:image><image:loc>${imageUrl.replace(/&/g, '&amp;')}</image:loc></image:image>` : ''}
+  </url>`;
+    }
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <changefreq>always</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/videos</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/mandi</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.90</priority>
+  </url>${urlsXml}
+</urlset>`;
+
+    res.send(xml.trim());
+  } catch (err: any) {
+    logger.error('Failed to generate news sitemap:', err);
+    res.status(500).send('<?xml version="1.0"?><error>Failed to generate news sitemap</error>');
+  }
+});
+
 // 3. GET /api/articles - List published articles filtered live from MongoDB Atlas (with In-Memory Master Cache & Edge Acceleration)
 router.get('/articles', async (req: Request, res: Response) => {
   try {

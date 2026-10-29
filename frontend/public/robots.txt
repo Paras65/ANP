@@ -84,6 +84,7 @@ Disallow: /api/
 
 # XML Sitemap Location
 Sitemap: https://ambitionnews.init65.co.in/sitemap.xml
+Sitemap: https://ambitionnews.init65.co.in/sitemap-news.xml
 
 # LLMs Text Specification (Agentic Browsing Standard: https://llmstxt.org)
 # llms.txt: https://ambitionnews.init65.co.in/llms.txt
