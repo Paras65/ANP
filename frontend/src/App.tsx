@@ -29,7 +29,7 @@ const SavedArticlesView = React.lazy(() => import('./components/SavedArticlesVie
 const ArticleModal = React.lazy(() => import('./components/ArticleModal').then(m => ({ default: m.ArticleModal })));
 const AdminPortal = React.lazy(() => import('./components/AdminPortal').then(m => ({ default: m.AdminPortal })));
 const SuperAdminPortal = React.lazy(() => import('./components/SuperAdminPortal').then(m => ({ default: m.SuperAdminPortal })));
-import { Footer } from './components/Footer';
+const Footer = React.lazy(() => import('./components/Footer').then(m => ({ default: m.Footer })));
 import { StoriesTray } from './components/StoriesTray';
 const StoryViewerModal = React.lazy(() => import('./components/StoryViewerModal').then(m => ({ default: m.StoryViewerModal })));
 const ReelsViewerModal = React.lazy(() => import('./components/ReelsViewerModal').then(m => ({ default: m.ReelsViewerModal })));
@@ -37,7 +37,7 @@ const DistrictPickerModal = React.lazy(() => import('./components/DistrictPicker
 const ReporterModal = React.lazy(() => import('./components/ReporterModal').then(m => ({ default: m.ReporterModal })));
 const ComplianceModal = React.lazy(() => import('./components/ComplianceModal').then(m => ({ default: m.ComplianceModal })));
 import { BottomNav } from './components/BottomNav';
-import { PwaInstallPrompt } from './components/PwaInstallPrompt';
+const PwaInstallPrompt = React.lazy(() => import('./components/PwaInstallPrompt').then(m => ({ default: m.PwaInstallPrompt })));
 import type { TabType } from './components/BottomNav';
 import { useVoiceTyping } from './hooks/useVoiceTyping';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './components/SocialIcons';
@@ -2357,16 +2357,18 @@ export const App: React.FC = () => {
 
         </main>
 
-        {/* 5. FOOTER */}
-        <Footer 
-          isDark={isDark} 
-          onOpenAdminPortal={handleOpenAdmin}
-          onOpenReporterModal={() => setShowReporterModal(true)}
-          onOpenCompliance={setComplianceModalTab}
-          onSelectTab={setActiveTab}
-          whatsappLink={whatsappLink}
-          youtubeSubs={youtubeSubs}
-        />
+        {/* 5. FOOTER (ON-DEMAND LAZY LOADED) */}
+        <React.Suspense fallback={null}>
+          <Footer 
+            isDark={isDark} 
+            onOpenAdminPortal={handleOpenAdmin}
+            onOpenReporterModal={() => setShowReporterModal(true)}
+            onOpenCompliance={setComplianceModalTab}
+            onSelectTab={setActiveTab}
+            whatsappLink={whatsappLink}
+            youtubeSubs={youtubeSubs}
+          />
+        </React.Suspense>
 
         {/* 6. NATIVE BOTTOM NAVIGATION BAR */}
         <BottomNav 
@@ -2384,8 +2386,10 @@ export const App: React.FC = () => {
         {/* FLOATING BACK TO TOP BUTTON WITH CIRCULAR READING PROGRESS RING */}
         <BackToTop />
 
-        {/* PWA INSTALL PROMPT (SHORT & SWEET IF NOT INSTALLED) */}
-        <PwaInstallPrompt onShareWhatsApp={handleShareAppWhatsApp} />
+        {/* PWA INSTALL PROMPT (ON-DEMAND LAZY LOADED) */}
+        <React.Suspense fallback={null}>
+          <PwaInstallPrompt onShareWhatsApp={handleShareAppWhatsApp} />
+        </React.Suspense>
 
         {/* 7-12. ON-DEMAND LAZY LOADED MODALS CONTAINER (CORE WEB VITALS OPTIMIZATION) */}
         <React.Suspense fallback={null}>
