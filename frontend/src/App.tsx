@@ -1051,6 +1051,15 @@ export const App: React.FC = () => {
       if (reelId) {
         setActiveReelId(reelId);
       }
+      const path = window.location.pathname.toLowerCase();
+      if (path === '/videos' || path.startsWith('/videos/')) {
+        setActiveTab('videos');
+      } else if (path === '/mandi' || path.startsWith('/mandi/')) {
+        setActiveTab('mandi');
+      } else if (path === '/reels' || path.startsWith('/reels/')) {
+        setActiveTab('insta');
+      }
+
       const tabParam = params.get('tab');
       if (tabParam && ['home', 'videos', 'insta', 'mandi', 'saved'].includes(tabParam)) {
         setActiveTab(tabParam as TabType);
@@ -2615,6 +2624,7 @@ export const App: React.FC = () => {
           onOpenAdminPortal={handleOpenAdmin}
           onOpenReporterModal={() => setShowReporterModal(true)}
           onOpenCompliance={setComplianceModalTab}
+          onSelectTab={setActiveTab}
           whatsappLink={whatsappLink}
           youtubeSubs={youtubeSubs}
         />

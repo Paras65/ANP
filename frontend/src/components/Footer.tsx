@@ -8,6 +8,7 @@ interface FooterProps {
   onOpenAdminPortal?: () => void;
   onOpenReporterModal?: () => void;
   onOpenCompliance?: (tab: 'editorial' | 'factcheck' | 'grievance' | 'privacy' | 'terms' | 'disclaimer') => void;
+  onSelectTab?: (tab: 'home' | 'videos' | 'insta' | 'mandi' | 'saved') => void;
   whatsappLink?: string;
   youtubeSubs?: string;
 }
@@ -17,6 +18,7 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenAdminPortal, 
   onOpenReporterModal,
   onOpenCompliance,
+  onSelectTab,
   whatsappLink,
   youtubeSubs
 }) => {
@@ -225,6 +227,48 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
+        </div>
+
+        {/* Row 1.5: Main Portal Pages Links */}
+        <div className={`py-3 px-4 rounded-xl border flex flex-wrap items-center justify-between gap-2.5 text-xs font-bold ${
+          isDark ? 'bg-slate-900/60 border-slate-800 text-slate-300' : 'bg-white border-slate-300 text-slate-800 shadow-xs'
+        }`}>
+          <span className="text-red-500 flex items-center gap-1">
+            <span>⚡ मुख्य पेज व लाइव सेक्शन:</span>
+          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => onSelectTab?.('home')}
+              className="hover:text-red-500 hover:underline transition cursor-pointer"
+            >
+              🏠 होम समाचार
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => onSelectTab?.('videos')}
+              className="text-red-500 hover:text-red-400 hover:underline transition cursor-pointer"
+            >
+              📺 वीडियो बुलेटिन (Videos)
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => onSelectTab?.('mandi')}
+              className="text-emerald-500 hover:text-emerald-400 hover:underline transition cursor-pointer"
+            >
+              🌾 कृषि व मंडी भाव
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => onSelectTab?.('insta')}
+              className="text-pink-500 hover:text-pink-400 hover:underline transition cursor-pointer"
+            >
+              🎬 रील्स व शॉर्ट्स
+            </button>
+          </div>
         </div>
 
         {/* Row 2: Bottom Copyright & Disclaimer */}

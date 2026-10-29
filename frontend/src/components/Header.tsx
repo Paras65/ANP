@@ -29,6 +29,7 @@ interface HeaderProps {
 const CATEGORIES = [
   'सभी खबरें',
   '🔴 कवर्धा स्पेशल',
+  '📺 वीडियो बुलेटिन',
   '🏛️ राजनीति',
   '🚔 अपराध व कानून',
   '🌾 कृषि व मंडी भाव',
@@ -108,6 +109,13 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleCategoryClick = (cat: string) => {
     setSelectedCategory(cat);
+    if (cat.includes('वीडियो')) {
+      if (setActiveTab) {
+        setActiveTab('videos');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (setActiveTab && activeTab !== 'home') {
       setActiveTab('home');
     }
@@ -450,7 +458,10 @@ export const Header: React.FC<HeaderProps> = ({
       }`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 flex items-center gap-1.5 text-xs whitespace-nowrap">
           {CATEGORIES.map((cat) => {
-            const isActive = selectedCategory === cat;
+            const isVideoCategory = cat.includes('वीडियो');
+            const isActive = isVideoCategory 
+              ? activeTab === 'videos' 
+              : (selectedCategory === cat && activeTab === 'home');
             return (
               <button 
                 key={cat} 

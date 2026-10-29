@@ -89,16 +89,28 @@
 
   <!-- 5. Live Mandi Rates & Video TV -->
   <url>
-    <loc>https://ambitionnews.init65.co.in/?tab=mandi</loc>
-    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <loc>https://ambitionnews.init65.co.in/videos</loc>
+    <lastmod>2026-10-29T12:00:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://ambitionnews.init65.co.in/?tab=videos</loc>
+    <lastmod>2026-10-29T12:00:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://ambitionnews.init65.co.in/mandi</loc>
+    <lastmod>2026-10-29T12:00:00+05:30</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://ambitionnews.init65.co.in/?tab=videos</loc>
-    <lastmod>2026-10-27T13:40:00+05:30</lastmod>
+    <loc>https://ambitionnews.init65.co.in/?tab=mandi</loc>
+    <lastmod>2026-10-29T12:00:00+05:30</lastmod>
     <changefreq>hourly</changefreq>
-    <priority>0.85</priority>
+    <priority>0.90</priority>
   </url>
 
 </urlset>
