@@ -33,7 +33,7 @@ export function parseYouTubeUrl(input: string): ParsedYouTube | null {
       id,
       isShort: true,
       embedUrl: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&loop=1&playlist=${id}&rel=0`,
-      thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+      thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
       watchUrl: `https://www.youtube.com/shorts/${id}`
     };
   }
@@ -46,7 +46,7 @@ export function parseYouTubeUrl(input: string): ParsedYouTube | null {
       id,
       isShort: false,
       embedUrl: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`,
-      thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+      thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
       watchUrl: `https://www.youtube.com/watch?v=${id}`
     };
   }
@@ -57,7 +57,7 @@ export function parseYouTubeUrl(input: string): ParsedYouTube | null {
       id: url,
       isShort: false,
       embedUrl: `https://www.youtube-nocookie.com/embed/${url}?autoplay=1&rel=0`,
-      thumbnailUrl: `https://img.youtube.com/vi/${url}/hqdefault.jpg`,
+      thumbnailUrl: `https://i.ytimg.com/vi/${url}/hqdefault.jpg`,
       watchUrl: `https://www.youtube.com/watch?v=${url}`
     };
   }
@@ -207,7 +207,7 @@ export function parseYouTubeRssXml(xmlText: string): { videos: VideoBulletin[]; 
       const publishedAt = publishedMatch ? publishedMatch[1] : new Date().toISOString();
       const timeAgo = formatHindiTimeAgo(publishedAt);
       const isShort = rawTitle.toLowerCase().includes('#shorts') || rawTitle.toLowerCase().includes('#short');
-      const thumb = thumbMatch ? thumbMatch[1] : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      const thumb = thumbMatch ? thumbMatch[1] : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 
       const videoItem: VideoBulletin = {
         id: 'yt_' + videoId,

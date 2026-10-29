@@ -58,7 +58,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
       return video.thumbnail;
     }
     if (video.youtubeId) {
-      return `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+      return `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
     }
     return '/logo.png';
   };
@@ -327,6 +327,8 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
               <img 
                 src={getVideoThumbnail(featuredVideo)} 
                 alt={featuredVideo.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent group-hover:from-black/90 transition-colors flex items-center justify-center">
@@ -459,6 +461,8 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 <img 
                   src={getVideoThumbnail(video)} 
                   alt={video.title}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                 />
                 <div className="absolute inset-0 bg-black/35 group-hover:bg-black/15 transition-colors flex items-center justify-center">
@@ -646,6 +650,8 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   <img 
                     src={getVideoThumbnail(activeVideo)} 
                     alt="" 
+                    loading="lazy"
+                    decoding="async"
                     className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-40" 
                   />
                 )}
@@ -779,6 +785,8 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                             <img 
                               src={getVideoThumbnail(nextVid)} 
                               alt={nextVid.title}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
                             />
                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 flex items-center justify-center transition">

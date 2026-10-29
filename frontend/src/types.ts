@@ -132,3 +132,5 @@ export interface MonetizationSettings {
   monthlyRevenueGoal: number;
 }
 
+export type ComplianceTab = 'editorial' | 'factcheck' | 'grievance' | 'privacy' | 'terms' | 'disclaimer';
+

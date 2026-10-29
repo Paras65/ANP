@@ -44,5 +44,10 @@ export function getOptimizedImageUrl(
     return url.replace('/upload/', `/upload/w_${width},q_auto,f_auto,c_fill/`);
   }
 
+  // YouTube thumbnail optimization: route to fast Google edge CDN
+  if (url.includes('img.youtube.com')) {
+    return url.replace('img.youtube.com', 'i.ytimg.com');
+  }
+
   return url;
 }

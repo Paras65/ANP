@@ -118,6 +118,8 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
               <img 
                 src={post.imageUrl} 
                 alt={post.caption}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
               />
               

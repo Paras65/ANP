@@ -27,16 +27,16 @@ import { BreakingTicker } from './components/BreakingTicker';
 import { MandiWidget } from './components/MandiWidget';
 import { VideoSection } from './components/VideoSection';
 import { InstagramSection } from './components/InstagramSection';
-import { ArticleModal } from './components/ArticleModal';
+const ArticleModal = React.lazy(() => import('./components/ArticleModal').then(m => ({ default: m.ArticleModal })));
 const AdminPortal = React.lazy(() => import('./components/AdminPortal').then(m => ({ default: m.AdminPortal })));
 const SuperAdminPortal = React.lazy(() => import('./components/SuperAdminPortal').then(m => ({ default: m.SuperAdminPortal })));
 import { Footer } from './components/Footer';
 import { StoriesTray } from './components/StoriesTray';
-import { StoryViewerModal } from './components/StoryViewerModal';
-import { ReelsViewerModal } from './components/ReelsViewerModal';
-import { DistrictPickerModal } from './components/DistrictPickerModal';
-import { ReporterModal } from './components/ReporterModal';
-import { ComplianceModal, type ComplianceTab } from './components/ComplianceModal';
+const StoryViewerModal = React.lazy(() => import('./components/StoryViewerModal').then(m => ({ default: m.StoryViewerModal })));
+const ReelsViewerModal = React.lazy(() => import('./components/ReelsViewerModal').then(m => ({ default: m.ReelsViewerModal })));
+const DistrictPickerModal = React.lazy(() => import('./components/DistrictPickerModal').then(m => ({ default: m.DistrictPickerModal })));
+const ReporterModal = React.lazy(() => import('./components/ReporterModal').then(m => ({ default: m.ReporterModal })));
+const ComplianceModal = React.lazy(() => import('./components/ComplianceModal').then(m => ({ default: m.ComplianceModal })));
 import { BottomNav } from './components/BottomNav';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import type { TabType } from './components/BottomNav';
@@ -53,7 +53,7 @@ import {
 } from './data/mockData';
 import { generateStoriesList } from './components/StoriesTray';
 import type { StoryItem } from './components/StoriesTray';
-import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter, Advertisement } from './types';
+import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter, Advertisement, ComplianceTab } from './types';
 import { AdBanner } from './components/AdBanner';
 import api from './api/client';
 import { syncYouTubeChannelVideos } from './utils/mediaUtils';
@@ -2577,91 +2577,94 @@ export const App: React.FC = () => {
         {/* PWA INSTALL PROMPT (SHORT & SWEET IF NOT INSTALLED) */}
         <PwaInstallPrompt onShareWhatsApp={handleShareAppWhatsApp} />
 
-        {/* 7. FULL ARTICLE READER BOTTOM SHEET / MODAL */}
-        {activeArticle && (
-          <ArticleModal 
-            article={activeArticle}
-            onClose={closeArticleModal}
-            onShareWhatsApp={shareWhatsApp}
-            isDark={isDark}
-            isBookmarked={savedArticles.some(a => a._id === activeArticle._id)}
-            onToggleBookmark={toggleBookmark}
-            ad={articleAd}
-          />
-        )}
+        {/* 7-12. ON-DEMAND LAZY LOADED MODALS CONTAINER (CORE WEB VITALS OPTIMIZATION) */}
+        <React.Suspense fallback={null}>
+          {/* 7. FULL ARTICLE READER BOTTOM SHEET / MODAL */}
+          {activeArticle && (
+            <ArticleModal 
+              article={activeArticle}
+              onClose={closeArticleModal}
+              onShareWhatsApp={shareWhatsApp}
+              isDark={isDark}
+              isBookmarked={savedArticles.some(a => a._id === activeArticle._id)}
+              onToggleBookmark={toggleBookmark}
+              ad={articleAd}
+            />
+          )}
 
-        {/* 8. INSTAGRAM / INSHORTS FULLSCREEN STORY VIEWER */}
-        {activeStory && (
-          <StoryViewerModal 
-            initialStory={activeStory}
-            stories={currentStoriesList}
-            onClose={closeStoryModal}
-            onReadFullArticle={handleOpenFromStory}
-            onShareWhatsApp={handleShareStoryWhatsApp}
-            onOpenVideo={() => {
-              setActiveTab('videos');
-              const el = document.getElementById('video-bulletins-section');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            onOpenMandi={() => {
-              setActiveTab('mandi');
-              const el = document.getElementById('mandi-section') || document.getElementById('mandi-rates-table');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          />
-        )}
+          {/* 8. INSTAGRAM / INSHORTS FULLSCREEN STORY VIEWER */}
+          {activeStory && (
+            <StoryViewerModal 
+              initialStory={activeStory}
+              stories={currentStoriesList}
+              onClose={closeStoryModal}
+              onReadFullArticle={handleOpenFromStory}
+              onShareWhatsApp={handleShareStoryWhatsApp}
+              onOpenVideo={() => {
+                setActiveTab('videos');
+                const el = document.getElementById('video-bulletins-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onOpenMandi={() => {
+                setActiveTab('mandi');
+                const el = document.getElementById('mandi-section') || document.getElementById('mandi-rates-table');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            />
+          )}
 
-        {/* 9. FULLSCREEN REELS VIEWER MODAL */}
-        {activeReelId && (
-          <ReelsViewerModal 
-            initialPostId={activeReelId}
-            posts={instagramPosts}
-            onClose={closeReelModal}
-            onShareWhatsApp={(caption, postUrl) => {
-              const reelDeepLink = activeReelId ? `${window.location.origin}/?reel=${encodeURIComponent(activeReelId)}` : (postUrl || window.location.origin);
-              const text = `🎬 *Ambition News Reel*:\n${caption}\n\n▶️ तुरंत यहाँ देखें:\n${reelDeepLink}`;
-              window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-            }}
-          />
-        )}
+          {/* 9. FULLSCREEN REELS VIEWER MODAL */}
+          {activeReelId && (
+            <ReelsViewerModal 
+              initialPostId={activeReelId}
+              posts={instagramPosts}
+              onClose={closeReelModal}
+              onShareWhatsApp={(caption, postUrl) => {
+                const reelDeepLink = activeReelId ? `${window.location.origin}/?reel=${encodeURIComponent(activeReelId)}` : (postUrl || window.location.origin);
+                const text = `🎬 *Ambition News Reel*:\n${caption}\n\n▶️ तुरंत यहाँ देखें:\n${reelDeepLink}`;
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+              }}
+            />
+          )}
 
-        {/* 10. ALL 88 DISTRICTS SEARCHABLE SELECTOR MODAL */}
-        {showDistrictModal && (
-          <DistrictPickerModal 
-            isOpen={showDistrictModal}
-            onClose={closeDistrictModal}
-            currentDistrict={currentDistrict}
-            selectedState={selectedState}
-            onSelectDistrict={(dist, state) => {
-              if (state && state !== selectedState) {
-                setSelectedState(state);
-              }
-              setCurrentDistrict(dist);
-              closeDistrictModal();
-            }}
-            isDark={isDark}
-          />
-        )}
+          {/* 10. ALL 88 DISTRICTS SEARCHABLE SELECTOR MODAL */}
+          {showDistrictModal && (
+            <DistrictPickerModal 
+              isOpen={showDistrictModal}
+              onClose={closeDistrictModal}
+              currentDistrict={currentDistrict}
+              selectedState={selectedState}
+              onSelectDistrict={(dist, state) => {
+                if (state && state !== selectedState) {
+                  setSelectedState(state);
+                }
+                setCurrentDistrict(dist);
+                closeDistrictModal();
+              }}
+              isDark={isDark}
+            />
+          )}
 
-        {/* 11. CITIZEN JOURNALIST / FIELD REPORTER SCOOP SUBMISSION MODAL */}
-        {showReporterModal && (
-          <ReporterModal 
-            districts={districtsList}
-            selectedState={selectedState}
-            onSubmit={handleScoopSubmit}
-            onClose={() => setShowReporterModal(false)}
-            isDark={isDark}
-          />
-        )}
+          {/* 11. CITIZEN JOURNALIST / FIELD REPORTER SCOOP SUBMISSION MODAL */}
+          {showReporterModal && (
+            <ReporterModal 
+              districts={districtsList}
+              selectedState={selectedState}
+              onSubmit={handleScoopSubmit}
+              onClose={() => setShowReporterModal(false)}
+              isDark={isDark}
+            />
+          )}
 
-        {/* 12. DIGITAL MEDIA COMPLIANCE & LEGAL DISCLOSURES MODAL */}
-        {complianceModalTab && (
-          <ComplianceModal 
-            initialTab={complianceModalTab}
-            isDark={isDark}
-            onClose={() => setComplianceModalTab(null)}
-          />
-        )}
+          {/* 12. DIGITAL MEDIA COMPLIANCE & LEGAL DISCLOSURES MODAL */}
+          {complianceModalTab && (
+            <ComplianceModal 
+              initialTab={complianceModalTab}
+              isDark={isDark}
+              onClose={() => setComplianceModalTab(null)}
+            />
+          )}
+        </React.Suspense>
 
       </div>
 
