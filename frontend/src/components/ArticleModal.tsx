@@ -149,7 +149,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
       <div className="absolute inset-0" onClick={handleClose}></div>
 
       {/* Sheet Container: Bottom Sheet on Mobile, Centered Modal on Tablet/Desktop */}
-      <div className={`relative w-full max-w-2xl sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl border transition-all z-10 max-h-[92vh] sm:max-h-[85vh] flex flex-col ${
+      <div className={`relative w-full max-w-2xl sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl border transition-colors duration-200 z-10 max-h-[92vh] sm:max-h-[85vh] flex flex-col ${
         isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-300 text-slate-900'
       }`}>
         

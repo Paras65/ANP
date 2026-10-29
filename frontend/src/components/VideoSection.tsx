@@ -325,7 +325,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 
       {/* 3. HERO SPOTLIGHT BROADCAST (Lead Featured Video) */}
       {featuredVideo && (
-        <div className={`mb-6 rounded-2xl sm:rounded-3xl border overflow-hidden transition-all shadow-xl ${
+        <div className={`mb-6 rounded-2xl sm:rounded-3xl border overflow-hidden transition-colors duration-200 shadow-xl ${
           isDark ? 'bg-gradient-to-br from-slate-900/90 via-slate-950 to-red-950/20 border-red-950/60' : 'bg-gradient-to-br from-red-50/50 via-white to-slate-50 border-red-200'
         }`}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
@@ -346,7 +346,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent group-hover:from-black/90 transition-colors flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-red-500 transition-all border-2 border-white/30 backdrop-blur-sm">
+                <div className="w-16 h-16 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-red-500 transition-transform duration-200 border-2 border-white/30 backdrop-blur-sm will-change-transform">
                   <Play size={28} className="fill-white ml-1" />
                 </div>
               </div>
@@ -466,7 +466,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 setCountdown(null);
                 setActiveVideo(video);
               }}
-              className={`group rounded-2xl border overflow-hidden cursor-pointer flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-md ${
+              className={`group rounded-2xl border overflow-hidden cursor-pointer flex flex-col justify-between transition-transform duration-300 hover:-translate-y-1 will-change-transform shadow-md ${
                 isDark ? 'bg-slate-950 border-slate-800/80 hover:border-red-600/60' : 'bg-slate-50 border-slate-200 hover:border-red-500 hover:shadow-lg'
               }`}
             >
@@ -530,7 +530,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
           {visibleRemaining.length === 3 && (
             <div 
               onClick={() => window.open(SOCIAL_LINKS.youtube, '_blank')}
-              className={`rounded-2xl border p-4 flex flex-col justify-between cursor-pointer group transition-all duration-300 hover:-translate-y-1 shadow-md ${
+              className={`rounded-2xl border p-4 flex flex-col justify-between cursor-pointer group transition-transform duration-300 hover:-translate-y-1 will-change-transform shadow-md ${
                 isDark 
                   ? 'bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-950 border-red-900/40 hover:border-red-500/60' 
                   : 'bg-gradient-to-br from-red-50 via-white to-red-50 border-red-200 hover:border-red-400'

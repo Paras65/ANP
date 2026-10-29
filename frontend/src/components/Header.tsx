@@ -337,7 +337,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={() => setSelectedState('chhattisgarh')}
               aria-label="छत्तीसगढ़ राज्य के 33 जिलों के समाचार चुनें"
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition-all min-h-[38px] sm:min-h-[40px] flex items-center justify-center ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 min-h-[38px] sm:min-h-[40px] flex items-center justify-center ${
                 selectedState === 'chhattisgarh' 
                   ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
                   : isDark ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-950'
@@ -349,7 +349,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={() => setSelectedState('madhya-pradesh')}
               aria-label="मध्य प्रदेश राज्य के 55 जिलों के समाचार चुनें"
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition-all min-h-[38px] sm:min-h-[40px] flex items-center justify-center ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 min-h-[38px] sm:min-h-[40px] flex items-center justify-center ${
                 selectedState === 'madhya-pradesh' 
                   ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/50' 
                   : isDark ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-950'
@@ -466,7 +466,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button 
                 key={cat} 
                 onClick={() => handleCategoryClick(cat)}
-                className={`px-3.5 py-1.5 rounded-full font-bold text-xs transition-all active:scale-95 min-h-[34px] flex items-center justify-center ${
+                className={`px-3.5 py-1.5 rounded-full font-bold text-xs transition duration-150 active:scale-95 min-h-[34px] flex items-center justify-center ${
                   isActive 
                     ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/40' 
                     : isDark 

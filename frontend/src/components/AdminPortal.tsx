@@ -1907,7 +1907,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
 
                                 {/* 0. MINIMALIST COLLAPSIBLE AI ASSISTANT STRIP */}
-                <div className="rounded-2xl border border-dashed border-red-500/30 overflow-hidden bg-red-500/5 transition-all">
+                <div className="rounded-2xl border border-dashed border-red-500/30 overflow-hidden bg-red-500/5 transition-colors duration-200">
                   <button
                     type="button"
                     onClick={() => setShowAiTools(prev => !prev)}
@@ -2474,7 +2474,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <div className="space-y-6">
             
             {/* 0. DEDICATED LIVE YOUTUBE AUTO-SYNC ENGINE */}
-            <div className={`p-5 sm:p-6 rounded-3xl border transition-all ${
+            <div className={`p-5 sm:p-6 rounded-3xl border transition-colors duration-200 ${
               isDark 
                 ? 'bg-gradient-to-br from-red-950/40 via-[#0a0e1c] to-[#070b16] border-red-900/40 shadow-xl' 
                 : 'bg-white border-slate-200 shadow-md'
@@ -2635,7 +2635,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
 
             {/* 0.1 OFFICIAL WHATSAPP GROUP & CHANNEL MANAGEMENT */}
-            <div className={`p-5 sm:p-6 rounded-3xl border transition-all ${
+            <div className={`p-5 sm:p-6 rounded-3xl border transition-colors duration-200 ${
               isDark 
                 ? 'bg-gradient-to-br from-emerald-950/40 via-[#0a1411] to-[#07110e] border-emerald-900/40 shadow-xl' 
                 : 'bg-emerald-50/70 border-emerald-200 shadow-md'
@@ -3532,7 +3532,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* 5. MOBILE FLOATING ISLAND DOCK (md:hidden) */}
       <nav 
         aria-label="Mobile Admin Navigation"
-        className={`fixed bottom-3 inset-x-3 max-w-md mx-auto h-16 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-center justify-between px-2 z-40 md:hidden transition-all ${
+        className={`fixed bottom-3 inset-x-3 max-w-md mx-auto h-16 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-center justify-between px-2 z-40 md:hidden transition-colors duration-200 ${
           isDark
             ? 'bg-slate-900/95 border-slate-700/80 shadow-black/80 text-slate-200'
             : 'bg-white/95 border-slate-200 shadow-slate-400/50 text-slate-800'

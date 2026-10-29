@@ -50,7 +50,7 @@ export const BackToTop: React.FC = () => {
           d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
         />
         <path
-          className="text-white transition-all duration-150"
+          className="text-white will-change-transform"
           strokeDasharray={`${scrollProgress}, 100`}
           strokeWidth="2.5"
           strokeLinecap="round"
@@ -62,8 +62,8 @@ export const BackToTop: React.FC = () => {
 
       {/* Inner Arrow Icon & Progress Percentage on Hover */}
       <div className="relative z-10 flex flex-col items-center justify-center">
-        <ChevronUp size={18} className="transition-transform group-hover:-translate-y-0.5" />
-        <span className="text-[8px] font-black leading-none hidden group-hover:block transition-all">
+        <ChevronUp size={18} className="transition-transform group-hover:-translate-y-0.5 will-change-transform" />
+        <span className="text-[8px] font-black leading-none hidden group-hover:block transition-opacity duration-150">
           {scrollProgress}%
         </span>
       </div>

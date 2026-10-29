@@ -637,7 +637,7 @@ export const ReelsViewerModal: React.FC<ReelsViewerModalProps> = ({
             aria-label={isCurrentLiked ? "रील अनलाइक करें" : "रील लाइक करें"}
             className="flex flex-col items-center gap-1 group active:scale-75 transition-transform"
           >
-            <div className={`p-2.5 rounded-full transition-all ${
+            <div className={`p-2.5 rounded-full transition duration-150 ${
               isCurrentLiked 
                 ? 'bg-red-600/30 text-red-500 scale-110' 
                 : 'bg-black/40 group-hover:bg-black/60'

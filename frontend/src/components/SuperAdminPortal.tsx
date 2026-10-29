@@ -705,10 +705,13 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
                   <span className="text-emerald-400">{dbMetrics.storage.estimatedUsedMB} MB / {dbMetrics.storage.totalLimitMB} MB (लगभग)</span>
                 </div>
 
-                <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800">
+                <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800 relative">
                   <div 
-                    className="h-full bg-gradient-to-r from-emerald-500 via-indigo-500 to-amber-500 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.max(5, dbMetrics.storage.safeCapacityPercent)}%` }}
+                    className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-indigo-500 to-amber-500 rounded-full origin-left will-change-transform"
+                    style={{ 
+                      transform: `scaleX(${Math.max(0.05, dbMetrics.storage.safeCapacityPercent / 100)}) translateZ(0)`,
+                      transition: 'transform 500ms ease-out'
+                    }}
                   />
                 </div>
 

@@ -235,7 +235,7 @@ export const MandiDesk: React.FC<MandiDeskProps> = ({
           return (
             <div
               key={item.id}
-              className={`p-4 rounded-2xl border transition-all ${
+              className={`p-4 rounded-2xl border transition-colors duration-200 ${
                 isEditing 
                   ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-950/20' 
                   : isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'

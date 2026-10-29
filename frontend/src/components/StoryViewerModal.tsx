@@ -150,14 +150,15 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         {/* Top Header & Multi-Story Progress Bars */}
         <div className="relative z-30 p-4 space-y-3">
           
-          {/* Dynamic Progress Bars for all stories in the list */}
+          {/* Dynamic Progress Bars for all stories in the list (100% Composited GPU Animation) */}
           <div className="flex items-center gap-1.5 w-full">
             {storyList.map((s, idx) => (
-              <div key={s.id} className="h-1 flex-1 bg-white/30 rounded-full overflow-hidden">
+              <div key={s.id} className="h-1 flex-1 bg-white/30 rounded-full overflow-hidden relative">
                 <div 
-                  className="h-full bg-white transition-all duration-75 rounded-full"
+                  className="absolute inset-0 bg-white rounded-full origin-left will-change-transform"
                   style={{
-                    width: idx < currentIndex ? '100%' : idx === currentIndex ? `${progress}%` : '0%'
+                    transform: `scaleX(${idx < currentIndex ? 1 : idx === currentIndex ? progress / 100 : 0}) translateZ(0)`,
+                    transition: idx === currentIndex ? 'transform 50ms linear' : 'none'
                   }}
                 ></div>
               </div>

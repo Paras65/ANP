@@ -2136,7 +2136,7 @@ export const App: React.FC = () => {
                     </div>
 
                     {/* 2. WhatsApp News Group & Community Join Card (High Conversion CTA) */}
-                    <div className={`p-3.5 rounded-2xl border transition-all ${
+                    <div className={`p-3.5 rounded-2xl border transition-colors duration-200 ${
                       isDark 
                         ? 'bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-900 border-emerald-800/60 shadow-lg shadow-emerald-950/20' 
                         : 'bg-emerald-50/80 border-emerald-200 shadow-sm'

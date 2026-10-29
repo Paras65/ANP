@@ -134,3 +134,67 @@ body.modal-open {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ========================================================
+   COMPOSITED GPU ACCELERATION FOR ANIMATIONS
+   Eliminates non-composited animations audit warnings in Lighthouse.
+   Ensures 60fps/120fps smooth rendering without main-thread paint/layout reflows.
+   ======================================================== */
+.animate-spin,
+.animate-pulse,
+.animate-ping,
+.animate-bounce,
+.ticker-seamless,
+.audio-ticker,
+.story-active {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Composited Bounce (Pure 3D translate with zero layer de-promotion) */
+@keyframes bounce {
+  0%, 100% {
+    transform: translate3d(0, -25%, 0);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translate3d(0, 0, 0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+/* Composited Spin (Pure 3D rotation) */
+@keyframes spin {
+  from {
+    transform: rotate(0deg) translateZ(0);
+  }
+  to {
+    transform: rotate(360deg) translateZ(0);
+  }
+}
+
+/* Composited Pulse (Pure opacity without layer rebuilds) */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Respect user motion preferences (Accessibility & Battery Saver) */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ticker-seamless,
+  .audio-ticker {
+    animation: none !important;
+    transform: none !important;
+  }
+}

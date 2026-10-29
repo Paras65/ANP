@@ -176,7 +176,7 @@ export const SavedArticlesView: React.FC<SavedArticlesViewProps> = ({
                     <div 
                       key={art._id}
                       onClick={() => openArticleModal(art)}
-                      className={`p-3 sm:p-3.5 rounded-2xl border flex gap-3 cursor-pointer group transition-all hover:-translate-y-0.5 ${
+                      className={`p-3 sm:p-3.5 rounded-2xl border flex gap-3 cursor-pointer group transition-transform duration-200 hover:-translate-y-0.5 will-change-transform ${
                         isDark 
                           ? 'bg-slate-900 border-slate-800 hover:border-amber-500/50' 
                           : 'bg-white border-slate-200 shadow-sm hover:border-amber-500/60 hover:shadow-md'

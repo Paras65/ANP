@@ -147,7 +147,7 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
 
               {/* Reel Play Icon in Center on hover */}
               <div className="absolute inset-0 flex items-center justify-center opacity-85 group-hover:opacity-100 transition-opacity">
-                <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:bg-pink-600 group-hover:border-pink-400 transition-all">
+                <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:bg-pink-600 group-hover:border-pink-400 transition-transform duration-200 will-change-transform">
                   <Play size={18} className="fill-current ml-0.5" />
                 </div>
               </div>

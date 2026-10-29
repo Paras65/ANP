@@ -503,7 +503,7 @@ export const MonetizationDesk: React.FC<MonetizationDeskProps> = ({
                 return (
                   <div
                     key={ad._id}
-                    className={`p-4 rounded-2xl border transition-all ${
+                    className={`p-4 rounded-2xl border transition-colors duration-200 ${
                       isDark 
                         ? ad.isActive ? 'bg-slate-900/90 border-slate-800 hover:border-amber-500/50' : 'bg-slate-950/40 border-slate-800/50 opacity-60'
                         : ad.isActive ? 'bg-white border-slate-200 shadow-sm hover:border-amber-300' : 'bg-slate-50 border-slate-200 opacity-60'
@@ -675,7 +675,7 @@ export const MonetizationDesk: React.FC<MonetizationDeskProps> = ({
                 onChange={e => setMonetizationSettings({ ...monetizationSettings, adsenseEnabled: e.target.checked })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform after:duration-200 peer-checked:bg-amber-500"></div>
             </label>
           </div>
 
