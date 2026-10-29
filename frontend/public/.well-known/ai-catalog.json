@@ -1,0 +1,65 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Ambition News Portal",
+    "identifier": "did:web:ambitionnews.init65.co.in",
+    "documentationUrl": "https://ambitionnews.init65.co.in/llms.txt",
+    "logoUrl": "https://ambitionnews.init65.co.in/logo-192.png"
+  },
+  "entries": [
+    {
+      "identifier": "urn:anp:api:articles",
+      "displayName": "Ambition News Articles API",
+      "type": "application/json",
+      "url": "https://anp-n2e6.onrender.com/api/articles",
+      "description": "Real-time hyper-local and regional news articles covering 88 districts of Chhattisgarh and Madhya Pradesh in Hindi.",
+      "representativeQueries": [
+        "Chhattisgarh latest breaking news and district updates",
+        "Kawardha local news updates and municipal reports",
+        "Madhya Pradesh politics and regional developments"
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-10-29T12:00:00Z"
+    },
+    {
+      "identifier": "urn:anp:api:mandi",
+      "displayName": "Kawardha & CG Agriculture Mandi Bhav API",
+      "type": "application/json",
+      "url": "https://anp-n2e6.onrender.com/api/mandi",
+      "description": "Live APMC commodity market rates, daily mandi bhav for paddy, gram, soybean, jaggery and mustard across Kawardha, Raipur, Rajnandgaon, and MP mandis.",
+      "representativeQueries": [
+        "Kawardha mandi bhav today paddy gram soybean",
+        "Chhattisgarh APMC agriculture market prices",
+        "Daily mandi commodity rates for Kawardha and Raipur"
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-10-29T12:00:00Z"
+    },
+    {
+      "identifier": "urn:anp:feed:rss",
+      "displayName": "Ambition News RSS Syndication Feed",
+      "type": "application/rss+xml",
+      "url": "https://anp-n2e6.onrender.com/api/rss",
+      "description": "Full-text XML RSS feed of recently published news articles, editorials, and regional reports.",
+      "representativeQueries": [
+        "Ambition News RSS feed Hindi news updates",
+        "Subscribe to Chhattisgarh local news RSS"
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-10-29T12:00:00Z"
+    },
+    {
+      "identifier": "urn:anp:docs:llms-txt",
+      "displayName": "Ambition News LLMs Context Manifest",
+      "type": "text/plain",
+      "url": "https://ambitionnews.init65.co.in/llms.txt",
+      "description": "Structured markdown document outlining site architecture, geographic coverage, editorial guidelines, and API discovery for LLM and agentic systems.",
+      "representativeQueries": [
+        "Ambition News Portal LLM agent documentation",
+        "Agentic resource discovery index for Ambition News"
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-10-29T12:00:00Z"
+    }
+  ]
+}
