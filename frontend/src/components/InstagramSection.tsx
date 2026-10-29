@@ -13,19 +13,16 @@ interface InstagramSectionProps {
 }
 
 export const InstagramSection: React.FC<InstagramSectionProps> = ({ 
-  posts, 
+  posts = [], 
   onSelectReel, 
   isDark
 }) => {
-  // Pure real data: do not render section if no live reels exist
-  if (!posts || posts.length === 0) return null;
-
   // Compact Shelf Controls
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDistrict, setSelectedDistrict] = useState<'all' | string>('all');
 
   const sortedPosts = useMemo(() => {
-    return sortMediaLatestFirst(posts);
+    return sortMediaLatestFirst(posts || []);
   }, [posts]);
 
   // Collect distinct districts from posts
@@ -36,6 +33,9 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
     : sortedPosts.filter(p => p.district === selectedDistrict);
 
   const visiblePosts = isExpanded ? filteredPosts : filteredPosts.slice(0, 8);
+
+  // Pure real data: do not render section if no live reels exist
+  if (!posts || posts.length === 0) return null;
 
   return (
     <section className={`rounded-3xl border p-4 sm:p-5 transition-colors ${

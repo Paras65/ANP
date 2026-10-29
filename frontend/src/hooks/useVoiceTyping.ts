@@ -10,20 +10,30 @@ interface VoiceTypingOptions {
 export function useVoiceTyping(options: VoiceTypingOptions = {}) {
   const { lang = 'hi-IN', onResult, onError, onInterim } = options;
   const [isListening, setIsListening] = useState(false);
-  const [isSupported, setIsSupported] = useState(false);
+  const [isSupported, setIsSupported] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  });
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Store callbacks in refs to avoid recreating recognition on component re-renders
   const onResultRef = useRef(onResult);
-  onResultRef.current = onResult;
-
   const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
-
   const onInterimRef = useRef(onInterim);
-  onInterimRef.current = onInterim;
+
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
+  useEffect(() => {
+    onInterimRef.current = onInterim;
+  }, [onInterim]);
 
   const recognitionRef = useRef<any>(null);
   const shouldListenRef = useRef(false);
@@ -229,14 +239,8 @@ export function useVoiceTyping(options: VoiceTypingOptions = {}) {
     }
   }, [isListening, startListening, stopListening]);
 
-  // Initial detection & cleanup
+  // Cleanup recognition on unmount
   useEffect(() => {
-    const SpeechRecognitionClass = 
-      (window as any).SpeechRecognition || 
-      (window as any).webkitSpeechRecognition;
-
-    setIsSupported(Boolean(SpeechRecognitionClass));
-
     return () => {
       shouldListenRef.current = false;
       clearTimeout(restartTimerRef.current);

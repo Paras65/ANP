@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, ChevronRight, MapPin, Pause } from 'lucide-react';
-import type { StoryItem } from './StoriesTray';
-import { EDITORIAL_STORIES } from './StoriesTray';
+import { EDITORIAL_STORIES, type StoryItem } from '../data/storiesData';
 import { WhatsAppIcon } from './SocialIcons';
 import { getCategoryTheme } from '../utils/categoryTheme';
 

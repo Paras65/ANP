@@ -3,7 +3,7 @@ import { X, Search, MapPin, Check, Building2, Sparkles, Mic } from 'lucide-react
 import type { DistrictItem } from '../types';
 import { useVoiceTyping } from '../hooks/useVoiceTyping';
 
-export const ALL_CG_DISTRICTS: DistrictItem[] = [
+const ALL_CG_DISTRICTS: DistrictItem[] = [
   { _id: 'cg-kwd', name: 'Kabirdham', nameHindi: 'कबीरधाम (कवर्धा)', slug: 'kabirdham', state: 'chhattisgarh' },
   { _id: 'cg-rpr', name: 'Raipur', nameHindi: 'रायपुर', slug: 'raipur', state: 'chhattisgarh' },
   { _id: 'cg-bsp', name: 'Bilaspur', nameHindi: 'बिलासपुर', slug: 'bilaspur', state: 'chhattisgarh' },
@@ -42,7 +42,7 @@ export const ALL_CG_DISTRICTS: DistrictItem[] = [
   { _id: 'cg-sbg', name: 'Sarangarh-Bilaigarh', nameHindi: 'सारंगढ़-बिलाईगढ़', slug: 'sarangarh', state: 'chhattisgarh' }
 ];
 
-export const ALL_MP_DISTRICTS: DistrictItem[] = [
+const ALL_MP_DISTRICTS: DistrictItem[] = [
   { _id: 'mp-bpl', name: 'Bhopal', nameHindi: 'भोपाल', slug: 'bhopal', state: 'madhya-pradesh' },
   { _id: 'mp-idr', name: 'Indore', nameHindi: 'इंदौर', slug: 'indore', state: 'madhya-pradesh' },
   { _id: 'mp-jbl', name: 'Jabalpur', nameHindi: 'जबलपुर', slug: 'jabalpur', state: 'madhya-pradesh' },

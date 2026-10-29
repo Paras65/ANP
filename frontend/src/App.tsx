@@ -50,8 +50,7 @@ import {
   POPULAR_DISTRICTS_MP, 
   SOCIAL_LINKS 
 } from './data/mockData';
-import { generateStoriesList } from './components/StoriesTray';
-import type { StoryItem } from './components/StoriesTray';
+import { generateStoriesList, type StoryItem } from './data/storiesData';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter, Advertisement, ComplianceTab } from './types';
 import { AdBanner } from './components/AdBanner';
 import api from './api/client';

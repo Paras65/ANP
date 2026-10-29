@@ -34,16 +34,18 @@ const PRESET_CATEGORIES = [
 ];
 
 export const VideoSection: React.FC<VideoSectionProps> = ({ 
-  bulletins, 
+  bulletins = [], 
   isDark, 
   onShareWhatsApp,
   youtubeSubs,
   autoPlayOnMount = false
 }) => {
-  // Pure real data: do not render video section if no live bulletins exist
-  if (!bulletins || bulletins.length === 0) return null;
-
   const [activeVideo, setActiveVideo] = useState<VideoBulletin | null>(null);
+  const [isAutoPlay, setIsAutoPlay] = useState<boolean>(true);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [visibleVideoCount, setVisibleVideoCount] = useState<number>(8);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Auto-play latest video immediately when entering dedicated videos tab
   useEffect(() => {
@@ -54,16 +56,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
         setActiveVideo(topVideo);
       }
     }
-  }, [autoPlayOnMount, bulletins]);
-
-  // Filters & Progressive Load More
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [visibleVideoCount, setVisibleVideoCount] = useState<number>(8);
-
-  // Autoplay & Playlist Continuous Playback State
-  const [isAutoPlay, setIsAutoPlay] = useState<boolean>(true);
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  }, [autoPlayOnMount, bulletins, activeVideo]);
 
   // Helper to resolve realistic video thumbnail (Real YouTube frame instead of generic logo)
   const getVideoThumbnail = (video: VideoBulletin): string => {
@@ -220,6 +213,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     }
   };
+
+  // Pure real data: do not render video section if no live bulletins exist
+  if (!bulletins || bulletins.length === 0) return null;
 
   return (
     <section className={`rounded-3xl border p-4 sm:p-5 transition-colors ${

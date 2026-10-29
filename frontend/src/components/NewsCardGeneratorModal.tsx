@@ -9,6 +9,55 @@ interface NewsCardGeneratorModalProps {
   onClose: () => void;
 }
 
+// Helper: Rounded Rectangle
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  if (w < 2 * r) r = w / 2;
+  if (h < 2 * r) r = h / 2;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Helper: Text Wrapping
+function wrapText(
+  ctx: CanvasRenderingContext2D, 
+  text: string, 
+  x: number, 
+  y: number, 
+  maxWidth: number, 
+  lineHeight: number, 
+  maxLines: number
+) {
+  const words = text.split(' ');
+  let line = '';
+  let currentY = y;
+  let lineCount = 0;
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + ' ';
+    const metrics = ctx.measureText(testLine);
+    const testWidth = metrics.width;
+
+    if (testWidth > maxWidth && n > 0) {
+      lineCount++;
+      if (lineCount >= maxLines) {
+        ctx.fillText(line.trim() + '...', x, currentY);
+        return;
+      }
+      ctx.fillText(line, x, currentY);
+      line = words[n] + ' ';
+      currentY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, x, currentY);
+}
+
 export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
   article,
   isDark,
@@ -161,55 +210,6 @@ export const NewsCardGeneratorModal: React.FC<NewsCardGeneratorModalProps> = ({
   useEffect(() => {
     renderCard();
   }, [renderCard]);
-
-  // Helper: Rounded Rectangle
-  function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-    if (w < 2 * r) r = w / 2;
-    if (h < 2 * r) r = h / 2;
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  // Helper: Text Wrapping
-  function wrapText(
-    ctx: CanvasRenderingContext2D, 
-    text: string, 
-    x: number, 
-    y: number, 
-    maxWidth: number, 
-    lineHeight: number, 
-    maxLines: number
-  ) {
-    const words = text.split(' ');
-    let line = '';
-    let currentY = y;
-    let lineCount = 0;
-
-    for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
-
-      if (testWidth > maxWidth && n > 0) {
-        lineCount++;
-        if (lineCount >= maxLines) {
-          ctx.fillText(line.trim() + '...', x, currentY);
-          return;
-        }
-        ctx.fillText(line, x, currentY);
-        line = words[n] + ' ';
-        currentY += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, x, currentY);
-  }
 
   const handleDownload = () => {
     const canvas = canvasRef.current;

@@ -84,12 +84,48 @@ function parseISO8601Duration(duration: string): { totalSeconds: number; formatt
 
 // Helper to format numeric view and like counts
 function formatViews(countStr?: string | number): string {
-  if (!countStr) return 'ताज़ा कवरेज';
+  if (!countStr && countStr !== 0) return 'ताज़ा कवरेज';
   const num = typeof countStr === 'number' ? countStr : parseInt(countStr, 10);
   if (isNaN(num)) return String(countStr);
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(2).replace(/\.?0+$/, '') + 'K';
+  if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
   return num.toString();
+}
+
+// Helper to format numeric interaction counts (likes, comments, shares) with fallback
+function formatInteractionCount(countStr?: string | number, fallback = '0'): string {
+  if (countStr === undefined || countStr === null || countStr === '') return fallback;
+  const num = typeof countStr === 'number' ? countStr : parseInt(countStr, 10);
+  if (isNaN(num)) return fallback;
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return num.toString();
+}
+
+// Supported key districts of Chhattisgarh and Madhya Pradesh
+const POPULAR_DISTRICTS = [
+  'कवर्धा', 'कबीरधाम', 'रायपुर', 'बिलासपुर', 'दुर्ग', 'राजनांदगांव', 'रायगढ़', 'कोरबा', 'जगदलपुर', 'बस्तर',
+  'अंबिकापुर', 'सरगुजा', 'धमतरी', 'महासमुंद', 'जांजगीर', 'चांपा', 'बेमेतरा', 'बालोद', 'बलौदाबाजार', 'कांकेर',
+  'दंतेवाड़ा', 'सुकमा', 'बीजापुर', 'नारायणपुर', 'कोरिया', 'सूरजपुर', 'बलरामपुर', 'जशपुर', 'गौरेला', 'पेंड्रा',
+  'भोपाल', 'इंदौर', 'ग्वालियर', 'जबलपुर', 'उज्जैन', 'रीवा', 'सतना', 'सागर', 'छिंदवाड़ा', 'मंडला', 'बालाघाट'
+];
+
+function detectDistrict(text: string): string {
+  for (const d of POPULAR_DISTRICTS) {
+    if (text.includes(d)) {
+      return d === 'कबीरधाम' ? 'कवर्धा' : d;
+    }
+  }
+  return 'कवर्धा';
+}
+
+function detectCategory(title: string): string {
+  if (title.includes('लाइव') || title.includes('LIVE')) return 'लाइव बुलेटिन';
+  if (title.includes('मंडी') || title.includes('भाव') || title.includes('किसान')) return 'कृषि व मंडी';
+  if (title.includes('अपराध') || title.includes('हादसा') || title.includes('पुलिस')) return 'क्राइम व सुरक्षा';
+  if (title.includes('मौसम') || title.includes('बारिश')) return 'मौसम व पर्यावरण';
+  if (title.includes('राजनीति') || title.includes('चुनाव') || title.includes('मंत्री') || title.includes('विधायक')) return 'राजनीति';
+  return 'कवर्धा विशेष';
 }
 
 /**
@@ -235,17 +271,18 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
       const duration = parseISO8601Duration(contentDetails.duration || '');
       const isShort = (duration.totalSeconds > 0 && duration.totalSeconds <= 60) || title.toLowerCase().includes('#short');
       const views = formatViews(statistics.viewCount);
-      const likes = formatViews(statistics.likeCount) || '1.2K';
-      const commentsCount = statistics.commentCount || '45';
+      const likes = formatInteractionCount(statistics.likeCount, '1.2K');
+      const commentsCount = formatInteractionCount(statistics.commentCount, '45');
 
-      const district = title.includes('रायपुर') ? 'रायपुर' : title.includes('बिलासपुर') ? 'बिलासपुर' : title.includes('राजनांदगांव') ? 'राजनांदगांव' : 'कवर्धा';
+      const district = detectDistrict(title);
+      const category = detectCategory(title);
 
       if (isShort) {
         reels.push({
           youtubeId: vid,
           caption: title.trim(),
           likes,
-          commentsCount: String(commentsCount),
+          commentsCount,
           sharesCount: '35',
           district,
           timeAgo: formatHindiTimeAgo(publishedAt),
@@ -264,7 +301,7 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
           duration: duration.formatted,
           views: `${views} बार देखा गया`,
           timeAgo: formatHindiTimeAgo(publishedAt),
-          category: 'कवर्धा विशेष',
+          category,
           youtubeUrl: `https://www.youtube.com/watch?v=${vid}`,
           publishedAt,
           isShort: false
