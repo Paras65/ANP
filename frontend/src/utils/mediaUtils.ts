@@ -264,7 +264,7 @@ export async function syncYouTubeChannelVideos(
     };
   }
 
-  // 1. Try Backend API
+  // 1. Official Google YouTube Data API v3 Backend Endpoint
   try {
     const res = await fetch(`${backendApiUrl}/youtube/sync?channelId=${cleanId}&force=true`);
     if (res.ok) {
@@ -278,36 +278,25 @@ export async function syncYouTubeChannelVideos(
           subscribers: data.subscribers || data.stats?.subscriberCount
         };
       }
+      if (!data.success && data.message) {
+        return {
+          success: false,
+          videos: data.videos || [],
+          reels: data.reels || [],
+          count: 0,
+          subscribers: data.subscribers || data.stats?.subscriberCount,
+          error: data.message
+        };
+      }
     }
   } catch {
-    // Backend offline or unreachable, fall through to direct proxy fetch
-  }
-
-  // 2. Fallback direct RSS feed through reliable open proxies
-  const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${cleanId}`;
-  const proxyEndpoints = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(rssUrl)}`
-  ];
-
-  for (const proxy of proxyEndpoints) {
-    try {
-      const response = await fetch(proxy, { headers: { 'Accept': 'application/xml, text/xml, */*' } });
-      if (response.ok) {
-        const xmlText = await response.text();
-        const parsed = parseYouTubeRssXml(xmlText);
-        if (parsed.videos.length > 0) {
-          return {
-            success: true,
-            videos: parsed.videos,
-            reels: parsed.reels,
-            count: parsed.videos.length
-          };
-        }
-      }
-    } catch {
-      // Try next proxy
-    }
+    return {
+      success: false,
+      videos: [],
+      reels: [],
+      count: 0,
+      error: 'सर्वर से संपर्क नहीं हो सका। कृपया पुनः प्रयास करें।'
+    };
   }
 
   return {
@@ -315,7 +304,7 @@ export async function syncYouTubeChannelVideos(
     videos: [],
     reels: [],
     count: 0,
-    error: 'यूट्यूब फीड लोड नहीं हो सकी। कृपया इंटरनेट कनेक्शन या चैनल आईडी जांचें।'
+    error: 'यूट्यूब वीडियो लोड करने में समस्या आई।'
   };
 }
 

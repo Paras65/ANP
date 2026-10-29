@@ -283,7 +283,7 @@ export const Header: React.FC<HeaderProps> = ({
             />
             <span 
               className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-[#080c14] shadow-sm animate-pulse" 
-              title={backendSynced ? "लाइव सर्वर कनेक्टेड" : "लाइव मोड"}
+              title={backendSynced ? "लाइव अपडेट" : "लाइव मोड"}
             />
           </div>
 

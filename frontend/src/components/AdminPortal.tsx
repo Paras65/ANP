@@ -1093,7 +1093,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <span>पाठक पोर्टल</span>
             </button>
             <span className="text-[10px] text-slate-500">
-              HMAC-SHA256 • Timing-Safe
+              सुरक्षित पोर्टल
             </span>
           </div>
         </div>
@@ -2881,12 +2881,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         onClick={async () => {
                           const clean = extractYouTubeChannelId(channelIdInput) || channelIdInput.trim();
                           if (clean) {
-                            setSyncFeedback('⏳ चैनल आईडी Atlas में सुरक्षित की जा रही है...');
+                            setSyncFeedback('⏳ चैनल आईडी सुरक्षित की जा रही है...');
                             localStorage.setItem('anp_yt_channel_id', clean);
                             if (onSaveChannelId) {
                               await onSaveChannelId(clean);
                             }
-                            setSyncFeedback(`✅ चैनल आईडी "${clean}" MongoDB Atlas में सुरक्षित की गई!`);
+                            setSyncFeedback('✅ चैनल आईडी सफलतापूर्वक सुरक्षित कर दी गई!');
                             setTimeout(() => setSyncFeedback(null), 3500);
                           }
                         }}
@@ -2899,32 +2899,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     </div>
                   </div>
 
-                  {/* YouTube Data API v3 Status (Server Environment Variable - 100% Secure) */}
+                  {/* YouTube Connection Status */}
                   <div className={`pt-2 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
                     <div className={`flex items-center justify-between p-3 rounded-2xl border ${
                       isDark ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200'
                     }`}>
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Google YouTube Data API v3</span>
+                          <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>यूट्यूब वीडियो सिंक</span>
                           {hasApiKey ? (
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                              isDark ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}>
-                              <Check size={10} className="text-emerald-500" /> सर्वर पर सक्रिय (Server ENV Secured)
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 flex items-center gap-1">
+                              <Check size={10} className="text-emerald-500" /> कनेक्टेड
                             </span>
                           ) : (
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                              isDark ? 'bg-amber-950 text-amber-300 border-amber-800' : 'bg-amber-50 text-amber-800 border-amber-200'
-                            }`}>
-                              Fallback RSS मोड
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 flex items-center gap-1">
+                              कॉन्फ़िगरेशन प्रतीक्षित
                             </span>
                           )}
                         </div>
                         <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                           {hasApiKey 
-                            ? '🔒 आपकी API Key सर्वर एनवायरनमेंट में सुरक्षित है। यह ब्राउज़र या नेटवर्क टैब में कभी दिखाई नहीं देती।'
-                            : 'ℹ️ Render Environment में YOUTUBE_API_KEY सेट करें। ब्राउज़र में कोई भी API Key स्टोर या ट्रांसमिट नहीं की जाती।'}
+                            ? 'आधिकारिक यूट्यूब चैनल सफलतापूर्वक जुड़ा हुआ है।'
+                            : 'यूट्यूब सेवा सक्रिय करने के लिए व्यवस्थापक से संपर्क करें।'}
                         </p>
                       </div>
                     </div>

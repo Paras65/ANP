@@ -1,4 +1,3 @@
-import https from 'https';
 import { logger } from '../utils/logger.js';
 
 export interface SyncedYouTubeVideo {
@@ -15,10 +14,35 @@ export interface SyncedYouTubeVideo {
   isShort?: boolean;
 }
 
-// In-memory cache to prevent excessive requests
-let cachedVideos: SyncedYouTubeVideo[] = [];
-let lastCacheTime = 0;
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
+export interface SyncedShort {
+  youtubeId: string;
+  caption: string;
+  likes: string;
+  commentsCount: string;
+  sharesCount: string;
+  district: string;
+  timeAgo: string;
+  audioTrack: string;
+  imageUrl: string;
+  embedUrl: string;
+  postUrl: string;
+}
+
+export interface ChannelStats {
+  subscriberCount: string;
+  subscriberCountRaw?: number;
+  videoCount?: string;
+  viewCount?: string;
+  channelTitle?: string;
+  isOfficialApi: boolean;
+  apiKeyConfigured: boolean;
+  updatedAt: string;
+}
+
+// In-memory cache for channel stats
+let cachedStats: ChannelStats | null = null;
+let lastStatsFetchTime = 0;
+const STATS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes cache
 
 // Helper to format ISO date into natural Hindi relative time
 function formatHindiTimeAgo(isoString: string): string {
@@ -39,127 +63,22 @@ function formatHindiTimeAgo(isoString: string): string {
   }
 }
 
-/**
- * Automatically fetches the latest videos from any YouTube Channel using official YouTube RSS Feed.
- * 100% Free, No API Key needed, Zero Quota limits.
- */
-export async function fetchChannelVideos(channelId: string, forceRefresh = false): Promise<SyncedYouTubeVideo[]> {
-  if (!channelId || !channelId.startsWith('UC')) {
-    return cachedVideos;
-  }
-
-  // Return cache if valid
-  if (!forceRefresh && cachedVideos.length > 0 && Date.now() - lastCacheTime < CACHE_TTL_MS) {
-    return cachedVideos;
-  }
-
-  return new Promise((resolve) => {
-    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-
-    https.get(url, (res) => {
-      if (res.statusCode !== 200) {
-        logger.warn(`[YouTube Sync] Feed returned status code ${res.statusCode} for channel ${channelId}`);
-        return resolve(cachedVideos);
-      }
-
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-
-      res.on('end', () => {
-        try {
-          const entries: SyncedYouTubeVideo[] = [];
-          const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
-          let match;
-
-          while ((match = entryRegex.exec(data)) !== null) {
-            const block = match[1];
-            const idMatch = block.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
-            const titleMatch = block.match(/<title>([^<]+)<\/title>/);
-            const publishedMatch = block.match(/<published>([^<]+)<\/published>/);
-            const thumbMatch = block.match(/<media:thumbnail[^>]+url="([^"]+)"/);
-
-            if (idMatch && titleMatch) {
-              const videoId = idMatch[1];
-              const rawTitle = titleMatch[1]
-                .replace(/&amp;/g, '&')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>');
-
-              const publishedAt = publishedMatch ? publishedMatch[1] : new Date().toISOString();
-              const isShort = rawTitle.toLowerCase().includes('#shorts') || rawTitle.toLowerCase().includes('#short');
-
-              entries.push({
-                id: 'yt_' + videoId,
-                title: rawTitle,
-                youtubeId: videoId,
-                thumbnail: thumbMatch ? thumbMatch[1] : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                duration: isShort ? '0:59' : '10:00',
-                views: 'ताज़ा कवरेज',
-                timeAgo: formatHindiTimeAgo(publishedAt),
-                category: isShort ? 'शॉर्ट्स / रील' : 'कवर्धा विशेष',
-                youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
-                publishedAt,
-                isShort
-              });
-            }
-          }
-
-          if (entries.length > 0) {
-            cachedVideos = entries;
-            lastCacheTime = Date.now();
-            logger.info(`✅ [YouTube Auto-Sync] Successfully synced ${entries.length} latest videos for channel ${channelId}`);
-          }
-
-          resolve(cachedVideos);
-        } catch (err) {
-          logger.error('[YouTube Sync] Error parsing XML feed:', err);
-          resolve(cachedVideos);
-        }
-      });
-    }).on('error', (err) => {
-      logger.error('[YouTube Sync] Network error fetching feed:', err.message);
-      resolve(cachedVideos);
-    });
-  });
-}
-
-export interface SyncedShort {
-  youtubeId: string;
-  caption: string;
-  likes: string;
-  commentsCount: string;
-  sharesCount: string;
-  district: string;
-  timeAgo: string;
-  audioTrack: string;
-  imageUrl: string;
-  embedUrl: string;
-  postUrl: string;
-}
-
-// Helper to parse ISO 8601 duration string (e.g. PT1M15S, PT45S, PT1H2M30S)
-function parseISO8601Duration(iso: string): { totalSeconds: number; formatted: string } {
-  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+// Helper to parse ISO 8601 duration string into formatted mm:ss
+function parseISO8601Duration(duration: string): { totalSeconds: number; formatted: string } {
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return { totalSeconds: 0, formatted: '0:00' };
-  const h = parseInt(match[1] || '0', 10);
-  const m = parseInt(match[2] || '0', 10);
-  const s = parseInt(match[3] || '0', 10);
-  const totalSeconds = h * 3600 + m * 60 + s;
 
-  if (h > 0) {
-    return {
-      totalSeconds,
-      formatted: `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-    };
+  const hours = parseInt(match[1] || '0', 10);
+  const minutes = parseInt(match[2] || '0', 10);
+  const seconds = parseInt(match[3] || '0', 10);
+  const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+  if (hours > 0) {
+    const formatted = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return { totalSeconds, formatted };
   }
-  return {
-    totalSeconds,
-    formatted: `${m}:${s.toString().padStart(2, '0')}`
-  };
+  const formatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  return { totalSeconds, formatted };
 }
 
 // Helper to format numeric view and like counts
@@ -172,22 +91,9 @@ function formatViews(countStr?: string | number): string {
   return num.toString();
 }
 
-export interface ChannelStats {
-  subscriberCount: string;
-  subscriberCountRaw?: number;
-  videoCount?: string;
-  viewCount?: string;
-  channelTitle?: string;
-  updatedAt: string;
-}
-
-let cachedStats: ChannelStats | null = null;
-let lastStatsFetchTime = 0;
-const STATS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes cache
-
 /**
- * Real-time YouTube Subscriber & Channel Statistics Engine.
- * Supports both Official YouTube Data API v3 and Zero-Key Public Channel Scraper.
+ * 100% Official Google YouTube Data API v3 Subscriber & Channel Stats Engine.
+ * Strictly uses Google's official REST API endpoint. Zero web scrapers.
  */
 export async function getLiveChannelStats(
   channelIdOrHandle = 'UC8mIipC7suPuBJ_n8kUzkCg',
@@ -201,151 +107,73 @@ export async function getLiveChannelStats(
   const apiKey = (process.env.YOUTUBE_API_KEY || '').trim();
   const cleanId = channelIdOrHandle.trim() || 'UC8mIipC7suPuBJ_n8kUzkCg';
 
-  // 1. Try official YouTube Data API v3 if API key is configured
-  if (apiKey) {
-    try {
-      const isHandle = cleanId.startsWith('@') || !cleanId.startsWith('UC');
-      const param = isHandle
-        ? `forHandle=${encodeURIComponent(cleanId.replace(/^@/, ''))}`
-        : `id=${encodeURIComponent(cleanId)}`;
-      const url = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&${param}&key=${apiKey}`;
-      const res = await fetch(url);
-      const data: any = await res.json();
-      const item = data?.items?.[0];
-      if (item && item.statistics) {
-        const rawSubs = parseInt(item.statistics.subscriberCount, 10);
-        const formattedSubs = isNaN(rawSubs) ? '4.56K+' : formatViews(rawSubs) + '+';
-        cachedStats = {
-          subscriberCount: formattedSubs,
-          subscriberCountRaw: rawSubs,
-          videoCount: item.statistics.videoCount,
-          viewCount: item.statistics.viewCount,
-          channelTitle: item.snippet?.title || 'Ambition News',
-          updatedAt: new Date().toISOString()
-        };
-        lastStatsFetchTime = now;
-        return cachedStats;
-      }
-    } catch (err: any) {
-      logger.warn('[YouTube API Stats Fallback]:', err?.message);
-    }
-  }
-
-  // 2. Direct Public Channel Fetch (Zero API key / Zero Quota)
-  try {
-    const channelUrl = cleanId.startsWith('UC')
-      ? `https://www.youtube.com/channel/${cleanId}`
-      : `https://www.youtube.com/${cleanId.startsWith('@') ? cleanId : '@' + cleanId}`;
-
-    const res = await fetch(channelUrl, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
-
-    const html = await res.text();
-
-    // Pattern 1: e.g. "4.56K subscribers"
-    const m1 = html.match(/([0-9.]+[KMBkmb]?)\s+(?:subscribers|सदस्य)/i);
-    // Pattern 2: subtitle content
-    const m2 = html.match(/"subtitle":\{"content":"[^"]*?([0-9.]+[KMBkmb]?)\s+subscribers/i);
-
-    const matchedCount = (m1 && m1[1]) || (m2 && m2[1]);
-    const finalSubs = matchedCount ? matchedCount.toUpperCase() + '+' : (cachedStats?.subscriberCount || '4.56K+');
-
+  if (!apiKey) {
     cachedStats = {
-      subscriberCount: finalSubs,
+      subscriberCount: cachedStats?.subscriberCount || '4.56K+',
       channelTitle: 'Ambition News',
+      isOfficialApi: true,
+      apiKeyConfigured: false,
       updatedAt: new Date().toISOString()
     };
-    lastStatsFetchTime = now;
     return cachedStats;
-  } catch (err: any) {
-    logger.warn('[Live YouTube Scraper Stats Fallback]:', err?.message);
-    return cachedStats || {
-      subscriberCount: '4.56K+',
-      channelTitle: 'Ambition News',
-      updatedAt: new Date().toISOString()
-    };
   }
-}
 
-/**
- * Automatically fetches the latest vertical Shorts directly from the YouTube channel page.
- */
-export async function fetchChannelShorts(handleOrChannelId = 'ambition_news'): Promise<SyncedShort[]> {
   try {
-    const handle = handleOrChannelId.replace(/^@/, '');
-    const url = handle.startsWith('UC')
-      ? `https://www.youtube.com/channel/${handle}/shorts`
-      : `https://www.youtube.com/@${handle}/shorts`;
+    const isHandle = cleanId.startsWith('@') || !cleanId.startsWith('UC');
+    const param = isHandle
+      ? `forHandle=${encodeURIComponent(cleanId.replace(/^@/, ''))}`
+      : `id=${encodeURIComponent(cleanId)}`;
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&${param}&key=${apiKey}`;
+    const res = await fetch(url);
+    const data: any = await res.json();
+    const item = data?.items?.[0];
 
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-    });
-    const html = await res.text();
-    const match = html.match(/var ytInitialData = ({[\s\S]*?});<\/script>/);
-    if (!match) return [];
-
-    const data = JSON.parse(match[1]);
-    const reels: SyncedShort[] = [];
-
-    function walk(obj: any) {
-      if (!obj || typeof obj !== 'object') return;
-      if (obj.shortsLockupViewModel) {
-        const item = obj.shortsLockupViewModel;
-        const vid = item.onTap?.innertubeCommand?.reelWatchEndpoint?.videoId;
-        const caption = item.overlayMetadata?.primaryText?.content || item.accessibilityText?.split(',')[0] || 'Ambition News Reel';
-        const views = item.overlayMetadata?.secondaryText?.content || '1.2K';
-        const thumb = item.thumbnailViewModel?.thumbnailViewModel?.image?.sources?.[0]?.url || `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`;
-        if (vid) {
-          reels.push({
-            youtubeId: vid,
-            caption: caption.trim(),
-            likes: views.replace(/ views/i, ''),
-            commentsCount: '85',
-            sharesCount: '42',
-            district: caption.includes('रायपुर') ? 'रायपुर' : 'कवर्धा',
-            timeAgo: 'ताज़ा रील',
-            audioTrack: 'Ambition News Original',
-            imageUrl: thumb,
-            embedUrl: `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1&loop=1&playlist=${vid}&rel=0`,
-            postUrl: `https://www.youtube.com/shorts/${vid}`
-          });
-        }
-      }
-      for (const k of Object.keys(obj)) {
-        walk(obj[k]);
-      }
+    if (item && item.statistics) {
+      const rawSubs = parseInt(item.statistics.subscriberCount, 10);
+      const formattedSubs = isNaN(rawSubs) ? '4.56K+' : formatViews(rawSubs) + '+';
+      cachedStats = {
+        subscriberCount: formattedSubs,
+        subscriberCountRaw: rawSubs,
+        videoCount: item.statistics.videoCount,
+        viewCount: item.statistics.viewCount,
+        channelTitle: item.snippet?.title || 'Ambition News',
+        isOfficialApi: true,
+        apiKeyConfigured: true,
+        updatedAt: new Date().toISOString()
+      };
+      lastStatsFetchTime = now;
+      return cachedStats;
     }
-    walk(data);
 
-    // Deduplicate
-    const seen = new Set<string>();
-    const unique: SyncedShort[] = [];
-    for (const r of reels) {
-      if (!seen.has(r.youtubeId)) {
-        seen.add(r.youtubeId);
-        unique.push(r);
-      }
+    if (data.error) {
+      logger.warn('[Google YouTube API Stats Error]:', data.error?.message);
     }
-    return unique;
-  } catch (err) {
-    logger.error('[YouTube Shorts Sync] Error:', err);
-    return [];
+  } catch (err: any) {
+    logger.error('[Google YouTube Data API v3 Request Error]:', err?.message);
   }
+
+  return cachedStats || {
+    subscriberCount: '4.56K+',
+    channelTitle: 'Ambition News',
+    isOfficialApi: true,
+    apiKeyConfigured: Boolean(apiKey),
+    updatedAt: new Date().toISOString()
+  };
 }
 
 /**
- * 100% Official Google YouTube Data API v3 Engine.
- * Fetches uploads, exact view/like counts, and categorizes into standard videos and vertical Shorts.
+ * 100% Official Google YouTube Data API v3 Sync Engine.
+ * Fetches uploads, exact view/like counts, and categorizes into standard bulletins and vertical Shorts.
+ * Zero scrapers, zero RSS feed hacks.
  */
 export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string): Promise<{
   videos: SyncedYouTubeVideo[];
   reels: SyncedShort[];
 }> {
+  if (!apiKey || !apiKey.trim()) {
+    throw new Error('Google YouTube Data API v3 Key (YOUTUBE_API_KEY) सर्वर पर कॉन्फ़िगर नहीं है।');
+  }
+
   try {
     const cleanId = channelId.trim();
     let uploadsPlaylistId = '';
@@ -361,7 +189,7 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
     }
 
     if (!uploadsPlaylistId) {
-      throw new Error(`Uploads playlist not found for channel: ${channelId}`);
+      throw new Error(`चैनल के लिए अपलोड प्लेलिस्ट प्राप्त नहीं हो सकी: ${channelId}`);
     }
 
     // 1. Fetch up to 50 items from the Uploads playlist
@@ -370,7 +198,7 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
     const pData: any = await pRes.json();
 
     if (!pData.items || !Array.isArray(pData.items)) {
-      throw new Error(pData.error?.message || 'Failed to fetch playlist from YouTube API');
+      throw new Error(pData.error?.message || 'यूट्यूब API से प्लेलिस्ट फेच करने में विफल');
     }
 
     const videoIds: string[] = pData.items
@@ -387,7 +215,7 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
     const vData: any = await vRes.json();
 
     if (!vData.items || !Array.isArray(vData.items)) {
-      throw new Error(vData.error?.message || 'Failed to fetch video details from YouTube API');
+      throw new Error(vData.error?.message || 'यूट्यूब API से वीडियो विवरण फेच करने में विफल');
     }
 
     const videos: SyncedYouTubeVideo[] = [];
@@ -441,9 +269,10 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
       }
     }
 
+    logger.info(`✅ [Google YouTube Data API v3] Synced ${videos.length} videos and ${reels.length} shorts for channel ${channelId}`);
     return { videos, reels };
   } catch (err: any) {
-    logger.error('[YouTube Data API v3 Engine Error]:', err.message);
+    logger.error('[Google YouTube Data API v3 Engine Error]:', err.message);
     throw err;
   }
 }

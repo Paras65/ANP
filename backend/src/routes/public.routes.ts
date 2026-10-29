@@ -14,7 +14,7 @@ import { MandiRate } from '../models/MandiRate.model.js';
 import { Advertisement } from '../models/Advertisement.model.js';
 import { requireAdminAuth } from '../middleware/auth.middleware.js';
 import { authLimiter, aiLimiter, contentCreationLimiter } from '../middleware/rateLimiter.middleware.js';
-import { fetchChannelVideos, fetchChannelShorts, syncFromYouTubeDataAPI, getLiveChannelStats } from '../services/youtubeSync.js';
+import { syncFromYouTubeDataAPI, getLiveChannelStats } from '../services/youtubeSync.js';
 import { processGeminiNewsTask } from '../services/gemini.service.js';
 import { 
   recordSecurityIncident, 
@@ -637,10 +637,10 @@ router.get('/videos', async (req: Request, res: Response) => {
   }
 });
 
-// 5b. GET /api/youtube/sync - Auto-fetch YouTube channel videos & persist into MongoDB Atlas
+// 5b. GET /api/youtube/sync - Auto-fetch YouTube channel videos using 100% Official Google YouTube Data API v3
 router.get('/youtube/sync', async (req: Request, res: Response) => {
   try {
-    const channelId = String(req.query.channelId || activeYouTubeChannelId || process.env.YOUTUBE_CHANNEL_ID || '').trim();
+    const channelId = String(req.query.channelId || activeYouTubeChannelId || process.env.YOUTUBE_CHANNEL_ID || 'UC8mIipC7suPuBJ_n8kUzkCg').trim();
     if (!channelId) {
       return res.status(400).json({
         success: false,
@@ -648,150 +648,121 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
       });
     }
 
-    // Strictly read from server environment variable (never hardcoded, never from DB or client)
+    // Strictly read API Key from server environment variable
     const apiKey = (process.env.YOUTUBE_API_KEY || '').trim();
+
+    // 100% Official API Enforcement: If API key is not configured, inform admin cleanly without scraping
+    if (!apiKey) {
+      const stats = await getLiveChannelStats(channelId);
+      const allVideos = await Video.find({ isShort: false }).sort({ publishedAt: -1, createdAt: -1 }).lean();
+      const allReels = await Reel.find().sort({ createdAt: -1 }).lean();
+
+      return res.status(200).json({
+        success: false,
+        isConfigured: false,
+        isOfficialApiOnly: true,
+        message: 'यूट्यूब सेवा सक्रिय की जा रही है।',
+        channelId,
+        syncEngine: 'youtube_data_api_v3_pending',
+        subscribers: stats.subscriberCount,
+        stats,
+        totalFetched: allVideos.length + allReels.length,
+        videos: allVideos.map((v: any) => ({
+          id: v._id.toString(),
+          title: v.title,
+          youtubeId: v.youtubeId,
+          thumbnail: v.thumbnail,
+          duration: v.duration,
+          views: v.views,
+          timeAgo: v.timeAgo,
+          category: v.category,
+          youtubeUrl: v.youtubeUrl
+        })),
+        reels: allReels.map((r: any) => ({
+          id: r._id.toString(),
+          caption: r.caption,
+          imageUrl: r.imageUrl,
+          youtubeId: r.youtubeId,
+          embedUrl: r.embedUrl,
+          postUrl: r.postUrl,
+          likes: r.likes,
+          commentsCount: r.commentsCount,
+          sharesCount: r.sharesCount,
+          district: r.district,
+          timeAgo: r.timeAgo,
+          audioTrack: r.audioTrack
+        }))
+      });
+    }
 
     let newVideosAdded = 0;
     let newReelsAdded = 0;
-    let syncEngine = 'rss_fallback';
-    let totalFetched = 0;
 
-    // 1. Try Official Google YouTube Data API v3 if API key is configured
-    if (apiKey) {
-      try {
-        logger.debug(`[YouTube Sync] Executing official YouTube Data API v3 for channel ${channelId}`);
-        const apiData = await syncFromYouTubeDataAPI(channelId, apiKey);
-        syncEngine = 'youtube_data_api_v3';
-        totalFetched = apiData.videos.length + apiData.reels.length;
+    logger.info(`[YouTube Sync] Executing 100% Official Google YouTube Data API v3 for channel ${channelId}`);
+    const apiData = await syncFromYouTubeDataAPI(channelId, apiKey);
+    const totalFetched = apiData.videos.length + apiData.reels.length;
 
-        for (const v of apiData.videos) {
-          const existing = await Video.findOne({ youtubeId: v.youtubeId });
-          if (!existing) {
-            await Video.create({
-              title: v.title,
-              youtubeId: v.youtubeId,
-              thumbnail: v.thumbnail,
-              duration: v.duration,
+    for (const v of apiData.videos) {
+      const existing = await Video.findOne({ youtubeId: v.youtubeId });
+      if (!existing) {
+        await Video.create({
+          title: v.title,
+          youtubeId: v.youtubeId,
+          thumbnail: v.thumbnail,
+          duration: v.duration,
+          views: v.views,
+          timeAgo: v.timeAgo,
+          category: v.category,
+          youtubeUrl: v.youtubeUrl,
+          isShort: false,
+          publishedAt: v.publishedAt ? new Date(v.publishedAt) : new Date()
+        });
+        newVideosAdded++;
+      } else {
+        await Video.updateOne(
+          { youtubeId: v.youtubeId },
+          {
+            $set: {
               views: v.views,
-              timeAgo: v.timeAgo,
-              category: v.category,
-              youtubeUrl: v.youtubeUrl,
-              isShort: false,
-              publishedAt: v.publishedAt ? new Date(v.publishedAt) : new Date()
-            });
-            newVideosAdded++;
-          } else {
-            // Live update views count and stats from YouTube
-            await Video.updateOne(
-              { youtubeId: v.youtubeId },
-              {
-                $set: {
-                  views: v.views,
-                  duration: v.duration,
-                  thumbnail: v.thumbnail,
-                  title: v.title
-                }
-              }
-            );
+              duration: v.duration,
+              thumbnail: v.thumbnail,
+              title: v.title
+            }
           }
-        }
-
-        for (const s of apiData.reels) {
-          const existing = await Reel.findOne({ youtubeId: s.youtubeId });
-          if (!existing) {
-            await Reel.create(s);
-            newReelsAdded++;
-          } else {
-            // Live update likes and view stats from YouTube
-            await Reel.updateOne(
-              { youtubeId: s.youtubeId },
-              {
-                $set: {
-                  likes: s.likes,
-                  commentsCount: s.commentsCount,
-                  caption: s.caption,
-                  imageUrl: s.imageUrl
-                }
-              }
-            );
-          }
-        }
-      } catch (apiErr: any) {
-        logger.warn('[YouTube Data API v3 Failed, Falling back to RSS/Scraper]:', apiErr?.message);
+        );
       }
     }
 
-    // 2. Fallback to RSS Feed + Direct Shorts scraper if API key is not present or failed
-    if (syncEngine !== 'youtube_data_api_v3') {
-      const force = req.query.force === 'true';
-      const videos = await fetchChannelVideos(channelId, force);
-      totalFetched = videos.length;
-
-      for (const v of videos) {
-        const existing = await Video.findOne({ youtubeId: v.youtubeId });
-        if (!existing) {
-          await Video.create({
-            title: v.title,
-            youtubeId: v.youtubeId,
-            thumbnail: v.thumbnail,
-            duration: v.duration,
-            views: v.views,
-            timeAgo: v.timeAgo,
-            category: v.category,
-            youtubeUrl: v.youtubeUrl,
-            isShort: Boolean(v.isShort),
-            publishedAt: v.publishedAt ? new Date(v.publishedAt) : new Date()
-          });
-          newVideosAdded++;
-        }
-
-        if (v.isShort) {
-          const existingReel = await Reel.findOne({ youtubeId: v.youtubeId });
-          if (!existingReel) {
-            await Reel.create({
-              caption: v.title,
-              imageUrl: v.thumbnail,
-              youtubeId: v.youtubeId,
-              embedUrl: `https://www.youtube-nocookie.com/embed/${v.youtubeId}?autoplay=1&loop=1&playlist=${v.youtubeId}&rel=0`,
-              postUrl: v.youtubeUrl,
-              likes: '1.2K',
-              commentsCount: '80',
-              sharesCount: '45',
-              district: 'कवर्धा',
-              timeAgo: v.timeAgo,
-              audioTrack: 'Ambition News Original'
-            });
-            newReelsAdded++;
+    for (const s of apiData.reels) {
+      const existing = await Reel.findOne({ youtubeId: s.youtubeId });
+      if (!existing) {
+        await Reel.create(s);
+        newReelsAdded++;
+      } else {
+        await Reel.updateOne(
+          { youtubeId: s.youtubeId },
+          {
+            $set: {
+              likes: s.likes,
+              commentsCount: s.commentsCount,
+              caption: s.caption,
+              imageUrl: s.imageUrl
+            }
           }
-        }
-      }
-
-      // Auto-sync channel Shorts directly from YouTube Shorts feed
-      try {
-        const channelShorts = await fetchChannelShorts(channelId || 'ambition_news');
-        for (const s of channelShorts) {
-          const existing = await Reel.findOne({ youtubeId: s.youtubeId });
-          if (!existing) {
-            await Reel.create(s);
-            newReelsAdded++;
-          }
-        }
-      } catch (shortErr) {
-        logger.warn('[Shorts Sync Error]:', shortErr);
+        );
       }
     }
 
     activeYouTubeChannelId = channelId;
     const allVideos = await Video.find({ isShort: false }).sort({ publishedAt: -1, createdAt: -1 }).lean();
     const allReels = await Reel.find().sort({ createdAt: -1 }).lean();
-
-    // Fetch live channel statistics (subscribers, view count)
     const stats = await getLiveChannelStats(channelId, true);
 
     return res.json({
       success: true,
       channelId,
-      syncEngine,
+      syncEngine: 'youtube_data_api_v3',
+      isOfficialApi: true,
       totalFetched,
       newVideosAdded,
       newReelsAdded,
@@ -824,11 +795,12 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
       }))
     });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+    logger.error('[YouTube Sync Error]:', err?.message || err);
+    return res.status(500).json({ success: false, message: 'यूट्यूब वीडियो सिंक करने में समस्या आई।' });
   }
 });
 
-// 5c. GET & POST /api/youtube/config - Read channel ID from Atlas; check server ENV for API key status
+// 5c. GET & POST /api/youtube/config - Read channel ID; check server configuration status
 router.get('/youtube/config', async (req: Request, res: Response) => {
   try {
     const doc = await Setting.findOne({ key: 'youtube_channel_id' });
@@ -858,14 +830,15 @@ router.post('/youtube/config', requireAdminAuth, async (req: Request, res: Respo
     const stats = await getLiveChannelStats(clean, true);
     res.json({
       success: true,
-      message: 'यूट्यूब चैनल आईडी MongoDB Atlas में सफलतापूर्वक सुरक्षित हो गई!',
+      message: 'यूट्यूब चैनल आईडी सफलतापूर्वक सुरक्षित हो गई!',
       channelId: clean,
       isConfiguredOnServer: Boolean(process.env.YOUTUBE_API_KEY),
       stats,
       subscribers: stats.subscriberCount
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    logger.error('[Save YouTube Config Error]:', err?.message || err);
+    res.status(500).json({ success: false, message: 'चैनल आईडी सुरक्षित करने में त्रुटि आई।' });
   }
 });
 

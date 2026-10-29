@@ -221,7 +221,7 @@ export const SuperAdminPortal: React.FC<SuperAdminPortalProps> = ({
               <ArrowLeft size={13} />
               <span>पब्लिक पोर्टल</span>
             </button>
-            <span className="text-[10px]">SHA-256 HMAC Encrypted</span>
+            <span className="text-[10px]">सुरक्षित पोर्टल</span>
           </div>
         </div>
       </div>
