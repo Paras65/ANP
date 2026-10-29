@@ -16,14 +16,7 @@ import {
   clearSecurityLogs, 
   recordSecurityIncident 
 } from '../services/securityAudit.service.js';
-import { 
-  generateBase32Secret, 
-  generateTOTP, 
-  verifyTOTP, 
-  getOtpAuthUrl, 
-  generateEmergencyBackupCodes, 
-  verifyAndConsumeBackupCode 
-} from '../utils/totp.js';
+import { TwoFactorService } from '../services/twoFactor.service.js';
 import { 
   generateFullDatabaseSnapshot, 
   createInternalSnapshot, 
@@ -71,9 +64,9 @@ router.post('/auth/login', authLimiter, async (req: Request, res: Response) => {
     const isMatch = bufInput.length === bufExpected.length && crypto.timingSafeEqual(bufInput, bufExpected);
 
     if (isMatch) {
-      // Check if 2FA is active on Super Admin
-      const twoFactorSetting = await Setting.findOne({ key: 'super_admin_2fa' }).lean();
-      if (twoFactorSetting?.value?.enabled && twoFactorSetting.value.secret) {
+      // Check if 2FA is active on Super Admin (DRY TwoFactorService)
+      const twoFactorStatus = await TwoFactorService.getStatus('super_admin_2fa');
+      if (twoFactorStatus.enabled) {
         const tempToken = jwt.sign(
           { role: 'super_admin_temp_2fa', desk: 'security_governance' },
           PIN_SALT,
@@ -130,49 +123,33 @@ router.post('/auth/verify-2fa', authLimiter, async (req: Request, res: Response)
       return res.status(401).json({ success: false, message: '2FA सत्र समाप्त या अमान्य है। कृपया पुनः मास्टर पिन दर्ज करें।' });
     }
 
-    const twoFactorSetting = await Setting.findOne({ key: 'super_admin_2fa' });
-    if (!twoFactorSetting?.value?.enabled || !twoFactorSetting.value.secret) {
-      return res.status(400).json({ success: false, message: '2FA सक्षम नहीं है' });
+    const verifyResult = await TwoFactorService.verifyCodeOrBackup('super_admin_2fa', code);
+    if (!verifyResult.valid) {
+      return res.status(401).json({ success: false, message: verifyResult.message || 'अमान्य 2FA कोड या समाप्त बैकअप कोड' });
     }
 
-    const inputCode = String(code).trim();
-
-    // 1. Verify standard 6-digit TOTP (Google / Microsoft Authenticator)
-    const isTotpValid = verifyTOTP(inputCode, twoFactorSetting.value.secret);
-    if (isTotpValid) {
-      return res.json({
-        success: true,
-        message: '2FA सत्यापन सफल! स्वागत है।',
-        token: generateSuperAdminJwt()
-      });
-    }
-
-    // 2. Check Emergency Single-Use Backup Recovery Code
-    const hashedCodes = twoFactorSetting.value.hashedBackupCodes || [];
-    const usedIndex = verifyAndConsumeBackupCode(inputCode, hashedCodes);
-    if (usedIndex !== -1) {
-      hashedCodes.splice(usedIndex, 1);
-      twoFactorSetting.value.hashedBackupCodes = hashedCodes;
-      twoFactorSetting.markModified('value');
-      await twoFactorSetting.save();
-
+    if (verifyResult.isBackupCode) {
       recordSecurityIncident({
         eventType: 'EMERGENCY_BACKUP_CODE_USED',
         severity: 'MEDIUM',
         ip: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown',
-        message: `सुपर एडमिन द्वारा आपातकालीन बैकअप कोड का उपयोग किया गया। शेष कोड: ${hashedCodes.length}`
+        message: `सुपर एडमिन द्वारा आपातकालीन बैकअप कोड का उपयोग किया गया। शेष कोड: ${verifyResult.remainingBackupCodes}`
       });
 
       return res.json({
         success: true,
-        message: `आपातकालीन बैकअप कोड स्वीकृत! शेष बैकअप कोड: ${hashedCodes.length}`,
+        message: `आपातकालीन बैकअप कोड स्वीकृत! शेष बैकअप कोड: ${verifyResult.remainingBackupCodes}`,
         token: generateSuperAdminJwt(),
         backupCodeUsed: true,
-        remainingBackupCodes: hashedCodes.length
+        remainingBackupCodes: verifyResult.remainingBackupCodes
       });
     }
 
-    return res.status(401).json({ success: false, message: 'अमान्य 2FA कोड या समाप्त बैकअप कोड' });
+    return res.json({
+      success: true,
+      message: '2FA सत्यापन सफल! स्वागत है।',
+      token: generateSuperAdminJwt()
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -275,14 +252,10 @@ router.get('/database/overview', requireSuperAdminAuth, async (_req: Request, re
 // 7. GET /api/super-admin/2fa/status - Get current 2FA status & remaining recovery codes
 router.get('/2fa/status', requireSuperAdminAuth, async (_req: Request, res: Response) => {
   try {
-    const setting = await Setting.findOne({ key: 'super_admin_2fa' }).lean();
+    const status = await TwoFactorService.getStatus('super_admin_2fa');
     res.json({
       success: true,
-      data: {
-        enabled: Boolean(setting?.value?.enabled),
-        remainingBackupCodes: setting?.value?.hashedBackupCodes?.length || 0,
-        enabledAt: setting?.value?.enabledAt || null
-      }
+      data: status
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -292,27 +265,10 @@ router.get('/2fa/status', requireSuperAdminAuth, async (_req: Request, res: Resp
 // 8. POST /api/super-admin/2fa/setup - Generate fresh Base32 TOTP secret & 5 Emergency Offline Recovery Codes
 router.post('/2fa/setup', requireSuperAdminAuth, async (_req: Request, res: Response) => {
   try {
-    const secret = generateBase32Secret(20);
-    const otpAuthUrl = getOtpAuthUrl(secret, 'super_admin', 'AmbitionNews');
-    const { rawCodes, hashedCodes } = generateEmergencyBackupCodes(5);
-
-    // Save pending setup in setting
-    await Setting.findOneAndUpdate(
-      { key: 'super_admin_2fa_pending' },
-      { 
-        key: 'super_admin_2fa_pending', 
-        value: { secret, hashedBackupCodes: hashedCodes, createdAt: new Date() } 
-      },
-      { upsert: true, new: true }
-    );
-
+    const data = await TwoFactorService.startSetup('super_admin_2fa_pending', 'super_admin');
     res.json({
       success: true,
-      data: {
-        secret,
-        otpAuthUrl,
-        emergencyBackupCodes: rawCodes
-      }
+      data
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -327,32 +283,10 @@ router.post('/2fa/verify-and-enable', requireSuperAdminAuth, async (req: Request
       return res.status(400).json({ success: false, message: 'सत्यापन कोड आवश्यक है' });
     }
 
-    const pending = await Setting.findOne({ key: 'super_admin_2fa_pending' });
-    if (!pending?.value?.secret) {
-      return res.status(400).json({ success: false, message: 'कोई लंबित 2FA सेटअप नहीं मिला' });
-    }
-
-    const isValid = verifyTOTP(String(code), pending.value.secret);
+    const isValid = await TwoFactorService.verifyAndEnable('super_admin_2fa', 'super_admin_2fa_pending', code);
     if (!isValid) {
       return res.status(400).json({ success: false, message: 'अमान्य 6-अंकों का कोड। कृपया Authenticator ऐप का ताज़ा कोड दर्ज करें।' });
     }
-
-    // Activate 2FA permanently
-    await Setting.findOneAndUpdate(
-      { key: 'super_admin_2fa' },
-      {
-        key: 'super_admin_2fa',
-        value: {
-          enabled: true,
-          secret: pending.value.secret,
-          hashedBackupCodes: pending.value.hashedBackupCodes || [],
-          enabledAt: new Date()
-        }
-      },
-      { upsert: true }
-    );
-
-    await Setting.deleteOne({ key: 'super_admin_2fa_pending' });
 
     recordSecurityIncident({
       eventType: 'TWO_FACTOR_ENABLED',
@@ -363,18 +297,14 @@ router.post('/2fa/verify-and-enable', requireSuperAdminAuth, async (req: Request
 
     res.json({ success: true, message: '🎉 2-फैक्टर ऑथेंटिकेशन (2FA) सफलतापूर्वक सक्रिय हो गया!' });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(400).json({ success: false, message: err.message });
   }
 });
 
 // 10. POST /api/super-admin/2fa/disable - Disable 2FA
 router.post('/2fa/disable', requireSuperAdminAuth, async (req: Request, res: Response) => {
   try {
-    await Setting.findOneAndUpdate(
-      { key: 'super_admin_2fa' },
-      { key: 'super_admin_2fa', value: { enabled: false } },
-      { upsert: true }
-    );
+    await TwoFactorService.disable('super_admin_2fa');
 
     recordSecurityIncident({
       eventType: 'TWO_FACTOR_DISABLED',

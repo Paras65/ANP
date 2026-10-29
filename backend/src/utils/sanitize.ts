@@ -107,3 +107,12 @@ export function getSafeGeminiErrorMessage(err: any): string {
   return snippet ? `Gemini AI सेवा त्रुटि: ${snippet}` : 'Gemini AI सेवा से उत्तर प्राप्त करने में विफल।';
 }
 
+/**
+ * ReDoS & Regex Injection Defense:
+ * Escapes regex special metacharacters and caps string length before MongoDB evaluation.
+ */
+export function escapeRegex(text: string): string {
+  return String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&').slice(0, 80);
+}
+
+
