@@ -17,6 +17,15 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
+User-agent: Googlebot-Image
+Allow: /
+Allow: /favicon.ico
+Allow: /favicon-48x48.png
+Allow: /favicon-96x96.png
+Allow: /logo.png
+Allow: /logo-192.png
+Allow: /logo-512.png
+
 User-agent: Googlebot-News
 Allow: /
 Disallow: /admin

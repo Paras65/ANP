@@ -47,13 +47,13 @@
     <link rel="preload" as="image" href="/logo-96.webp" type="image/webp" fetchpriority="high" />
     <link rel="preload" as="image" href="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=640&amp;auto=format&amp;fit=crop&amp;q=70" fetchpriority="high" />
 
-    <!-- Favicon & Touch Icons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
+    <!-- Google Search & Browser Favicons (Google Search Multiples of 48px strict standard) -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48 32x32 16x16" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/webp" sizes="96x96" href="/logo-96.webp" />
-    <link rel="icon" type="image/webp" sizes="192x192" href="/logo-192.webp" />
-    <link rel="icon" type="image/webp" sizes="512x512" href="/logo-512.webp" />
-    <link rel="apple-touch-icon" href="/logo-192.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/logo-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="mask-icon" href="/favicon.svg" color="#dc2626" />
 
     <!-- PWA & Mobile Web Capabilities -->
@@ -150,8 +150,14 @@
           "@type": "WebSite",
           "@id": "https://ambitionnews.init65.co.in/#website",
           "url": "https://ambitionnews.init65.co.in/",
-          "name": "एम्बिशन न्यूज़ पोर्टल",
-          "description": "कवर्धा, छत्तीसगढ़ और मध्यप्रदेश का डिजिटल न्यूज़ नेटवर्क",
+          "name": "एम्बिशन न्यूज़",
+          "alternateName": [
+            "Ambition News",
+            "एम्बिशन न्यूज़ कवर्धा",
+            "Ambition News Kawardha",
+            "AN News"
+          ],
+          "description": "कबीरधाम (कवर्धा), छत्तीसगढ़ के 33 और मध्यप्रदेश के 55 जिलों की ताज़ा ब्रेकिंग खबरें, भोरमदेव समाचार, मंडी भाव, राजनीति और वीडियो बुलेटिन।",
           "publisher": {
             "@id": "https://ambitionnews.init65.co.in/#organization"
           },
@@ -200,7 +206,21 @@
     </script>
   </head>
   <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased selection:bg-red-600 selection:text-white">
-    <div id="root"></div>
+    <noscript>
+      <header style="background:#dc2626;color:#ffffff;padding:12px 16px;text-align:center;">
+        <strong>एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश डिजिटल न्यूज़ नेटवर्क</strong>
+      </header>
+      <main style="padding:16px;max-width:800px;margin:auto;font-family:system-ui,-apple-system,sans-serif;line-height:1.6;">
+        <h1>एम्बिशन न्यूज़ (Ambition News) — निष्पक्ष एवं निर्भीक क्षेत्रीय पत्रकारिता</h1>
+        <p>कबीरधाम (कवर्धा), छत्तीसगढ़ के 33 और मध्यप्रदेश के 55 जिलों की ताज़ा ब्रेकिंग खबरें, भोरमदेव समाचार, कृषि मंडी भाव, राजनीति, अपराध व विशेष वीडियो बुलेटिन।</p>
+      </main>
+    </noscript>
+    <div id="root">
+      <div style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
+        <h1>एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश डिजिटल न्यूज़ पोर्टल</h1>
+        <p>एम्बिशन न्यूज़ (Ambition News) कबीरधाम (कवर्धा), छत्तीसगढ़ और मध्यप्रदेश का अग्रणी डिजिटल समाचार पोर्टल है। यहाँ पढ़ें आज की ताज़ा ब्रेकिंग खबरें, कवर्धा स्पेशल रिपोर्ट, भोरमदेव समाचार, कृषि मंडी भाव, राजनीति और लाइव वीडियो बुलेटिन।</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
