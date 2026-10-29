@@ -16,7 +16,13 @@ import { requireAdminAuth } from '../middleware/auth.middleware.js';
 import { authLimiter, aiLimiter, contentCreationLimiter } from '../middleware/rateLimiter.middleware.js';
 import { syncFromYouTubeDataAPI, getLiveChannelStats } from '../services/youtubeSync.js';
 import { processGeminiNewsTask } from '../services/gemini.service.js';
-import { verifyTOTP, verifyAndConsumeBackupCode } from '../utils/totp.js';
+import { 
+  verifyTOTP, 
+  verifyAndConsumeBackupCode, 
+  generateBase32Secret, 
+  generateEmergencyBackupCodes, 
+  getOtpAuthUrl 
+} from '../utils/totp.js';
 import { 
   recordSecurityIncident, 
   getSecurityDashboardStats, 
@@ -1779,6 +1785,121 @@ router.post('/auth/verify-2fa', authLimiter, async (req: Request, res: Response)
     }
 
     return res.status(401).json({ success: false, message: 'अमान्य 2FA कोड या समाप्त बैकअप कोड' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10d. GET /api/admin/2fa/status - Get current 2FA status for Editorial Admin
+router.get('/admin/2fa/status', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const setting = await Setting.findOne({ key: 'admin_2fa' }).lean();
+    res.json({
+      success: true,
+      data: {
+        enabled: Boolean(setting?.value?.enabled),
+        remainingBackupCodes: setting?.value?.hashedBackupCodes?.length || 0,
+        enabledAt: setting?.value?.enabledAt || null
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10e. POST /api/admin/2fa/setup - Generate fresh Base32 TOTP secret & 5 Emergency Offline Recovery Codes for Editorial Admin
+router.post('/admin/2fa/setup', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const secret = generateBase32Secret(20);
+    const otpAuthUrl = getOtpAuthUrl(secret, 'admin_editorial', 'AmbitionNews');
+    const { rawCodes, hashedCodes } = generateEmergencyBackupCodes(5);
+
+    await Setting.findOneAndUpdate(
+      { key: 'admin_2fa_pending' },
+      { 
+        key: 'admin_2fa_pending', 
+        value: { secret, hashedBackupCodes: hashedCodes, createdAt: new Date() } 
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      success: true,
+      data: {
+        secret,
+        otpAuthUrl,
+        emergencyBackupCodes: rawCodes
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10f. POST /api/admin/2fa/verify-and-enable - Verify test code & enable 2FA for Editorial Admin
+router.post('/admin/2fa/verify-and-enable', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'सत्यापन कोड आवश्यक है' });
+    }
+
+    const pending = await Setting.findOne({ key: 'admin_2fa_pending' });
+    if (!pending?.value?.secret) {
+      return res.status(400).json({ success: false, message: 'कोई लंबित 2FA सेटअप नहीं मिला' });
+    }
+
+    const isValid = verifyTOTP(String(code), pending.value.secret);
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: 'अमान्य 6-अंकों का कोड। कृपया Authenticator ऐप का ताज़ा कोड दर्ज करें।' });
+    }
+
+    await Setting.findOneAndUpdate(
+      { key: 'admin_2fa' },
+      {
+        key: 'admin_2fa',
+        value: {
+          enabled: true,
+          secret: pending.value.secret,
+          hashedBackupCodes: pending.value.hashedBackupCodes || [],
+          enabledAt: new Date()
+        }
+      },
+      { upsert: true }
+    );
+
+    await Setting.deleteOne({ key: 'admin_2fa_pending' });
+
+    recordSecurityIncident({
+      eventType: 'TWO_FACTOR_ENABLED',
+      severity: 'HIGH',
+      ip: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown',
+      message: 'एडमिन द्वारा न्यूज़ पोर्टल खाते के लिए 2FA प्रमाणीकरण सक्रिय किया गया (RFC 6238 TOTP)'
+    });
+
+    res.json({ success: true, message: '🎉 2-फैक्टर ऑथेंटिकेशन (2FA) एडमिन खाते के लिए सफलतापूर्वक सक्रिय हो गया!' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10g. POST /api/admin/2fa/disable - Disable 2FA for Editorial Admin
+router.post('/admin/2fa/disable', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    await Setting.findOneAndUpdate(
+      { key: 'admin_2fa' },
+      { key: 'admin_2fa', value: { enabled: false } },
+      { upsert: true }
+    );
+
+    recordSecurityIncident({
+      eventType: 'TWO_FACTOR_DISABLED',
+      severity: 'HIGH',
+      ip: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown',
+      message: 'एडमिन द्वारा 2FA प्रमाणीकरण निष्क्रिय किया गया'
+    });
+
+    res.json({ success: true, message: 'एडमिन 2FA सुरक्षा सफलतापूर्वक निष्क्रिय कर दी गई।' });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
