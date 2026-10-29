@@ -24,6 +24,7 @@ export interface IReel extends Document {
   district: string;
   timeAgo: string;
   audioTrack?: string;
+  publishedAt?: Date;
   createdAt: Date;
 }
 
@@ -65,9 +66,11 @@ const ReelSchema = new Schema<IReel>({
   comments: { type: [CommentSubSchema], default: [] },
   district: { type: String, default: 'कवर्धा', maxlength: 100 },
   timeAgo: { type: String, default: 'अभी-अभी', maxlength: 50 },
-  audioTrack: { type: String, default: 'Ambition News Original', maxlength: 200 }
+  audioTrack: { type: String, default: 'Ambition News Original', maxlength: 200 },
+  publishedAt: { type: Date, default: Date.now, index: true }
 }, { timestamps: true });
 
+ReelSchema.index({ publishedAt: -1, createdAt: -1 });
 ReelSchema.index({ createdAt: -1 });
 
 export const Reel = model<IReel>('Reel', ReelSchema);

@@ -13,7 +13,7 @@ import {
 import { YoutubeIcon, WhatsAppIcon } from './SocialIcons';
 import type { VideoBulletin } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
-import { isDirectVideoUrl } from '../utils/mediaUtils';
+import { isDirectVideoUrl, sortMediaLatestFirst } from '../utils/mediaUtils';
 
 interface VideoSectionProps {
   bulletins: VideoBulletin[];
@@ -108,7 +108,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
     });
   }, [bulletins, selectedCategory]);
 
-  const displayList = filteredBulletins;
+  const displayList = useMemo(() => {
+    return sortMediaLatestFirst(filteredBulletins);
+  }, [filteredBulletins]);
   const featuredVideo = displayList[0] || null;
   const remainingBulletins = displayList.slice(1);
   const visibleRemaining = remainingBulletins.slice(0, visibleVideoCount);

@@ -222,7 +222,8 @@ export function parseYouTubeRssXml(xmlText: string): { videos: VideoBulletin[]; 
         views: 'ताज़ा बुलेटिन',
         timeAgo,
         category: isShort ? 'शॉर्ट्स बुलेटिन' : 'कवर्धा विशेष',
-        youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`
+        youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        publishedAt
       };
       videos.push(videoItem);
 
@@ -240,13 +241,49 @@ export function parseYouTubeRssXml(xmlText: string): { videos: VideoBulletin[]; 
           sharesCount: '38',
           district: 'कवर्धा',
           timeAgo,
-          audioTrack: 'Ambition News Original'
+          audioTrack: 'Ambition News Original',
+          publishedAt
         });
       }
     }
   }
 
+  // Strictly sort latest first
+  videos.sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+  reels.sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+
   return { videos, reels };
+}
+
+/**
+ * Universal Latest-First Media Sorter (handles ISO timestamps, dates and relative Hindi time strings)
+ */
+export function sortMediaLatestFirst<T>(items: T[]): T[] {
+  if (!Array.isArray(items)) return [];
+  return [...items].sort((a: any, b: any) => {
+    const timeA = a?.publishedAt ? new Date(a.publishedAt).getTime() : (a?.createdAt ? new Date(a.createdAt).getTime() : 0);
+    const timeB = b?.publishedAt ? new Date(b.publishedAt).getTime() : (b?.createdAt ? new Date(b.createdAt).getTime() : 0);
+    if (timeA && timeB && timeA !== timeB) {
+      return timeB - timeA;
+    }
+    const weightA = getTimeAgoWeight(a?.timeAgo);
+    const weightB = getTimeAgoWeight(b?.timeAgo);
+    return weightA - weightB;
+  });
+}
+
+function getTimeAgoWeight(timeAgo?: string): number {
+  if (!timeAgo) return 999999;
+  const s = timeAgo.toLowerCase();
+  if (s.includes('अभी-अभी') || s.includes('just now')) return 0;
+  const num = parseInt(s.replace(/[^0-9]/g, ''), 10) || 1;
+  if (s.includes('मिनट') || s.includes('min')) return num;
+  if (s.includes('घंटे') || s.includes('घंटा') || s.includes('hour')) return num * 60;
+  if (s.includes('कल') || s.includes('yesterday')) return 24 * 60;
+  if (s.includes('दिन') || s.includes('day')) return num * 24 * 60;
+  if (s.includes('हफ्ते') || s.includes('week')) return num * 7 * 24 * 60;
+  if (s.includes('माह') || s.includes('महीने') || s.includes('month')) return num * 30 * 24 * 60;
+  return 500000;
 }
 
 /**

@@ -26,6 +26,7 @@ export interface SyncedShort {
   imageUrl: string;
   embedUrl: string;
   postUrl: string;
+  publishedAt?: string;
 }
 
 export interface ChannelStats {
@@ -251,7 +252,8 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
           audioTrack: 'Ambition News Original',
           imageUrl: thumb,
           embedUrl: `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1&loop=1&playlist=${vid}&rel=0`,
-          postUrl: `https://www.youtube.com/shorts/${vid}`
+          postUrl: `https://www.youtube.com/shorts/${vid}`,
+          publishedAt
         });
       } else {
         videos.push({
@@ -269,6 +271,10 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
         });
       }
     }
+
+    // Strictly sort both YouTube videos and Reels latest-first by publishedAt
+    videos.sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+    reels.sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
     logger.info(`✅ [Google YouTube Data API v3] Synced ${videos.length} videos and ${reels.length} shorts for channel ${channelId}`);
     return { videos, reels };

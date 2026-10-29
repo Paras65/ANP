@@ -56,7 +56,7 @@ import type { StoryItem } from './components/StoriesTray';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter, Advertisement, ComplianceTab } from './types';
 import { AdBanner } from './components/AdBanner';
 import api from './api/client';
-import { syncYouTubeChannelVideos } from './utils/mediaUtils';
+import { syncYouTubeChannelVideos, sortMediaLatestFirst } from './utils/mediaUtils';
 
 export const App: React.FC = () => {
   // Theme state: defaults to false (White / Light mode)
@@ -143,10 +143,10 @@ export const App: React.FC = () => {
   });
   const [hasYouTubeApiKey, setHasYouTubeApiKey] = useState(false);
 
-  // Dynamic Live YouTube Videos & Instagram Reels
+  // Dynamic Live YouTube Videos & Instagram Reels (Strictly latest-first)
   const [videoBulletins, setVideoBulletins] = useState<VideoBulletin[]>(() => {
     const saved = localStorage.getItem('anp_video_bulletins');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? sortMediaLatestFirst(JSON.parse(saved)) : [];
   });
 
   // Dynamic Live Mandi Rates
@@ -220,7 +220,7 @@ export const App: React.FC = () => {
 
   const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(() => {
     const saved = localStorage.getItem('anp_instagram_posts');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? sortMediaLatestFirst(JSON.parse(saved)) : [];
   });
 
   // Dynamic WhatsApp Group / Channel Link
@@ -253,24 +253,18 @@ export const App: React.FC = () => {
           const existingIds = new Set(prev.map(v => v.youtubeId));
           const newItems = res.videos.filter(v => !existingIds.has(v.youtubeId));
           addedCount += newItems.length;
-          if (newItems.length > 0) {
-            const merged = [...newItems, ...prev];
-            localStorage.setItem('anp_video_bulletins', JSON.stringify(merged));
-            return merged;
-          }
-          return prev;
+          const merged = sortMediaLatestFirst([...newItems, ...prev]);
+          localStorage.setItem('anp_video_bulletins', JSON.stringify(merged));
+          return merged;
         });
 
         if (res.reels.length > 0) {
           setInstagramPosts(prev => {
             const existingIds = new Set(prev.map(r => r.youtubeId || r.id));
             const newReels = res.reels.filter(r => !existingIds.has(r.youtubeId || r.id));
-            if (newReels.length > 0) {
-              const merged = [...newReels, ...prev];
-              localStorage.setItem('anp_instagram_posts', JSON.stringify(merged));
-              return merged;
-            }
-            return prev;
+            const merged = sortMediaLatestFirst([...newReels, ...prev]);
+            localStorage.setItem('anp_instagram_posts', JSON.stringify(merged));
+            return merged;
           });
         }
 
@@ -577,10 +571,14 @@ export const App: React.FC = () => {
       const repRes = results[3];
 
       if (vRes?.status === 'fulfilled' && vRes.value?.data?.data && Array.isArray(vRes.value.data.data) && vRes.value.data.data.length > 0) {
-        setVideoBulletins(vRes.value.data.data);
+        const sortedVideos = sortMediaLatestFirst<VideoBulletin>(vRes.value.data.data);
+        setVideoBulletins(sortedVideos);
+        localStorage.setItem('anp_video_bulletins', JSON.stringify(sortedVideos));
       }
       if (rRes?.status === 'fulfilled' && rRes.value?.data?.data && Array.isArray(rRes.value.data.data) && rRes.value.data.data.length > 0) {
-        setInstagramPosts(rRes.value.data.data);
+        const sortedReels = sortMediaLatestFirst<InstagramPost>(rRes.value.data.data);
+        setInstagramPosts(sortedReels);
+        localStorage.setItem('anp_instagram_posts', JSON.stringify(sortedReels));
       }
       if (mRes?.status === 'fulfilled' && mRes.value?.data?.data && Array.isArray(mRes.value.data.data) && mRes.value.data.data.length > 0) {
         setMandiRates(mRes.value.data.data);

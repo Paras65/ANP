@@ -26,6 +26,8 @@ export interface VideoBulletin {
   timeAgo: string;
   category: string;
   youtubeUrl: string;
+  publishedAt?: string;
+  createdAt?: string;
 }
 
 export interface ReelComment {
@@ -53,6 +55,8 @@ export interface InstagramPost {
   district: string;
   timeAgo: string;
   audioTrack?: string;
+  publishedAt?: string;
+  createdAt?: string;
 }
 
 export interface MandiRate {

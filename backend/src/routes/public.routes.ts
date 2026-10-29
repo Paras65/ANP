@@ -771,7 +771,9 @@ router.get('/videos', async (req: Request, res: Response) => {
         views: v.views,
         timeAgo: v.timeAgo,
         category: v.category,
-        youtubeUrl: v.youtubeUrl
+        youtubeUrl: v.youtubeUrl,
+        publishedAt: v.publishedAt || v.createdAt,
+        createdAt: v.createdAt
       }))
     });
   } catch (err: any) {
@@ -797,7 +799,7 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
     if (!apiKey) {
       const stats = await getLiveChannelStats(channelId);
       const allVideos = await Video.find({ isShort: false }).sort({ publishedAt: -1, createdAt: -1 }).lean();
-      const allReels = await Reel.find().sort({ createdAt: -1 }).lean();
+      const allReels = await Reel.find().sort({ publishedAt: -1, createdAt: -1 }).lean();
 
       return res.status(200).json({
         success: false,
@@ -884,7 +886,10 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
     for (const s of apiData.reels) {
       const existing = await Reel.findOne({ youtubeId: s.youtubeId });
       if (!existing) {
-        await Reel.create(s);
+        await Reel.create({
+          ...s,
+          publishedAt: s.publishedAt ? new Date(s.publishedAt) : new Date()
+        });
         newReelsAdded++;
       } else {
         await Reel.updateOne(
@@ -894,7 +899,8 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
               likes: s.likes,
               commentsCount: s.commentsCount,
               caption: s.caption,
-              imageUrl: s.imageUrl
+              imageUrl: s.imageUrl,
+              ...(s.publishedAt ? { publishedAt: new Date(s.publishedAt) } : {})
             }
           }
         );
@@ -903,7 +909,7 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
 
     activeYouTubeChannelId = channelId;
     const allVideos = await Video.find({ isShort: false }).sort({ publishedAt: -1, createdAt: -1 }).lean();
-    const allReels = await Reel.find().sort({ createdAt: -1 }).lean();
+    const allReels = await Reel.find().sort({ publishedAt: -1, createdAt: -1 }).lean();
     const stats = await getLiveChannelStats(channelId, true);
 
     return res.json({
@@ -925,7 +931,9 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
         views: v.views,
         timeAgo: v.timeAgo,
         category: v.category,
-        youtubeUrl: v.youtubeUrl
+        youtubeUrl: v.youtubeUrl,
+        publishedAt: v.publishedAt || v.createdAt,
+        createdAt: v.createdAt
       })),
       reels: allReels.map((r: any) => ({
         id: r._id.toString(),
@@ -939,7 +947,9 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
         sharesCount: r.sharesCount,
         district: r.district,
         timeAgo: r.timeAgo,
-        audioTrack: r.audioTrack
+        audioTrack: r.audioTrack,
+        publishedAt: r.publishedAt || r.createdAt,
+        createdAt: r.createdAt
       }))
     });
   } catch (err: any) {
@@ -1068,7 +1078,7 @@ router.get('/reels', async (req: Request, res: Response) => {
     const [totalReels, reels] = await Promise.all([
       Reel.countDocuments({}),
       Reel.find({})
-        .sort({ createdAt: -1 })
+        .sort({ publishedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean()
@@ -1112,7 +1122,9 @@ router.get('/reels', async (req: Request, res: Response) => {
         })),
         district: r.district,
         timeAgo: r.timeAgo,
-        audioTrack: r.audioTrack
+        audioTrack: r.audioTrack,
+        publishedAt: r.publishedAt || r.createdAt,
+        createdAt: r.createdAt
       }))
     });
   } catch (err: any) {

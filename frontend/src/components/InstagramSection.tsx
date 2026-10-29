@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Heart, ExternalLink, Play, Film } from 'lucide-react';
 import { InstagramIcon } from './SocialIcons';
 import type { InstagramPost } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
+import { sortMediaLatestFirst } from '../utils/mediaUtils';
 
 interface InstagramSectionProps {
   posts: InstagramPost[];
@@ -22,12 +23,16 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDistrict, setSelectedDistrict] = useState<'all' | string>('all');
 
+  const sortedPosts = useMemo(() => {
+    return sortMediaLatestFirst(posts);
+  }, [posts]);
+
   // Collect distinct districts from posts
-  const districts = ['all', ...Array.from(new Set(posts.map(p => p.district).filter(Boolean)))];
+  const districts = ['all', ...Array.from(new Set(sortedPosts.map(p => p.district).filter(Boolean)))];
 
   const filteredPosts = selectedDistrict === 'all' 
-    ? posts 
-    : posts.filter(p => p.district === selectedDistrict);
+    ? sortedPosts 
+    : sortedPosts.filter(p => p.district === selectedDistrict);
 
   const visiblePosts = isExpanded ? filteredPosts : filteredPosts.slice(0, 8);
 
