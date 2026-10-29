@@ -21,7 +21,7 @@ export const EDITORIAL_STORIES: StoryItem[] = [
     id: 's-live',
     label: 'लाइव टीवी',
     title: 'Ambition News लाइव बुलेटिन: कवर्धा व प्रदेश की आज की 50 बड़ी खबरें',
-    image: '/logo.png',
+    image: '/logo-96.webp',
     category: '🔴 LIVE',
     district: 'कवर्धा HQ',
     excerpt: 'कवर्धा स्टूडियो से सीधा प्रसारण: भोरमदेव महोत्सव, धान अंतर राशि व मौसम का ताजा हाल।',
@@ -106,7 +106,7 @@ export function generateStoriesList(
     id: 's-live',
     label: 'लाइव टीवी',
     title: latestVideo?.title || 'Ambition News लाइव बुलेटिन: कवर्धा व प्रदेश की आज की बड़ी खबरें',
-    image: latestVideo?.thumbnail && !latestVideo.thumbnail.includes('photo-1585829365295') ? latestVideo.thumbnail : '/logo.png',
+    image: latestVideo?.thumbnail && !latestVideo.thumbnail.includes('photo-1585829365295') ? latestVideo.thumbnail : '/logo-96.webp',
     category: '🔴 LIVE',
     district: 'कवर्धा HQ',
     excerpt: 'कवर्धा स्टूडियो से सीधा प्रसारण: भोरमदेव, किसान अंतर राशि व मौसम का ताजा हाल।',
@@ -209,7 +209,7 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
                   width="66"
                   height="66"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/logo.png';
+                    (e.target as HTMLImageElement).src = '/logo-96.webp';
                   }}
                   className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300" 
                 />

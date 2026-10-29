@@ -107,8 +107,12 @@ export const PwaInstallPrompt: React.FC<PwaInstallPromptProps> = ({ onShareWhats
         {/* Left App Icon */}
         <div className="relative shrink-0">
           <img 
-            src="/logo.png" 
+            src="/logo-96.webp" 
             alt="Ambition News" 
+            width="40"
+            height="40"
+            loading="lazy"
+            decoding="async"
             className="w-10 h-10 rounded-full object-cover ring-2 ring-red-500 bg-white p-0.5 shadow-md" 
           />
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-900 animate-pulse"></span>

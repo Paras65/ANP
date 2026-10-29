@@ -690,7 +690,10 @@ router.get('/videos', async (req: Request, res: Response) => {
         id: v._id.toString(),
         title: v.title,
         youtubeId: v.youtubeId,
-        thumbnail: v.thumbnail,
+        thumbnail: (v.thumbnail || `https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg`)
+          .replace('maxresdefault.jpg', 'hqdefault.jpg')
+          .replace('sddefault.jpg', 'hqdefault.jpg')
+          .replace('img.youtube.com', 'i.ytimg.com'),
         duration: v.duration,
         views: v.views,
         timeAgo: v.timeAgo,
@@ -737,7 +740,10 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
           id: v._id.toString(),
           title: v.title,
           youtubeId: v.youtubeId,
-          thumbnail: v.thumbnail,
+          thumbnail: (v.thumbnail || `https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg`)
+            .replace('maxresdefault.jpg', 'hqdefault.jpg')
+            .replace('sddefault.jpg', 'hqdefault.jpg')
+            .replace('img.youtube.com', 'i.ytimg.com'),
           duration: v.duration,
           views: v.views,
           timeAgo: v.timeAgo,
@@ -747,7 +753,10 @@ router.get('/youtube/sync', async (req: Request, res: Response) => {
         reels: allReels.map((r: any) => ({
           id: r._id.toString(),
           caption: r.caption,
-          imageUrl: r.imageUrl,
+          imageUrl: (r.imageUrl || (r.youtubeId ? `https://i.ytimg.com/vi/${r.youtubeId}/hqdefault.jpg` : '/logo.png'))
+            .replace('maxresdefault.jpg', 'hqdefault.jpg')
+            .replace('sddefault.jpg', 'hqdefault.jpg')
+            .replace('img.youtube.com', 'i.ytimg.com'),
           youtubeId: r.youtubeId,
           embedUrl: r.embedUrl,
           postUrl: r.postUrl,
@@ -1008,7 +1017,10 @@ router.get('/reels', async (req: Request, res: Response) => {
       data: reels.map((r: any) => ({
         id: r._id.toString(),
         caption: r.caption,
-        imageUrl: r.imageUrl,
+        imageUrl: (r.imageUrl || (r.youtubeId ? `https://i.ytimg.com/vi/${r.youtubeId}/hqdefault.jpg` : '/logo.png'))
+          .replace('maxresdefault.jpg', 'hqdefault.jpg')
+          .replace('sddefault.jpg', 'hqdefault.jpg')
+          .replace('img.youtube.com', 'i.ytimg.com'),
         videoUrl: r.videoUrl,
         youtubeId: r.youtubeId,
         embedUrl: r.embedUrl,

@@ -55,7 +55,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   // Helper to resolve realistic video thumbnail (Real YouTube frame instead of generic logo)
   const getVideoThumbnail = (video: VideoBulletin): string => {
     if (video.thumbnail && !video.thumbnail.includes('photo-1585829365295') && !video.thumbnail.includes('logo.png')) {
-      return video.thumbnail;
+      return video.thumbnail
+        .replace('maxresdefault.jpg', 'hqdefault.jpg')
+        .replace('sddefault.jpg', 'hqdefault.jpg')
+        .replace('img.youtube.com', 'i.ytimg.com');
     }
     if (video.youtubeId) {
       return `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;

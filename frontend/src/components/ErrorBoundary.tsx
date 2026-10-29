@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
             
             {/* Logo Badge */}
             <div className="inline-flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800 mx-auto">
-              <img src="/logo.png" alt="Logo" className="w-5 h-5 rounded-full object-cover" />
+              <img src="/logo-96.webp" alt="Logo" width="20" height="20" className="w-5 h-5 rounded-full object-cover" />
               <span className="font-black text-sm text-white tracking-wider">एम्बिशन न्यूज़</span>
               <span className="text-[10px] bg-red-950 text-red-300 font-bold px-1.5 py-0.5 rounded border border-red-800">
                 कवर्धा

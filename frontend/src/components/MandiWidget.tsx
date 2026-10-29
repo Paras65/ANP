@@ -15,8 +15,21 @@ export const MandiWidget: React.FC<MandiWidgetProps> = ({
   compact = false, 
   onViewFull 
 }) => {
-  // Pure real data: do not display widget if no live mandi rates exist
-  if (!rates || rates.length === 0) return null;
+  // Zero CLS Stabilization: maintain exact 44px height while rates are buffering
+  if (!rates || rates.length === 0) {
+    if (compact) {
+      return (
+        <div className={`h-11 rounded-2xl border p-2 sm:p-2.5 transition-colors animate-pulse flex items-center gap-2 ${
+          isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-100 border-slate-200'
+        }`}>
+          <div className="w-20 h-6 rounded-lg bg-emerald-500/20 shrink-0"></div>
+          <div className="w-32 h-6 rounded-lg bg-slate-700/20 shrink-0"></div>
+          <div className="w-28 h-6 rounded-lg bg-slate-700/20 shrink-0 hidden sm:block"></div>
+        </div>
+      );
+    }
+    return null;
+  }
 
   // 1. Compact 1-line horizontal momentum strip for Homepage
   if (compact) {

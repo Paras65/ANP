@@ -34,7 +34,21 @@ export const BreakingTicker: React.FC<BreakingTickerProps> = ({
     return Array.from({ length: repeatCount }, () => activeList).flat();
   }, [activeList]);
 
-  if (activeList.length === 0) return null;
+  if (activeList.length === 0) {
+    return (
+      <div 
+        className="text-white text-xs font-medium flex items-center overflow-hidden border-t border-b shadow-sm relative z-20 w-full max-w-full select-none h-[34px] bg-gradient-to-r from-red-700 via-rose-700 to-red-800 border-red-800/80 px-3"
+      >
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Zap size={13} className="animate-pulse text-amber-400" />
+          <span className="font-bold text-[11px] text-amber-300">लाइव अपडेट:</span>
+        </div>
+        <span className="text-[11px] text-red-100 truncate ml-2">
+          एम्बिशन डिजिटल न्यूज़ नेटवर्क • कवर्धा (कबीरधाम) एवं 88 जिला लाइव बुलेटिन
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div 

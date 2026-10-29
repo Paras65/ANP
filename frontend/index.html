@@ -4,7 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     
-    <!-- Preconnect to Font & Asset CDNs for Ultra-Fast Core Web Vitals -->
+    <!-- Preconnect to Font, Backend API & Asset CDNs for Ultra-Fast Core Web Vitals -->
+    <link rel="preconnect" href="https://anp-n2e6.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://anp-n2e6.onrender.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" />
@@ -42,12 +44,14 @@
     <link rel="alternate" type="application/rss+xml" title="एम्बिशन न्यूज़ — RSS 2.0 समाचार फ़ीड" href="/api/rss" />
 
     <!-- Immediate LCP Asset Discovery Preload for Core Web Vitals -->
-    <link rel="preload" as="image" href="/logo.png" type="image/png" fetchpriority="high" />
+    <link rel="preload" as="image" href="/logo-96.webp" type="image/webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=640&amp;auto=format&amp;fit=crop&amp;q=70" fetchpriority="high" />
 
     <!-- Favicon & Touch Icons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/logo-512.png" />
+    <link rel="icon" type="image/webp" sizes="96x96" href="/logo-96.webp" />
+    <link rel="icon" type="image/webp" sizes="192x192" href="/logo-192.webp" />
+    <link rel="icon" type="image/webp" sizes="512x512" href="/logo-512.webp" />
     <link rel="apple-touch-icon" href="/logo-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/logo-192.png" />
     <link rel="mask-icon" href="/favicon.svg" color="#dc2626" />

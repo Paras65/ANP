@@ -68,7 +68,17 @@ export const App: React.FC = () => {
   const [currentDistrict, setCurrentDistrict] = useState<string>('सभी');
   const [selectedCategory, setSelectedCategory] = useState<string>('सभी खबरें');
   const [districtsList, setDistrictsList] = useState<DistrictItem[]>(ALL_DISTRICTS_DEMO);
-  const [articles, setArticles] = useState<Article[]>([]);
+  // Zero CLS Cache: Initialize articles instantly from localStorage cache to prevent layout shift & eliminate 2350ms LCP delay
+  const [articles, setArticles] = useState<Article[]>(() => {
+    try {
+      const cached = localStorage.getItem('anp_cached_feed');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
   const [reporters, setReporters] = useState<Reporter[]>([]);
   const [ads, setAds] = useState<Advertisement[]>([]);
   const [youtubeSubs, setYoutubeSubs] = useState<string>(() => {
@@ -296,39 +306,49 @@ export const App: React.FC = () => {
     }
   };
 
-  // Load configured channel ID from Atlas on mount
+  // Load channel config & active ads (Deferred to keep initial LCP and feed render fast)
   useEffect(() => {
-    api.get('/youtube/config').then(res => {
-      if (res.data?.channelId) {
-        setYoutubeChannelId(res.data.channelId);
-        localStorage.setItem('anp_yt_channel_id', res.data.channelId);
+    const timer = setTimeout(() => {
+      // Only request channel config if in admin view or subscriber count is not cached
+      const cachedSubs = localStorage.getItem('anp_yt_subs');
+      if (currentView === 'admin' || !cachedSubs) {
+        api.get('/youtube/config').then(res => {
+          if (res.data?.channelId) {
+            setYoutubeChannelId(res.data.channelId);
+            localStorage.setItem('anp_yt_channel_id', res.data.channelId);
+          }
+          if (res.data?.isConfiguredOnServer !== undefined) {
+            setHasYouTubeApiKey(res.data.isConfiguredOnServer);
+          }
+          if (res.data?.subscribers || res.data?.stats?.subscriberCount) {
+            const liveSubs = res.data.subscribers || res.data.stats.subscriberCount;
+            setYoutubeSubs(liveSubs);
+            localStorage.setItem('anp_yt_subs', liveSubs);
+            SOCIAL_LINKS.youtubeSubs = liveSubs;
+          }
+        }).catch(() => {});
       }
-      if (res.data?.isConfiguredOnServer !== undefined) {
-        setHasYouTubeApiKey(res.data.isConfiguredOnServer);
-      }
-      if (res.data?.subscribers || res.data?.stats?.subscriberCount) {
-        const liveSubs = res.data.subscribers || res.data.stats.subscriberCount;
-        setYoutubeSubs(liveSubs);
-        localStorage.setItem('anp_yt_subs', liveSubs);
-        SOCIAL_LINKS.youtubeSubs = liveSubs;
-      }
-    }).catch(() => {});
 
-    // Fetch active local advertiser campaigns
-    api.get('/ads').then(res => {
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        setAds(res.data.data);
-      }
-    }).catch(() => {});
-  }, []);
+      // Fetch active local advertiser campaigns
+      api.get('/ads').then(res => {
+        if (res.data?.success && Array.isArray(res.data.data)) {
+          setAds(res.data.data);
+        }
+      }).catch(() => {});
+    }, 400);
 
-  // Auto-sync on startup
+    return () => clearTimeout(timer);
+  }, [currentView]);
+
+  // Auto-sync only in Admin Portal (Public readers do not trigger server-side YouTube scraping)
   useEffect(() => {
-    const isAutoSyncEnabled = localStorage.getItem('anp_auto_sync_enabled') !== 'false';
-    if (isAutoSyncEnabled && youtubeChannelId) {
-      handleSyncYouTube(youtubeChannelId).catch(() => {});
+    if (currentView === 'admin' && youtubeChannelId) {
+      const isAutoSyncEnabled = localStorage.getItem('anp_auto_sync_enabled') !== 'false';
+      if (isAutoSyncEnabled) {
+        handleSyncYouTube(youtubeChannelId).catch(() => {});
+      }
     }
-  }, [youtubeChannelId]);
+  }, [youtubeChannelId, currentView]);
 
   const handleAddVideo = async (newVideo: VideoBulletin) => {
     const updated = [newVideo, ...videoBulletins];
@@ -510,6 +530,11 @@ export const App: React.FC = () => {
           });
         } else {
           setArticles(fetchedData);
+          if (fetchedData.length > 0) {
+            try {
+              localStorage.setItem('anp_cached_feed', JSON.stringify(fetchedData.slice(0, 15)));
+            } catch {}
+          }
         }
 
         if (res.data.pagination) {
@@ -533,26 +558,35 @@ export const App: React.FC = () => {
     }
   };
 
-  // Load live media (videos & reels) & reporters from MongoDB Atlas
+  // Load live media (videos, reels, mandi) - reporters only loaded in Admin mode
   const loadMediaFromBackend = async () => {
     try {
-      const [vRes, rRes, mRes, repRes] = await Promise.allSettled([
+      const requests: Promise<any>[] = [
         api.get('/videos'),
         api.get('/reels'),
-        api.get('/mandi'),
-        api.get('/reporters')
-      ]);
-      if (vRes.status === 'fulfilled' && vRes.value.data?.data && Array.isArray(vRes.value.data.data) && vRes.value.data.data.length > 0) {
+        api.get('/mandi')
+      ];
+      if (currentView === 'admin') {
+        requests.push(api.get('/reporters'));
+      }
+
+      const results = await Promise.allSettled(requests);
+      const vRes = results[0];
+      const rRes = results[1];
+      const mRes = results[2];
+      const repRes = results[3];
+
+      if (vRes?.status === 'fulfilled' && vRes.value?.data?.data && Array.isArray(vRes.value.data.data) && vRes.value.data.data.length > 0) {
         setVideoBulletins(vRes.value.data.data);
       }
-      if (rRes.status === 'fulfilled' && rRes.value.data?.data && Array.isArray(rRes.value.data.data) && rRes.value.data.data.length > 0) {
+      if (rRes?.status === 'fulfilled' && rRes.value?.data?.data && Array.isArray(rRes.value.data.data) && rRes.value.data.data.length > 0) {
         setInstagramPosts(rRes.value.data.data);
       }
-      if (mRes.status === 'fulfilled' && mRes.value.data?.data && Array.isArray(mRes.value.data.data) && mRes.value.data.data.length > 0) {
+      if (mRes?.status === 'fulfilled' && mRes.value?.data?.data && Array.isArray(mRes.value.data.data) && mRes.value.data.data.length > 0) {
         setMandiRates(mRes.value.data.data);
         localStorage.setItem('anp_mandi_rates', JSON.stringify(mRes.value.data.data));
       }
-      if (repRes.status === 'fulfilled' && repRes.value.data?.data && Array.isArray(repRes.value.data.data) && repRes.value.data.data.length > 0) {
+      if (repRes?.status === 'fulfilled' && repRes.value?.data?.data && Array.isArray(repRes.value.data.data) && repRes.value.data.data.length > 0) {
         setReporters(repRes.value.data.data);
       }
     } catch {
@@ -563,7 +597,11 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadDistrictsFromBackend();
     loadArticles(currentView === 'admin');
-    loadMediaFromBackend();
+    // Prioritize critical feed & LCP image first; defer secondary media by 200ms
+    const timer = setTimeout(() => {
+      loadMediaFromBackend();
+    }, 200);
+    return () => clearTimeout(timer);
   }, [selectedState, currentDistrict, currentView]);
 
   // Handle new article submitted from Reporter Modal or Admin Portal (Edge-Case Hardened)
@@ -1483,7 +1521,7 @@ export const App: React.FC = () => {
                                   decoding="async"
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                   onError={(e) => {
-                                    (e.target as HTMLImageElement).src = '/logo.png';
+                                    (e.target as HTMLImageElement).src = '/logo-96.webp';
                                   }}
                                 />
                                 <span className="absolute bottom-1 left-1 bg-black/75 backdrop-blur-xs text-[9px] font-bold text-amber-400 px-1 py-0.2 rounded">
@@ -1575,7 +1613,7 @@ export const App: React.FC = () => {
                               alt={reel.caption}
                               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/logo.png';
+                                (e.target as HTMLImageElement).src = '/logo-96.webp';
                               }}
                             />
                             
@@ -1892,13 +1930,19 @@ export const App: React.FC = () => {
                 </button>
               </div>
 
-              {/* ZERO ARTICLES EMPTY STATE (Edge Case: District or search has 0 results) */}
+              {/* ZERO CLS SKELETON: Uses the identical 3-column grid geometry as the live feed */}
               {isLoading && displayArticles.length === 0 ? (
-                <div className="space-y-4 animate-pulse my-2">
-                  <div className={`h-64 sm:h-80 rounded-3xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className={`h-48 rounded-2xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
-                    <div className={`h-48 rounded-2xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 my-2 animate-pulse">
+                  <div className="lg:col-span-2 space-y-4">
+                    <div className={`h-64 sm:h-96 rounded-3xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className={`h-40 rounded-2xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
+                      <div className={`h-40 rounded-2xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
+                    </div>
+                  </div>
+                  <div className="space-y-4 hidden lg:block">
+                    <div className={`h-64 rounded-3xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
+                    <div className={`h-48 rounded-3xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200'}`}></div>
                   </div>
                 </div>
               ) : displayArticles.length === 0 ? (
@@ -2378,15 +2422,19 @@ export const App: React.FC = () => {
 
                       {/* Official Ambition Logo Center Backdrop */}
                       <div className="absolute inset-0 flex items-center justify-center p-3">
-                        <img 
-                          src="/logo.png" 
-                          alt="Ambition TV Logo"
-                          loading="lazy"
-                          decoding="async"
-                          width="96"
-                          height="96"
-                          className="w-24 h-24 object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.5)] group-hover:scale-110 transition duration-500" 
-                        />
+                        <picture>
+                          <source srcSet="/logo-96.webp" type="image/webp" />
+                          <img 
+                            src="/logo-96.webp" 
+                            alt="Ambition TV Logo"
+                            loading="lazy"
+                            decoding="async"
+                            width="96"
+                            height="96"
+                            onError={(e) => { (e.target as HTMLImageElement).src = '/logo.webp'; }}
+                            className="w-24 h-24 object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.5)] group-hover:scale-110 transition duration-500" 
+                          />
+                        </picture>
                       </div>
 
                       {/* Top Badges */}
@@ -2439,7 +2487,19 @@ export const App: React.FC = () => {
                     <div className="flex items-center gap-2.5 mb-2.5">
                       <div className="w-9 h-9 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600 shrink-0">
                         <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center overflow-hidden p-0.5">
-                          <img src="/logo.png" alt="Ambition News Logo" loading="lazy" decoding="async" width="36" height="36" className="w-full h-full object-cover rounded-full" />
+                          <picture>
+                            <source srcSet="/logo-96.webp" type="image/webp" />
+                            <img 
+                              src="/logo-96.webp" 
+                              alt="Ambition News Logo" 
+                              loading="lazy" 
+                              decoding="async" 
+                              width="36" 
+                              height="36" 
+                              onError={(e) => { (e.target as HTMLImageElement).src = '/logo.webp'; }}
+                              className="w-full h-full object-cover rounded-full" 
+                            />
+                          </picture>
                         </div>
                       </div>
                       <div>

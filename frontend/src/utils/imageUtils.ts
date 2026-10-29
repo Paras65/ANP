@@ -19,7 +19,7 @@ export function getOptimizedImageUrl(
   fallback?: string
 ): string {
   if (!url || typeof url !== 'string') {
-    return fallback || '/logo.png';
+    return fallback || '/logo-96.webp';
   }
 
   const { width, quality } = PRESET_DIMS[preset] || PRESET_DIMS.card;
@@ -44,9 +44,12 @@ export function getOptimizedImageUrl(
     return url.replace('/upload/', `/upload/w_${width},q_auto,f_auto,c_fill/`);
   }
 
-  // YouTube thumbnail optimization: route to fast Google edge CDN
-  if (url.includes('img.youtube.com')) {
-    return url.replace('img.youtube.com', 'i.ytimg.com');
+  // YouTube thumbnail optimization: route to fast Google edge CDN & replace bloated maxresdefault (380KB) with hqdefault (18KB)
+  if (url.includes('youtube.com') || url.includes('ytimg.com')) {
+    return url
+      .replace('img.youtube.com', 'i.ytimg.com')
+      .replace('maxresdefault.jpg', 'hqdefault.jpg')
+      .replace('sddefault.jpg', 'hqdefault.jpg');
   }
 
   return url;

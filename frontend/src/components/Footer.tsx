@@ -33,15 +33,19 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Col 1: Brand Info */}
           <div className="space-y-3 md:col-span-1">
             <div className="flex items-center gap-2.5">
-              <img 
-                src="/logo.png" 
-                alt="एम्बिशन न्यूज़" 
-                width="48"
-                height="48"
-                loading="lazy"
-                decoding="async"
-                className="w-12 h-12 rounded-full object-cover ring-2 ring-red-500/60 bg-white p-0.5 shadow-md shrink-0" 
-              />
+              <picture>
+                <source srcSet="/logo-96.webp" type="image/webp" />
+                <img 
+                  src="/logo-96.webp" 
+                  alt="एम्बिशन न्यूज़" 
+                  width="48"
+                  height="48"
+                  loading="lazy"
+                  decoding="async"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/logo.webp'; }}
+                  className="w-12 h-12 rounded-full object-cover ring-2 ring-red-500/60 bg-white p-0.5 shadow-md shrink-0" 
+                />
+              </picture>
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
                   <span className="bg-red-600 text-white font-black text-lg px-2 py-0.5 rounded shadow leading-none">

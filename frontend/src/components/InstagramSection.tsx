@@ -43,7 +43,18 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600 shrink-0">
             <div className="w-full h-full rounded-full overflow-hidden bg-slate-950 flex items-center justify-center p-0.5">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover rounded-full" />
+              <picture>
+                <source srcSet="/logo-96.webp" type="image/webp" />
+                <img 
+                  src="/logo-96.webp" 
+                  alt="Logo" 
+                  width="44" 
+                  height="44" 
+                  loading="lazy" 
+                  decoding="async" 
+                  className="w-full h-full object-cover rounded-full" 
+                />
+              </picture>
             </div>
           </div>
           <div>

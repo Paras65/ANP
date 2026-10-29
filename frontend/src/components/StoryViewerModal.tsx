@@ -116,11 +116,16 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
           {currentStory.id === 's-live' ? (
             <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-br from-red-950 via-slate-950 to-black">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 via-transparent to-transparent"></div>
-              <img 
-                src="/logo.png" 
-                alt="Ambition News"
-                className="w-48 h-48 object-contain drop-shadow-[0_8px_32px_rgba(220,38,38,0.6)] animate-pulse"
-              />
+              <picture>
+                <source srcSet="/logo-192.webp" type="image/webp" />
+                <img 
+                  src="/logo-192.webp" 
+                  alt="Ambition News"
+                  width="192"
+                  height="192"
+                  className="w-48 h-48 object-contain drop-shadow-[0_8px_32px_rgba(220,38,38,0.6)] animate-pulse"
+                />
+              </picture>
             </div>
           ) : (
             <img 

@@ -229,7 +229,8 @@ export async function syncFromYouTubeDataAPI(channelId: string, apiKey: string):
 
       const title = snippet.title || 'Ambition News';
       const publishedAt = snippet.publishedAt || new Date().toISOString();
-      const thumb = snippet.thumbnails?.maxres?.url || snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`;
+      // High-efficiency mobile thumbnail: Prefer 'high' (480x360, ~18KB) over 'maxres' (1920x1080, ~380KB)
+      const thumb = snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`;
       const duration = parseISO8601Duration(contentDetails.duration || '');
       const isShort = (duration.totalSeconds > 0 && duration.totalSeconds <= 60) || title.toLowerCase().includes('#short');
       const views = formatViews(statistics.viewCount);

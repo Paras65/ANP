@@ -12,7 +12,7 @@ export const SOCIAL_LINKS = {
   domain: siteDomain,
   email: supportEmail,
   grievanceEmail: supportEmail,
-  logo: '/logo.png',
+  logo: '/logo-96.webp',
   phone: contactPhone,
   phoneFormatted: contactPhoneFormatted,
   whatsappDirect: `https://wa.me/91${contactPhone.replace(/\D/g, '')}`,

@@ -130,7 +130,7 @@ export function parseReelMedia(input: string): ParsedReelMedia | null {
       type: 'direct_video',
       videoUrl: url,
       postUrl: url,
-      previewThumb: '/logo.png'
+      previewThumb: '/logo-96.webp'
     };
   }
   return null;
@@ -207,7 +207,11 @@ export function parseYouTubeRssXml(xmlText: string): { videos: VideoBulletin[]; 
       const publishedAt = publishedMatch ? publishedMatch[1] : new Date().toISOString();
       const timeAgo = formatHindiTimeAgo(publishedAt);
       const isShort = rawTitle.toLowerCase().includes('#shorts') || rawTitle.toLowerCase().includes('#short');
-      const thumb = thumbMatch ? thumbMatch[1] : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+      const rawThumb = thumbMatch ? thumbMatch[1] : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+      const thumb = rawThumb
+        .replace('maxresdefault.jpg', 'hqdefault.jpg')
+        .replace('sddefault.jpg', 'hqdefault.jpg')
+        .replace('img.youtube.com', 'i.ytimg.com');
 
       const videoItem: VideoBulletin = {
         id: 'yt_' + videoId,

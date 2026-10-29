@@ -271,16 +271,20 @@ export const Header: React.FC<HeaderProps> = ({
         >
           {/* Official 3D Round Logo - Highly Visible, Large & Sharp with Red Studio Glow */}
           <div className="relative shrink-0 flex items-center justify-center">
-            <img 
-              src="/logo.png" 
-              alt="एम्बिशन न्यूज़ आधिकारिक लोगो" 
-              width="60"
-              height="60"
-              // @ts-ignore
-              fetchpriority="high"
-              decoding="async"
-              className="w-10 h-10 sm:w-14 sm:h-14 md:w-15 md:h-15 object-contain rounded-full filter drop-shadow-[0_4px_16px_rgba(220,38,38,0.55)] transition-transform duration-300 group-hover:scale-105" 
-            />
+            <picture>
+              <source srcSet="/logo-96.webp" type="image/webp" />
+              <img 
+                src="/logo-96.webp" 
+                alt="एम्बिशन न्यूज़ आधिकारिक लोगो" 
+                width="60"
+                height="60"
+                // @ts-ignore
+                fetchpriority="high"
+                decoding="async"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/logo.webp'; }}
+                className="w-10 h-10 sm:w-14 sm:h-14 md:w-15 md:h-15 object-contain rounded-full filter drop-shadow-[0_4px_16px_rgba(220,38,38,0.55)] transition-transform duration-300 group-hover:scale-105" 
+              />
+            </picture>
             <span 
               className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-[#080c14] shadow-sm animate-pulse" 
               title={backendSynced ? "लाइव अपडेट" : "लाइव मोड"}
