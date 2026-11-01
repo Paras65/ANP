@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Maximize2, Minimize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2, RotateCw } from 'lucide-react';
+import { X, Maximize2, Minimize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2, RotateCw, Play, Pause } from 'lucide-react';
 import type { VideoBulletin } from '../types';
 import { isDirectVideoUrl, getVideoThumbnail } from '../utils/mediaUtils';
 
@@ -79,7 +79,51 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState<boolean>(false);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [showControls, setShowControls] = useState<boolean>(true);
+
+  // Auto-hide HUD timer (3.5 seconds)
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetControlsTimer = useCallback(() => {
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 3500);
+  }, []);
+
+  // Direct 1-Tap Play / Pause Controller
+  const handleTogglePlayPause = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setIsPlaying(prev => {
+      const next = !prev;
+      if (next) {
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        }
+        if (videoElementRef.current) {
+          videoElementRef.current.play().catch(() => {});
+        }
+        resetControlsTimer();
+      } else {
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        }
+        if (videoElementRef.current) {
+          videoElementRef.current.pause();
+        }
+        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+        setShowControls(true);
+      }
+      return next;
+    });
+  }, [resetControlsTimer]);
+
+  useEffect(() => {
+    return () => {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, []);
 
   // Drag offset for real-time free-floating movement
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -96,7 +140,6 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     hasMoved: boolean 
   } | null>(null);
   const resizeStartRef = useRef<{ startX: number; startWidth: number; startPosX: number } | null>(null);
-  const lastTapRef = useRef<number>(0);
 
   // 1. HARD PREVENT BROWSER WHOLE-PAGE PINCH ZOOM ON MINI PLAYER
   useEffect(() => {
@@ -202,19 +245,24 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
         videoElementRef.current.pause();
       }
     } else {
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-      }
-      if (videoElementRef.current) {
-        videoElementRef.current.play().catch(() => {});
+      if (isPlaying) {
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        }
+        if (videoElementRef.current) {
+          videoElementRef.current.play().catch(() => {});
+        }
       }
     }
-  }, [isPausedByModal]);
+  }, [isPausedByModal, isPlaying]);
 
-  // Reset video loaded state when video changes
+  // Reset video loaded and play state when video changes
   useEffect(() => {
     setIsVideoLoaded(false);
-  }, [video.youtubeId, video.youtubeUrl]);
+    setIsPlaying(true);
+    setShowControls(true);
+    resetControlsTimer();
+  }, [video.id, video.youtubeId, video.youtubeUrl, resetControlsTimer]);
 
   // Save preferred width to localStorage
   const saveWidth = useCallback((w: number) => {
@@ -230,30 +278,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     } catch {}
   }, []);
 
-  // Double-tap or double-click to cycle preset sizes: Small (240px) <-> Medium (310px) <-> Large (390px)
-  const handleCyclePresetSize = (e: React.MouseEvent | React.TouchEvent) => {
-    if ((e.target as HTMLElement)?.closest('button, a, input, .no-drag')) return;
 
-    const now = Date.now();
-    if (now - lastTapRef.current < 320) {
-      const maxSafe = Math.min(window.innerWidth - 24, 440);
-      let nextWidth = 310;
-
-      if (playerWidth < 270) {
-        nextWidth = Math.min(320, maxSafe);
-      } else if (playerWidth < 350 && maxSafe >= 370) {
-        nextWidth = Math.min(390, maxSafe);
-      } else {
-        nextWidth = 230;
-      }
-
-      setPlayerWidth(nextWidth);
-      saveWidth(nextWidth);
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
-    }
-  };
 
   // 3. ONE-THUMB CORNER RESIZE (TOP-LEFT GRIP)
   const handleResizePointerDown = (e: React.PointerEvent) => {
@@ -321,7 +346,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     const deltaY = e.clientY - dragStartRef.current.startPointerY;
     const dist = Math.hypot(deltaX, deltaY);
 
-    if (dist > 8) {
+    if (dist > 18) {
       dragStartRef.current.hasMoved = true;
     }
 
@@ -349,8 +374,12 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     const speed = distance / Math.max(deltaTime, 1);
 
     // CASE A: TAP (Not dragged) -> Toggle Controls HUD
-    if (!dragStartRef.current.hasMoved && deltaTime < 300) {
-      setShowControls(prev => !prev);
+    if (!dragStartRef.current.hasMoved && deltaTime < 350) {
+      setShowControls(prev => {
+        const next = !prev;
+        if (next) resetControlsTimer();
+        return next;
+      });
       dragStartRef.current = null;
       setIsOverBottomDismissZone(false);
       return;
@@ -539,29 +568,28 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 onPointerCancel={handleResizePointerUp}
                 title="खींचकर छोटा या बड़ा करें (Resize handle)"
                 aria-label="छोटा या बड़ा करें"
-                className="no-drag absolute top-1.5 left-1.5 z-40 p-1.5 rounded-lg bg-black/85 hover:bg-red-600 border border-white/25 text-white/90 hover:text-white cursor-nwse-resize transition active:scale-95 shadow flex items-center justify-center pointer-events-auto touch-none"
+                className="no-drag absolute top-1.5 left-1.5 z-40 w-6 h-6 rounded-md bg-black/85 hover:bg-red-600 border border-white/30 text-white/90 hover:text-white cursor-nwse-resize transition active:scale-90 shadow flex items-center justify-center pointer-events-auto touch-none"
               >
-                <Scaling size={11} className="-rotate-90" />
+                <Scaling size={12} className="-rotate-90" />
               </div>
             )}
 
             {/* TOP CONTROLS BAR (RESPONSIVE & CLEAN) */}
             <div 
-              onClick={handleCyclePresetSize}
-              className={`absolute top-0 left-0 right-0 h-9 px-2 flex items-center justify-between z-30 transition-opacity duration-200 bg-gradient-to-b from-black/85 via-black/45 to-transparent pointer-events-none ${
-                showControls || isCinemaMode || isLandscapeRotated ? 'opacity-100' : 'opacity-0'
+              className={`absolute top-0 left-0 right-0 h-9 px-2 flex items-center justify-between z-30 transition-opacity duration-200 bg-gradient-to-b from-black/90 via-black/50 to-transparent pointer-events-none ${
+                showControls || !isPlaying || isCinemaMode || isLandscapeRotated ? 'opacity-100' : 'opacity-0'
               }`}
             >
               {/* Live TV Badge & Drag Grip */}
               <div className="flex items-center gap-1.5 ml-7">
-                {(playerWidth >= 250 || isCinemaMode || isLandscapeRotated) && (
-                  <span className="bg-red-600 text-white text-[8.5px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
+                {(playerWidth >= 260 || isCinemaMode || isLandscapeRotated) && (
+                  <span className="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
                     <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
                     LIVE TV
                   </span>
                 )}
                 {!isCinemaMode && !isLandscapeRotated && (
-                  <div className="flex items-center text-white/50">
+                  <div className="flex items-center text-white/50" title="फ्लोटिंग प्लेयर">
                     <GripHorizontal size={13} />
                   </div>
                 )}
@@ -570,15 +598,15 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               {/* Action Buttons (Strictly No-Drag so clicks are 100% instantaneous) */}
               <div className="flex items-center gap-1 pointer-events-auto no-drag">
                 {/* Skip to Next Bulletin */}
-                {onNext && hasNext && (playerWidth >= 280 || isCinemaMode || isLandscapeRotated) && (
+                {onNext && hasNext && (playerWidth >= 290 || isCinemaMode || isLandscapeRotated) && (
                   <button
                     type="button"
                     onClick={onNext}
                     aria-label="अगला बुलेटिन देखें"
                     title="अगला बुलेटिन देखें"
-                    className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+                    className="w-7 h-7 rounded-full bg-black/85 hover:bg-slate-700 text-white border border-white/20 transition active:scale-90 cursor-pointer shadow flex items-center justify-center"
                   >
-                    <SkipForward size={11} />
+                    <SkipForward size={12} />
                   </button>
                 )}
 
@@ -592,25 +620,27 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   }}
                   aria-label="ऑडियो मोड (छोटा करें)"
                   title="ऑडियो मोड (छोटा करें)"
-                  className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+                  className="w-7 h-7 rounded-full bg-black/85 hover:bg-slate-700 text-white border border-white/20 transition active:scale-90 cursor-pointer shadow flex items-center justify-center"
                 >
-                  <ChevronDown size={11} />
+                  <ChevronDown size={12} />
                 </button>
 
                 {/* Rotate to Landscape Fullscreen Button */}
-                <button
-                  type="button"
-                  onClick={handleToggleRotate}
-                  aria-label={isLandscapeRotated ? "सीधा करें (Exit Rotate)" : "रोटेट मोड (Landscape Fullscreen)"}
-                  title={isLandscapeRotated ? "सीधा करें (Exit Rotate)" : "रोटेट मोड (Landscape Fullscreen)"}
-                  className={`p-1 rounded-full border transition active:scale-95 cursor-pointer shadow ${
-                    isLandscapeRotated 
-                      ? 'bg-red-600 text-white border-white animate-pulse' 
-                      : 'bg-black/80 hover:bg-slate-700 text-white border-white/20'
-                  }`}
-                >
-                  <RotateCw size={11} className={isLandscapeRotated ? "rotate-90 transition-transform" : ""} />
-                </button>
+                {(playerWidth >= 280 || isCinemaMode || isLandscapeRotated) && (
+                  <button
+                    type="button"
+                    onClick={handleToggleRotate}
+                    aria-label={isLandscapeRotated ? "सीधा करें (Exit Rotate)" : "रोटेट मोड (Landscape Fullscreen)"}
+                    title={isLandscapeRotated ? "सीधा करें (Exit Rotate)" : "रोटेट मोड (Landscape Fullscreen)"}
+                    className={`w-7 h-7 rounded-full border transition active:scale-90 cursor-pointer shadow flex items-center justify-center ${
+                      isLandscapeRotated 
+                        ? 'bg-red-600 text-white border-white animate-pulse' 
+                        : 'bg-black/85 hover:bg-slate-700 text-white border-white/20'
+                    }`}
+                  >
+                    <RotateCw size={12} className={isLandscapeRotated ? "rotate-90 transition-transform" : ""} />
+                  </button>
+                )}
 
                 {/* Cinema Mode Toggle (Expand / Shrink) */}
                 <button
@@ -618,9 +648,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   onClick={handleToggleCinema}
                   aria-label={isCinemaMode ? "फ्लोटिंग मिनी-प्लेयर में बदलें" : "बड़ी स्क्रीन (सिनेमा मोड) में देखें"}
                   title={isCinemaMode ? "फ्लोटिंग मिनी-प्लेयर में बदलें" : "बड़ी स्क्रीन (सिनेमा मोड) में देखें"}
-                  className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+                  className="w-7 h-7 rounded-full bg-black/85 hover:bg-slate-700 text-white border border-white/20 transition active:scale-90 cursor-pointer shadow flex items-center justify-center"
                 >
-                  {isCinemaMode ? <Minimize2 size={11} /> : <Maximize2 size={11} />}
+                  {isCinemaMode ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
                 </button>
 
                 {/* Close Video button */}
@@ -629,9 +659,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   onClick={onClose}
                   aria-label="वीडियो बंद करें"
                   title="वीडियो बंद करें"
-                  className="p-1 bg-black/80 hover:bg-red-600 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+                  className="w-7 h-7 rounded-full bg-red-600/95 hover:bg-red-500 text-white border border-white/30 transition active:scale-90 cursor-pointer shadow flex items-center justify-center"
                 >
-                  <X size={11} />
+                  <X size={13} className="stroke-[2.5]" />
                 </button>
               </div>
             </div>
@@ -657,9 +687,11 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 <video
                   ref={videoElementRef}
                   src={video.youtubeUrl || video.youtubeId}
-                  controls
+                  controls={isCinemaMode || isLandscapeRotated}
                   autoPlay
                   playsInline
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
                   onLoadedData={() => setIsVideoLoaded(true)}
                   className="w-full h-full object-contain bg-black relative z-10"
                 />
@@ -677,9 +709,8 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
               {/* 
                 FULL-SURFACE TOUCH & DRAG TRANSPARENT OVERLAY:
-                Intercepts touches across 100% of the video box!
+                Intercepts touches across 100% of the video box in Floating PiP mode!
                 Tap toggles controls; Drag floats/flicks the player.
-                Only active when in floating PiP mode (not in Cinema mode or Rotated mode).
               */}
               {!isCinemaMode && !isLandscapeRotated && (
                 <div
@@ -691,34 +722,72 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   title="खींचकर कहीं भी रखें या नीचे ले जाकर बंद करें"
                 />
               )}
+
+              {/* 
+                BIG CENTER PLAY / PAUSE BUTTON (PROPORTIONAL & RESPONSIVE)
+                Sits at z-30 with pointer-events-auto, instantly clickable!
+              */}
+              {(showControls || !isPlaying) && !isCollapsed && (
+                <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none bg-black/35 backdrop-blur-[1px] transition-opacity duration-200">
+                  <button
+                    type="button"
+                    onClick={handleTogglePlayPause}
+                    aria-label={isPlaying ? "वीडियो रोकें (Pause)" : "वीडियो चलाएं (Play)"}
+                    title={isPlaying ? "वीडियो रोकें (Pause)" : "वीडियो चलाएं (Play)"}
+                    className={`no-drag pointer-events-auto rounded-full bg-red-600/95 hover:bg-red-500 text-white shadow-2xl flex items-center justify-center transition-transform active:scale-90 border-2 border-white/40 cursor-pointer animate-in zoom-in-75 duration-150 ${
+                      isCinemaMode || isLandscapeRotated 
+                        ? 'w-14 h-14 sm:w-16 sm:h-16' 
+                        : 'w-10 h-10 sm:w-11 sm:h-11 shadow-red-950/80'
+                    }`}
+                  >
+                    {isPlaying ? (
+                      <Pause size={isCinemaMode || isLandscapeRotated ? 24 : 18} className="fill-current text-white" />
+                    ) : (
+                      <Play size={isCinemaMode || isLandscapeRotated ? 24 : 18} className="fill-current text-white ml-0.5" />
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* BOTTOM TITLE BAR & CLICK TO EXPAND */}
+            {/* BOTTOM TITLE BAR WITH DIRECT 1-TAP CONTROLS */}
             <div 
-              onClick={handleCyclePresetSize}
-              className="p-1.5 px-2 bg-gradient-to-t from-black via-black/95 to-black/80 text-white flex items-center justify-between gap-1.5 border-t border-white/10"
-              title="क्लिक करके बड़ा करें या डबल-टैप से साइज बदलें"
+              className="p-1 px-2 bg-gradient-to-t from-black via-black/95 to-black/80 text-white flex items-center justify-between gap-1.5 border-t border-white/10 z-30 relative"
             >
-              <p className="text-[10px] font-bold truncate flex-1 leading-tight pointer-events-none">
+              <p className="text-[10px] font-bold truncate flex-1 leading-tight select-none">
                 {video.title}
               </p>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1 shrink-0 no-drag">
+                {/* 1-Tap Play / Pause Button */}
+                <button
+                  type="button"
+                  onClick={handleTogglePlayPause}
+                  className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border border-white/15"
+                  title={isPlaying ? "रोकें (Pause)" : "चलाएं (Play)"}
+                >
+                  {isPlaying ? <Pause size={9} /> : <Play size={9} />}
+                  <span>{isPlaying ? 'रोकें' : 'प्ले'}</span>
+                </button>
+
+                {/* Rotate Button */}
                 <button
                   type="button"
                   onClick={handleToggleRotate}
-                  className="no-drag text-[8.5px] text-amber-300 hover:text-amber-200 font-bold shrink-0 cursor-pointer flex items-center gap-0.5"
+                  className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-amber-300 hover:text-amber-200 text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border border-white/15"
                   title="रोटेट मोड (Landscape)"
                 >
                   <RotateCw size={9} />
                   <span>रोटेट</span>
                 </button>
+
+                {/* Cinema / Expand Button */}
                 <button
                   type="button"
                   onClick={handleToggleCinema}
-                  className="no-drag text-[8.5px] text-red-400 font-bold shrink-0 hover:underline cursor-pointer flex items-center gap-0.5"
+                  className="px-1.5 py-0.5 rounded bg-red-600/30 hover:bg-red-600/50 text-red-300 hover:text-white text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border border-red-500/30"
+                  title={isCinemaMode ? "छोटा करें" : "बड़ा करें"}
                 >
-                  <span>{isCinemaMode ? 'छोटा करें' : 'बड़ा करें'}</span>
-                  <span>{isCinemaMode ? '↙' : '⛶'}</span>
+                  <span>{isCinemaMode ? '↙ छोटा' : '⛶ बड़ा'}</span>
                 </button>
               </div>
             </div>
@@ -727,7 +796,6 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
       {/* 
         ULTRA-COMPACT FLOATING AUDIO PILL (COLLAPSED MODE)
-        Can also be dragged across the 4 corners or dismissed.
       */}
       {isCollapsed && (
         <div 
@@ -735,22 +803,22 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className={`flex items-center gap-2 px-3 py-1.5 bg-slate-950/95 backdrop-blur-md rounded-full border-2 shadow-2xl text-white w-[250px] sm:w-[280px] animate-in fade-in zoom-in-95 duration-200 cursor-grab active:cursor-grabbing transition-colors ${
+          className={`flex items-center gap-2 px-3 py-1.5 bg-slate-950/95 backdrop-blur-md rounded-full border-2 shadow-2xl text-white w-[260px] sm:w-[290px] animate-in fade-in zoom-in-95 duration-200 cursor-grab active:cursor-grabbing transition-colors ${
             isPastDismissThreshold 
               ? 'border-red-500 shadow-red-600/60 ring-2 ring-red-500' 
               : 'border-red-600'
           }`}
           title="खींचकर हटाएं या वीडियो देखने के लिए टैप करें"
         >
-          {/* Animated Equalizer Wave */}
+          {/* Animated Equalizer Wave / Play Pause */}
           <div 
-            onClick={() => setIsCollapsed(false)}
+            onClick={handleTogglePlayPause}
             className="no-drag flex items-end gap-0.5 h-3 px-1 shrink-0 cursor-pointer"
-            title="वीडियो खोलें"
+            title={isPlaying ? "ऑडियो रोकें" : "ऑडियो चलाएं"}
           >
-            <span className="w-0.5 bg-red-500 rounded-full animate-bounce [animation-delay:0ms] h-full" />
-            <span className="w-0.5 bg-red-500 rounded-full animate-bounce [animation-delay:150ms] h-2/3" />
-            <span className="w-0.5 bg-red-500 rounded-full animate-bounce [animation-delay:300ms] h-4/5" />
+            <span className={`w-0.5 bg-red-500 rounded-full ${isPlaying ? 'animate-bounce [animation-delay:0ms] h-full' : 'h-1.5'}`} />
+            <span className={`w-0.5 bg-red-500 rounded-full ${isPlaying ? 'animate-bounce [animation-delay:150ms] h-2/3' : 'h-1'}`} />
+            <span className={`w-0.5 bg-red-500 rounded-full ${isPlaying ? 'animate-bounce [animation-delay:300ms] h-4/5' : 'h-2'}`} />
           </div>
 
           {/* Title & Click to Restore */}
@@ -761,20 +829,33 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             <p className="text-[9.5px] font-bold text-white truncate leading-tight">
               {video.title}
             </p>
-            <span className="text-[8px] text-red-400 font-medium">● लाइव ऑडियो चालू</span>
+            <span className="text-[8px] text-red-400 font-medium">
+              {isPlaying ? '● लाइव ऑडियो चालू' : '❚❚ ऑडियो रुका हुआ'}
+            </span>
           </div>
 
           {/* Quick Controls */}
-          <div className="flex items-center gap-1 shrink-0 no-drag">
+          <div className="flex items-center gap-1.5 shrink-0 no-drag">
+            {/* Play/Pause in Audio Pill */}
+            <button
+              type="button"
+              onClick={handleTogglePlayPause}
+              aria-label={isPlaying ? "रोकें" : "चलाएं"}
+              title={isPlaying ? "रोकें" : "चलाएं"}
+              className="w-7 h-7 flex items-center justify-center hover:bg-slate-800 text-white rounded-full transition active:scale-95 cursor-pointer"
+            >
+              {isPlaying ? <Pause size={12} /> : <Play size={12} className="ml-0.5" />}
+            </button>
+
             {onNext && hasNext && (
               <button
                 type="button"
                 onClick={onNext}
                 aria-label="अगला बुलेटिन"
                 title="अगला बुलेटिन"
-                className="p-1 hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
+                className="w-7 h-7 flex items-center justify-center hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
               >
-                <SkipForward size={11} />
+                <SkipForward size={12} />
               </button>
             )}
 
@@ -783,9 +864,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               onClick={() => setIsCollapsed(false)}
               aria-label="वीडियो खोलें"
               title="वीडियो खोलें"
-              className="p-1 hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
             >
-              <Maximize2 size={11} />
+              <Maximize2 size={12} />
             </button>
 
             <button
@@ -793,9 +874,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               onClick={onClose}
               aria-label="बंद करें"
               title="बंद करें"
-              className="p-1 hover:bg-red-600 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center hover:bg-red-600 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
             >
-              <X size={11} />
+              <X size={13} />
             </button>
           </div>
         </div>
