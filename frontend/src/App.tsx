@@ -1445,8 +1445,10 @@ export const App: React.FC = () => {
                 isBookmarked={savedArticles.some(a => a._id === activeArticle._id)}
                 onToggleBookmark={toggleBookmark}
                 ad={articleAd}
+                articles={articles}
                 relatedArticles={articles.filter(a => a._id !== activeArticle._id && (a.category === activeArticle.category || a.district === activeArticle.district)).slice(0, 4)}
                 onSelectArticle={openArticleModal}
+                onShowToast={showToast}
               />
             </React.Suspense>
           ) : (

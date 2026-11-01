@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ArrowLeft, 
   Volume2, 
@@ -9,12 +9,17 @@ import {
   MapPin, 
   Heart, 
   Bookmark,
-  ChevronRight
+  ChevronRight,
+  Copy,
+  Check,
+  Clock,
+  Share2
 } from 'lucide-react';
 import type { Article, Advertisement } from '../types';
 import { WhatsAppIcon } from './SocialIcons';
 import { getSmartCoverImage } from '../utils/categoryTheme';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+import { estimateReadingTime } from '../utils/dateUtils';
 import { AdBanner } from './AdBanner';
 
 interface ArticleModalProps {
@@ -25,8 +30,10 @@ interface ArticleModalProps {
   isBookmarked?: boolean;
   onToggleBookmark?: (article: Article) => void;
   ad?: Advertisement | null;
+  articles?: Article[];
   relatedArticles?: Article[];
   onSelectArticle?: (article: Article) => void;
+  onShowToast?: (message: string) => void;
 }
 
 export const ArticleModal: React.FC<ArticleModalProps> = ({
@@ -37,13 +44,34 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   isBookmarked = false,
   onToggleBookmark,
   ad,
+  articles = [],
   relatedArticles = [],
-  onSelectArticle
+  onSelectArticle,
+  onShowToast
 }) => {
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'xl'>('normal');
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [likes, setLikes] = useState(() => Math.floor((article.views || 1000) / 12) + 42);
   const [isLiked, setIsLiked] = useState(false);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const touchStartXRef = useRef<number | null>(null);
+
+  // Compute Read Time in minutes
+  const readingTime = useMemo(() => {
+    return estimateReadingTime(article.content || article.excerpt);
+  }, [article.content, article.excerpt]);
+
+  // Compute Previous and Next Articles in the current news stream
+  const { prevArticle, nextArticle } = useMemo(() => {
+    if (!articles || articles.length === 0) return { prevArticle: null, nextArticle: null };
+    const idx = articles.findIndex(a => a._id === article._id);
+    if (idx === -1) return { prevArticle: null, nextArticle: null };
+    return {
+      prevArticle: idx > 0 ? articles[idx - 1] : null,
+      nextArticle: idx < articles.length - 1 ? articles[idx + 1] : null
+    };
+  }, [articles, article._id]);
 
   // Stop any active speech synthesis
   const stopAudio = () => {
@@ -53,9 +81,24 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     setIsPlayingAudio(false);
   };
 
+  // Real-time Reading Progress Bar calculation
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalHeight > 0) {
+        const progress = Math.min(100, Math.max(0, (window.scrollY / totalHeight) * 100));
+        setReadingProgress(progress);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Cancel speech on unmount & scroll to top of article
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    setReadingProgress(0);
     return () => {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -81,9 +124,9 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     const body = article.content || '';
     const fullRaw = `${headline}${excerpt}${body}`;
     const cleanText = fullRaw
-      .replace(/<[^>]+>/g, '') // strip HTML tags
-      .replace(/https?:\/\/\S+/g, '') // strip URLs
-      .replace(/[*_#`~[\]()]/g, ' ') // strip markdown
+      .replace(/<[^>]+>/g, '')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/[*_#`~[\]()]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
@@ -93,10 +136,9 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'hi-IN';
-    utterance.rate = 0.95; // Natural Hindi news pace
+    utterance.rate = 0.95;
     utterance.pitch = 1.0;
 
-    // Pick a natural Hindi voice if available
     const voices = window.speechSynthesis.getVoices();
     const hindiVoice = voices.find(v => 
       v.lang === 'hi-IN' || 
@@ -144,6 +186,62 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     }
   };
 
+  // 1-Click Copy Direct Article Link to Clipboard
+  const handleCopyLink = async () => {
+    const shareUrl = `${window.location.origin}/?article=${encodeURIComponent(article._id)}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      if (onShowToast) {
+        onShowToast('🔗 खबर का लिंक कॉपी हो गया! अब कहीं भी शेयर करें');
+      }
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      if (onShowToast) {
+        onShowToast('🔗 लिंक: ' + shareUrl);
+      }
+    }
+  };
+
+  // Native Mobile Web Share API (Telegram, Twitter, etc)
+  const handleNativeShare = async () => {
+    const shareUrl = `${window.location.origin}/?article=${encodeURIComponent(article._id)}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          text: article.excerpt || article.title,
+          url: shareUrl
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          onShareWhatsApp(article.title, article._id);
+        }
+      }
+    } else {
+      onShareWhatsApp(article.title, article._id);
+    }
+  };
+
+  // Mobile Swipe-Right to Return to Feed Gesture
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches[0].clientX < 50) {
+      touchStartXRef.current = e.touches[0].clientX;
+    } else {
+      touchStartXRef.current = null;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current !== null) {
+      const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+      if (deltaX > 80) {
+        handleClose();
+      }
+      touchStartXRef.current = null;
+    }
+  };
+
   const getFontSizeClass = () => {
     switch (fontSize) {
       case 'large': return 'text-base sm:text-lg leading-relaxed';
@@ -153,10 +251,22 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   };
 
   return (
-    <article className={`w-full max-w-4xl mx-auto rounded-3xl border shadow-xl overflow-hidden transition-colors duration-200 ${
-      isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
-    }`}>
+    <article 
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className={`w-full max-w-4xl mx-auto rounded-3xl border shadow-xl overflow-hidden transition-colors duration-200 ${
+        isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+      }`}
+    >
       
+      {/* 0. REAL-TIME READING PROGRESS BAR (FIXED AT VERY TOP) */}
+      <div className="fixed top-0 left-0 right-0 h-1 z-50 bg-transparent pointer-events-none">
+        <div 
+          className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 transition-all duration-150 ease-out shadow-sm"
+          style={{ width: `${readingProgress}%` }}
+        />
+      </div>
+
       {/* 1. STICKY TOP ACTION & NAVIGATION BAR */}
       <div className={`sticky top-0 z-30 px-3 sm:px-6 py-3 flex items-center justify-between border-b backdrop-blur-md transition-colors ${
         isDark ? 'bg-slate-950/90 border-slate-800' : 'bg-white/95 border-slate-200 shadow-sm'
@@ -223,13 +333,29 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             <span className="hidden sm:inline">{isPlayingAudio ? 'रुकें' : 'सुनें'}</span>
           </button>
 
-          {/* Quick WhatsApp Share */}
+          {/* Quick Copy Link Button */}
           <button
             type="button"
-            onClick={() => onShareWhatsApp(article.title, article._id)}
-            aria-label="व्हाट्सएप पर शेयर करें"
+            onClick={handleCopyLink}
+            aria-label="खबर का लिंक कॉपी करें"
+            className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition active:scale-95 cursor-pointer border ${
+              copied 
+                ? 'bg-emerald-600 text-white border-emerald-500' 
+                : isDark ? 'bg-slate-800 text-slate-300 hover:text-white border-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+            }`}
+            title="लिंक कॉपी करें"
+          >
+            {copied ? <Check size={14} className="text-white" /> : <Copy size={14} />}
+            <span className="hidden md:inline">{copied ? 'कॉपी हुआ' : 'लिंक'}</span>
+          </button>
+
+          {/* Native Mobile Share / WhatsApp */}
+          <button
+            type="button"
+            onClick={handleNativeShare}
+            aria-label="शेयर करें"
             className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold p-1.5 sm:px-3 sm:py-1.5 rounded-xl flex items-center gap-1 shadow transition active:scale-95 cursor-pointer"
-            title="WhatsApp शेयर"
+            title="शेयर करें"
           >
             <WhatsAppIcon size={14} />
             <span className="hidden sm:inline">शेयर</span>
@@ -284,7 +410,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           {article.title}
         </h1>
 
-        {/* Byline, Author, Date & Views */}
+        {/* Byline, Author, Date, Views & Read Time */}
         <div className={`flex flex-wrap items-center justify-between gap-3 pb-4 border-b text-xs ${
           isDark ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-600'
         }`}>
@@ -307,6 +433,10 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Read Time Badge */}
+            <span className="flex items-center gap-1 font-semibold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+              <Clock size={12} /> {readingTime}
+            </span>
             <span className="flex items-center gap-1 font-semibold">
               <Eye size={13} className="text-red-500" /> {article.views || 1200} व्यूज
             </span>
@@ -358,7 +488,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           }}
         />
 
-        {/* Bottom Engagement Bar (Likes, Bookmarks, Share) */}
+        {/* Bottom Engagement Bar (Likes, Bookmarks, Copy Link & Share) */}
         <div className={`pt-5 pb-2 border-t flex flex-wrap items-center justify-between gap-3 ${
           isDark ? 'border-slate-800' : 'border-slate-200'
         }`}>
@@ -392,11 +522,20 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                 <span>{isBookmarked ? 'सेव्ड है' : 'सेव करें'}</span>
               </button>
             )}
+
+            <button 
+              type="button"
+              onClick={handleCopyLink}
+              className="p-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:text-white transition active:scale-95 cursor-pointer"
+              title="लिंक कॉपी करें"
+            >
+              <Share2 size={16} />
+            </button>
           </div>
 
           <button 
             type="button"
-            onClick={() => onShareWhatsApp(article.title, article._id)}
+            onClick={handleNativeShare}
             aria-label="यह खबर व्हाट्सएप पर शेयर करें"
             className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg transition active:scale-95 cursor-pointer"
           >
@@ -405,7 +544,46 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           </button>
         </div>
 
-        {/* 3. RELATED NEWS SECTION (इन्हें भी पढ़ें) */}
+        {/* 3. PREV / NEXT ARTICLE SWITCHER */}
+        {(prevArticle || nextArticle) && onSelectArticle && (
+          <div className={`mt-8 pt-6 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {prevArticle ? (
+                <button
+                  type="button"
+                  onClick={() => onSelectArticle(prevArticle)}
+                  className={`p-3.5 rounded-2xl border text-left flex items-center gap-3 transition-transform hover:-translate-y-0.5 active:scale-98 cursor-pointer shadow-sm ${
+                    isDark ? 'bg-slate-950/70 border-slate-800 hover:border-red-600/50' : 'bg-slate-50 border-slate-200 hover:border-red-400'
+                  }`}
+                >
+                  <ArrowLeft size={18} className="text-red-500 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">← पिछली खबर</span>
+                    <h4 className="text-xs font-bold leading-snug line-clamp-1">{prevArticle.title}</h4>
+                  </div>
+                </button>
+              ) : <div className="hidden sm:block"></div>}
+
+              {nextArticle && (
+                <button
+                  type="button"
+                  onClick={() => onSelectArticle(nextArticle)}
+                  className={`p-3.5 rounded-2xl border text-right flex items-center justify-between gap-3 transition-transform hover:-translate-y-0.5 active:scale-98 cursor-pointer shadow-sm ${
+                    isDark ? 'bg-slate-950/70 border-slate-800 hover:border-red-600/50' : 'bg-slate-50 border-slate-200 hover:border-red-400'
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">अगली खबर →</span>
+                    <h4 className="text-xs font-bold leading-snug line-clamp-1">{nextArticle.title}</h4>
+                  </div>
+                  <ChevronRight size={18} className="text-red-500 shrink-0" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 4. RELATED NEWS SECTION (इन्हें भी पढ़ें) */}
         {relatedArticles.length > 0 && onSelectArticle && (
           <div className={`mt-8 pt-6 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
             <h3 className="text-base sm:text-lg font-black tracking-wide flex items-center gap-2 mb-4">
@@ -443,7 +621,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           </div>
         )}
 
-        {/* 4. BOTTOM RETURN TO FEED BANNER */}
+        {/* 5. BOTTOM RETURN TO FEED BANNER */}
         <div className="pt-6">
           <button
             type="button"

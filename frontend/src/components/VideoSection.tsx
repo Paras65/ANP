@@ -5,7 +5,8 @@ import {
   Clock, 
   Tv, 
   RefreshCw,
-  X
+  X,
+  Maximize2
 } from 'lucide-react';
 import { YoutubeIcon, WhatsAppIcon } from './SocialIcons';
 import type { VideoBulletin } from '../types';
@@ -39,6 +40,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   autoPlayOnMount = false
 }) => {
   const [playingVideo, setPlayingVideo] = useState<VideoBulletin | null>(null);
+  const [isMiniPlayerVisible, setIsMiniPlayerVisible] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [visibleVideoCount, setVisibleVideoCount] = useState<number>(8);
   const hasAutoPlayedRef = useRef<boolean>(false);
@@ -47,10 +49,36 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   // In-Page Cinema Opener: Sets video to play right inside the Hero Spotlight screen
   const openVideo = useCallback((video: VideoBulletin) => {
     setPlayingVideo(video);
+    setIsMiniPlayerVisible(false);
     setTimeout(() => {
       heroVideoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 60);
   }, []);
+
+  // IntersectionObserver: Automatically show Floating Mini-Player when hero screen is scrolled out of viewport
+  useEffect(() => {
+    if (!playingVideo) {
+      setIsMiniPlayerVisible(false);
+      return;
+    }
+    const target = heroVideoRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // When hero screen is NOT visible and we've scrolled down past it
+        if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+          setIsMiniPlayerVisible(true);
+        } else {
+          setIsMiniPlayerVisible(false);
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [playingVideo]);
 
   // Filter bulletins based on selected category tag
   const filteredBulletins = useMemo(() => {
@@ -249,7 +277,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   {/* Close button to stop video & return to poster view */}
                   <button
                     type="button"
-                    onClick={() => setPlayingVideo(null)}
+                    onClick={() => {
+                      setPlayingVideo(null);
+                      setIsMiniPlayerVisible(false);
+                    }}
                     aria-label="वीडियो बंद करें"
                     title="वीडियो बंद करें (थंबनेल पर लौटें)"
                     className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-red-600 text-white p-1.5 rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow-lg"
@@ -365,7 +396,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 {playingVideo ? (
                   <button
                     type="button"
-                    onClick={() => setPlayingVideo(null)}
+                    onClick={() => {
+                      setPlayingVideo(null);
+                      setIsMiniPlayerVisible(false);
+                    }}
                     className="flex-1 sm:flex-initial bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
                   >
                     <X size={15} />
@@ -588,6 +622,87 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
               <span>▲ कम वीडियो दिखाएं (आरंभिक 8 वीडियो पर जाएं)</span>
             </button>
           )}
+        </div>
+      )}
+
+      {/* 6. FLOATING STICKY MINI-PLAYER (Appears automatically when scrolled down past Hero Spotlight) */}
+      {playingVideo && isMiniPlayerVisible && (
+        <div 
+          className="fixed bottom-20 right-3 sm:right-6 z-40 w-[280px] sm:w-[320px] rounded-2xl overflow-hidden shadow-2xl border-2 border-red-600 bg-black animate-in slide-in-from-bottom-5 duration-300 select-none group"
+        >
+          {/* Top Controls Bar */}
+          <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-30 pointer-events-none">
+            <span className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+              MINI TV
+            </span>
+            <div className="flex items-center gap-1.5 pointer-events-auto">
+              {/* Expand to Hero Screen button */}
+              <button
+                type="button"
+                onClick={() => {
+                  heroVideoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  setIsMiniPlayerVisible(false);
+                }}
+                aria-label="बड़ी स्क्रीन में देखें"
+                title="बड़ी स्क्रीन में देखें"
+                className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+              >
+                <Maximize2 size={12} />
+              </button>
+              {/* Close Video button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPlayingVideo(null);
+                  setIsMiniPlayerVisible(false);
+                }}
+                aria-label="वीडियो बंद करें"
+                title="वीडियो बंद करें"
+                className="p-1 bg-black/80 hover:bg-red-600 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+
+          {/* 16:9 Video Embed */}
+          <div className="relative aspect-video w-full bg-black">
+            {isDirectVideoUrl(playingVideo.youtubeUrl || playingVideo.youtubeId) ? (
+              <video
+                src={playingVideo.youtubeUrl || playingVideo.youtubeId}
+                controls
+                autoPlay
+                playsInline
+                className="w-full h-full object-contain bg-black"
+              />
+            ) : (
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${playingVideo.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
+                title={playingVideo.title}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            )}
+          </div>
+
+          {/* Bottom Mini Headline & Click to Scroll Up */}
+          <div 
+            onClick={() => {
+              heroVideoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              setIsMiniPlayerVisible(false);
+            }}
+            className="p-2 bg-gradient-to-t from-black via-black/90 to-black/70 text-white cursor-pointer hover:bg-slate-900 transition flex items-center justify-between gap-2"
+            title="क्लिक करके बड़ी स्क्रीन पर जाएं"
+          >
+            <p className="text-[10px] font-bold truncate flex-1">
+              {playingVideo.title}
+            </p>
+            <span className="text-[9px] text-red-400 font-bold shrink-0">
+              बड़ा करें ⛶
+            </span>
+          </div>
         </div>
       )}
 
