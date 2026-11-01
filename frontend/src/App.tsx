@@ -2574,7 +2574,7 @@ export const App: React.FC = () => {
         <BackToTop />
 
         {/* PERSISTENT CROSS-TAB & IN-ARTICLE FLOATING MINI-PLAYER */}
-        {globalPlayingVideo && !activeStory && !activeReelId && (
+        {globalPlayingVideo && (
           <FloatingMiniPlayer
             video={globalPlayingVideo}
             onClose={() => setGlobalPlayingVideo(null)}
@@ -2582,6 +2582,7 @@ export const App: React.FC = () => {
             onNext={hasNextGlobalVideo ? handleNextGlobalVideo : undefined}
             hasNext={hasNextGlobalVideo}
             activeTab={activeTab}
+            isPausedByModal={Boolean(activeStory || activeReelId)}
           />
         )}
 

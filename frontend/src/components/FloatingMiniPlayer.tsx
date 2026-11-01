@@ -14,6 +14,7 @@ interface FloatingMiniPlayerProps {
   hasNext?: boolean;
   hasPrev?: boolean;
   activeTab?: string;
+  isPausedByModal?: boolean;
 }
 
 export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
@@ -21,9 +22,14 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   onClose,
   onExpand,
   onNext,
-  hasNext = false
+  hasNext = false,
+  activeTab = 'home',
+  isPausedByModal = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoElementRef = useRef<HTMLVideoElement>(null);
+  const hasManuallyMinimizedRef = useRef<boolean>(false);
 
   // Ultra-compact audio-pill mode (ideal when reading articles)
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -109,17 +115,55 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     };
   }, []);
 
-  // 3. AUTO-COLLAPSE CINEMA MODE TO FLOATING PiP WHEN USER SCROLLS DOWN
+  // 3. AUTO-CINEMA SCROLL FLOW ON VIDEOS TAB (Top = Cinema, Scrolled = Floating)
   useEffect(() => {
-    if (!isCinemaMode) return;
+    hasManuallyMinimizedRef.current = false;
+    if (activeTab === 'videos' && window.scrollY < 180 && !isCollapsed) {
+      setIsCinemaMode(true);
+    } else if (activeTab !== 'videos') {
+      setIsCinemaMode(false);
+    }
+  }, [activeTab, video.id, video.youtubeId, isCollapsed]);
+
+  // 4. SCROLL LISTENER: COLLAPSE TO FLOATING ON SCROLL DOWN, EXPAND BACK ON SCROLL TOP
+  useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 250) {
-        setIsCinemaMode(false);
+      const scrollY = Math.max(0, window.scrollY);
+      if (isCinemaMode && scrollY > 260) {
+        setIsCinemaMode(false); // smoothly shrink down to corner
+      } else if (
+        !isCinemaMode && 
+        activeTab === 'videos' && 
+        scrollY < 120 && 
+        !isCollapsed && 
+        !isDragging && 
+        !hasManuallyMinimizedRef.current
+      ) {
+        setIsCinemaMode(true); // smoothly expand back to cinema view at top
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isCinemaMode]);
+  }, [isCinemaMode, activeTab, isCollapsed, isDragging]);
+
+  // 5. SMART PAUSE/RESUME ON REEL / STORY MODAL (WITHOUT UNMOUNTING IFRAME)
+  useEffect(() => {
+    if (isPausedByModal) {
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      }
+      if (videoElementRef.current) {
+        videoElementRef.current.pause();
+      }
+    } else {
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+      }
+      if (videoElementRef.current) {
+        videoElementRef.current.play().catch(() => {});
+      }
+    }
+  }, [isPausedByModal]);
 
   // Reset video loaded state when video changes
   useEffect(() => {
@@ -304,20 +348,24 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   const getDockClasses = (): string => {
     switch (dockCorner) {
       case 'bottom-left':
-        return 'bottom-16 sm:bottom-6 left-3.5 sm:left-6';
+        return 'bottom-20 sm:bottom-6 left-3.5 sm:left-6';
       case 'top-right':
-        return 'top-20 right-3 sm:right-6';
+        return 'top-24 sm:top-24 right-3 sm:right-6';
       case 'top-left':
-        return 'top-20 left-3.5 sm:left-6';
+        return 'top-24 sm:top-24 left-3.5 sm:left-6';
       case 'bottom-right':
       default:
-        return 'bottom-16 sm:bottom-6 right-3 sm:right-6';
+        return 'bottom-20 sm:bottom-6 right-3 sm:right-6';
     }
   };
 
   const handleToggleCinema = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setIsCinemaMode(prev => !prev);
+    setIsCinemaMode(prev => {
+      const next = !prev;
+      hasManuallyMinimizedRef.current = !next;
+      return next;
+    });
     onExpand?.();
   };
 
@@ -365,11 +413,13 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             : isDismissing ? 'transform 0.2s ease-in, opacity 0.2s ease-in' : 'none',
           touchAction: isCinemaMode ? 'auto' : 'none'
         }}
-        className={isCinemaMode
-          ? 'fixed inset-x-3 sm:inset-x-6 top-16 sm:top-20 z-50 max-w-4xl mx-auto select-none animate-in zoom-in-95 duration-200'
-          : `fixed z-40 select-none ${getDockClasses()} ${
-              isDismissing ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'
-            }`
+        className={isPausedByModal
+          ? 'opacity-0 pointer-events-none absolute -z-50'
+          : isCinemaMode
+            ? 'fixed inset-x-3 sm:inset-x-6 top-16 sm:top-20 z-50 max-w-4xl mx-auto select-none animate-in zoom-in-95 duration-200'
+            : `fixed z-40 select-none ${getDockClasses()} ${
+                isDismissing ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'
+              }`
         }
       >
         {/* 
@@ -496,6 +546,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               {/* Video Player */}
               {isDirectVideoUrl(video.youtubeUrl || video.youtubeId) ? (
                 <video
+                  ref={videoElementRef}
                   src={video.youtubeUrl || video.youtubeId}
                   controls
                   autoPlay
@@ -505,6 +556,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 />
               ) : (
                 <iframe
+                  ref={iframeRef}
                   onLoad={() => setIsVideoLoaded(true)}
                   src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
                   title={video.title}

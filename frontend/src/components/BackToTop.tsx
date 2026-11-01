@@ -36,7 +36,7 @@ export const BackToTop: React.FC = () => {
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      className="fixed bottom-16 sm:bottom-6 left-3.5 sm:left-6 z-40 group w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white shadow-2xl shadow-red-950/80 border border-white/20 transition-transform duration-200 active:scale-90 flex items-center justify-center cursor-pointer animate-in fade-in zoom-in-75 will-change-transform"
+      className="fixed bottom-20 sm:bottom-6 left-3.5 sm:left-6 z-30 group w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white shadow-2xl shadow-red-950/80 border border-white/20 transition-transform duration-200 active:scale-90 flex items-center justify-center cursor-pointer animate-in fade-in zoom-in-75 will-change-transform"
       title={`पेज के सबसे ऊपर जाएं (${scrollProgress}% पढ़ा)`}
       aria-label="Back to Top"
     >
