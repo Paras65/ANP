@@ -2,18 +2,16 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { 
   Play, 
   ExternalLink, 
-  X, 
   Eye, 
   Clock, 
   Tv, 
-  RefreshCw,
-  SkipBack, 
-  SkipForward 
+  RefreshCw
 } from 'lucide-react';
 import { YoutubeIcon, WhatsAppIcon } from './SocialIcons';
 import type { VideoBulletin } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
-import { isDirectVideoUrl, sortMediaLatestFirst } from '../utils/mediaUtils';
+import { sortMediaLatestFirst, getVideoThumbnail } from '../utils/mediaUtils';
+import { VideoPlayerModal } from './VideoPlayerModal';
 
 interface VideoSectionProps {
   bulletins: VideoBulletin[];
@@ -21,6 +19,7 @@ interface VideoSectionProps {
   onShareWhatsApp?: (title: string, videoUrl?: string) => void;
   youtubeSubs?: string;
   autoPlayOnMount?: boolean;
+  onOpenVideo?: (video: VideoBulletin) => void;
 }
 
 const PRESET_CATEGORIES = [
@@ -38,15 +37,21 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   isDark, 
   onShareWhatsApp,
   youtubeSubs,
-  autoPlayOnMount = false
+  autoPlayOnMount = false,
+  onOpenVideo
 }) => {
   const [activeVideo, setActiveVideo] = useState<VideoBulletin | null>(null);
-  const [isAutoPlay, setIsAutoPlay] = useState<boolean>(true);
-  const [countdown, setCountdown] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [visibleVideoCount, setVisibleVideoCount] = useState<number>(8);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const hasAutoPlayedRef = useRef<boolean>(false);
+
+  const openVideo = useCallback((video: VideoBulletin) => {
+    if (onOpenVideo) {
+      onOpenVideo(video);
+    } else {
+      setActiveVideo(video);
+    }
+  }, [onOpenVideo]);
 
   // Auto-play latest video immediately when entering dedicated videos tab
   useEffect(() => {
@@ -54,25 +59,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
       hasAutoPlayedRef.current = true;
       const topVideo = bulletins[0];
       if (topVideo) {
-        setIsAutoPlay(true);
-        setActiveVideo(topVideo);
+        openVideo(topVideo);
       }
     }
-  }, [autoPlayOnMount, bulletins]);
-
-  // Helper to resolve realistic video thumbnail (Real YouTube frame instead of generic logo)
-  const getVideoThumbnail = (video: VideoBulletin): string => {
-    if (video.thumbnail && !video.thumbnail.includes('photo-1585829365295') && !video.thumbnail.includes('logo.png')) {
-      return video.thumbnail
-        .replace('maxresdefault.jpg', 'hqdefault.jpg')
-        .replace('sddefault.jpg', 'hqdefault.jpg')
-        .replace('img.youtube.com', 'i.ytimg.com');
-    }
-    if (video.youtubeId) {
-      return `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
-    }
-    return '/logo.png';
-  };
+  }, [autoPlayOnMount, bulletins, openVideo]);
 
   // Dynamic Categories calculation with real video counts
   const categoriesWithCounts = useMemo(() => {
@@ -86,32 +76,6 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
       return { ...cat, count };
     }).filter(cat => cat.id === 'all' || cat.count > 0);
   }, [bulletins]);
-
-  // Close video modal on Escape key
-  useEffect(() => {
-    if (!activeVideo) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setCountdown(null);
-        setActiveVideo(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeVideo]);
-
-  // Lock body scroll while video modal is active to prevent background rubber-band jerks
-  useEffect(() => {
-    if (activeVideo) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      document.body.classList.add('modal-open');
-      return () => {
-        document.body.style.overflow = originalOverflow;
-        document.body.classList.remove('modal-open');
-      };
-    }
-  }, [activeVideo]);
 
   // Reset visible video count when category changes
   useEffect(() => {
@@ -137,87 +101,6 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   const visibleRemaining = remainingBulletins.slice(0, visibleVideoCount);
   const hasMoreVideos = visibleVideoCount < remainingBulletins.length;
 
-  // Find index of currently playing video in displayList
-  const currentIndex = activeVideo ? displayList.findIndex(v => v.youtubeId === activeVideo.youtubeId) : -1;
-  const nextVideo = currentIndex >= 0 ? displayList[(currentIndex + 1) % displayList.length] : (displayList[0] || null);
-  const prevVideo = currentIndex > 0 ? displayList[currentIndex - 1] : displayList[displayList.length - 1];
-
-  // Navigate to Next Video
-  const handleNext = useCallback(() => {
-    if (!nextVideo) return;
-    setCountdown(null);
-    setActiveVideo(nextVideo);
-  }, [nextVideo]);
-
-  // Navigate to Previous Video
-  const handlePrev = useCallback(() => {
-    if (!prevVideo) return;
-    setCountdown(null);
-    setActiveVideo(prevVideo);
-  }, [prevVideo]);
-
-  // YouTube IFrame postMessage Handshake
-  const onIframeLoad = () => {
-    try {
-      iframeRef.current?.contentWindow?.postMessage(
-        JSON.stringify({ event: 'listening' }),
-        '*'
-      );
-      iframeRef.current?.contentWindow?.postMessage(
-        JSON.stringify({ event: 'command', func: 'addEventListener', args: ['onStateChange'] }),
-        '*'
-      );
-    } catch {
-      // Ignore cross-origin postMessage warnings
-    }
-  };
-
-  // Listen for YouTube video ended (State 0) for automatic continuous playback
-  useEffect(() => {
-    if (!activeVideo) return;
-
-    const handleMessage = (e: MessageEvent) => {
-      try {
-        let data = e.data;
-        if (typeof data === 'string') {
-          data = JSON.parse(data);
-        }
-        if (!data) return;
-
-        // YouTube State 0 represents YT.PlayerState.ENDED
-        const isEnded = 
-          (data.event === 'onStateChange' && data.info === 0) ||
-          (data.event === 'infoDelivery' && data.info?.playerState === 0) ||
-          (data.info && data.info.playerState === 0);
-
-        if (isEnded) {
-          if (isAutoPlay) {
-            // Trigger 3s countdown before advancing to next video
-            setCountdown(3);
-          }
-        }
-      } catch {
-        // Not a JSON message or unrelated message
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [activeVideo, isAutoPlay]);
-
-  // Countdown timer effect
-  useEffect(() => {
-    if (countdown === null) return;
-    if (countdown <= 0) {
-      handleNext();
-      return;
-    }
-    const timer = setTimeout(() => {
-      setCountdown(prev => (prev !== null ? prev - 1 : null));
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [countdown, handleNext]);
-
   const handleShare = (video: VideoBulletin, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const url = video.youtubeUrl || `https://www.youtube.com/watch?v=${video.youtubeId}`;
@@ -233,9 +116,12 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   if (!bulletins || bulletins.length === 0) return null;
 
   return (
-    <section className={`rounded-3xl border p-4 sm:p-5 ${
-      isDark ? 'bg-[#090d18]/95 border-red-950/40 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
-    }`}>
+    <section 
+      id="video-bulletins-section"
+      className={`rounded-3xl border p-4 sm:p-5 ${
+        isDark ? 'bg-[#090d18]/95 border-red-950/40 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
+      }`}
+    >
       
       {/* 1. SECTION HEADER */}
       <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b ${
@@ -271,9 +157,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
           {/* Continuous Non-Stop TV Mode Button */}
           <button
             onClick={() => {
-              setIsAutoPlay(true);
-              setCountdown(null);
-              setActiveVideo(featuredVideo || displayList[0]);
+              if (featuredVideo || displayList[0]) {
+                openVideo(featuredVideo || displayList[0]);
+              }
             }}
             className="flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-md shadow-red-600/30 transition active:scale-95 cursor-pointer shrink-0"
             title="सारे वीडियो बुलेटिन एक के बाद एक बिना रुके देखें"
@@ -359,10 +245,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             
             {/* 16:9 Cinema Thumbnail with 1-click play */}
             <div 
-              onClick={() => {
-                setCountdown(null);
-                setActiveVideo(featuredVideo);
-              }}
+              onClick={() => openVideo(featuredVideo)}
               className="lg:col-span-7 relative aspect-video w-full bg-slate-950 cursor-pointer overflow-hidden group select-none"
             >
               <img 
@@ -407,10 +290,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 </div>
 
                 <h3 
-                  onClick={() => {
-                    setCountdown(null);
-                    setActiveVideo(featuredVideo);
-                  }}
+                  onClick={() => openVideo(featuredVideo)}
                   className={`text-base sm:text-xl font-black leading-snug line-clamp-3 cursor-pointer transition-colors ${
                     isDark ? 'text-white hover:text-red-400' : 'text-slate-900 hover:text-red-600'
                   }`}
@@ -432,10 +312,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 isDark ? 'border-red-950/30' : 'border-slate-200'
               }`}>
                 <button
-                  onClick={() => {
-                    setCountdown(null);
-                    setActiveVideo(featuredVideo);
-                  }}
+                  onClick={() => openVideo(featuredVideo)}
                   className="flex-1 sm:flex-initial bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
                 >
                   <Play size={15} className="fill-white" />
@@ -443,11 +320,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 </button>
 
                 <button
-                  onClick={() => {
-                    setIsAutoPlay(true);
-                    setCountdown(null);
-                    setActiveVideo(featuredVideo);
-                  }}
+                  onClick={() => openVideo(featuredVideo)}
                   className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-transform duration-150 active:scale-95 cursor-pointer"
                   title="एक के बाद एक लगातार ऑटो-प्ले चलाएं"
                 >
@@ -499,10 +372,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
           {visibleRemaining.map((video) => (
             <div 
               key={video.id}
-              onClick={() => {
-                setCountdown(null);
-                setActiveVideo(video);
-              }}
+              onClick={() => openVideo(video)}
               className={`group rounded-2xl border overflow-hidden cursor-pointer flex flex-col justify-between transition-transform duration-300 hover:-translate-y-1 will-change-transform shadow-md ${
                 isDark ? 'bg-slate-950 border-slate-800/80 hover:border-red-600/60' : 'bg-slate-50 border-slate-200 hover:border-red-500 hover:shadow-lg'
               }`}
@@ -637,258 +507,15 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
         </div>
       )}
 
-      {/* 6. INTERACTIVE VIDEO PLAYER MODAL WITH CONTINUOUS AUTOPLAY & 'UP NEXT' */}
-      {activeVideo && (
-        <div 
-          onClick={() => {
-            setCountdown(null);
-            setActiveVideo(null);
-          }}
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 cursor-pointer"
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-[#0b0f19] border border-red-500/30 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh] cursor-default"
-          >
-            
-            {/* Modal Header */}
-            <div className="p-3 sm:p-4 bg-[#070a12] flex items-center justify-between border-b border-white/10 shrink-0">
-              <div className="flex items-center gap-2 sm:gap-3 text-red-500 font-bold text-sm">
-                <YoutubeIcon size={18} />
-                <span className="text-white font-black tracking-wide text-xs sm:text-sm">AMBITION TV</span>
-                {currentIndex >= 0 && (
-                  <span className="bg-red-950/60 text-red-300 border border-red-600/40 text-[10px] font-mono px-2 py-0.5 rounded-full">
-                    बुलेटिन {currentIndex + 1} / {displayList.length}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {/* Autoplay Toggle Switch */}
-                <button
-                  onClick={() => setIsAutoPlay(!isAutoPlay)}
-                  className={`text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition active:scale-95 cursor-pointer ${
-                    isAutoPlay 
-                      ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 shadow-sm' 
-                      : 'bg-slate-900 border-slate-700 text-slate-400'
-                  }`}
-                  title={isAutoPlay ? 'ऑटो-प्ले चालू है: एक के बाद एक लगातार चलेगा' : 'ऑटो-प्ले बंद है: वीडियो खत्म होने पर रुकेगा'}
-                >
-                  <RefreshCw size={12} className={isAutoPlay ? 'animate-spin text-emerald-400' : ''} />
-                  <span className="hidden sm:inline">{isAutoPlay ? 'ऑटो-प्ले चालू' : 'ऑटो-प्ले बंद'}</span>
-                  <span className="sm:hidden">{isAutoPlay ? 'Auto ON' : 'Auto OFF'}</span>
-                </button>
-
-                {/* Previous Video Button */}
-                <button
-                  onClick={handlePrev}
-                  aria-label="पिछला वीडियो बुलेटिन चलाएं"
-                  className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition active:scale-90 cursor-pointer flex items-center gap-1 text-xs font-bold"
-                  title="पिछला बुलेटिन (Previous)"
-                >
-                  <SkipBack size={14} />
-                  <span className="hidden md:inline">पिछला</span>
-                </button>
-
-                {/* Next Video Button */}
-                <button
-                  onClick={handleNext}
-                  aria-label="अगला वीडियो बुलेटिन चलाएं"
-                  className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition active:scale-90 cursor-pointer flex items-center gap-1 text-xs font-bold"
-                  title="अगला बुलेटिन (Next)"
-                >
-                  <span className="hidden md:inline">अगला</span>
-                  <SkipForward size={14} />
-                </button>
-
-                <button 
-                  onClick={() => {
-                    setCountdown(null);
-                    setActiveVideo(null);
-                  }}
-                  aria-label="वीडियो प्लेयर विंडो बंद करें"
-                  className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition cursor-pointer ml-1"
-                  title="बंद करें"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="overflow-y-auto no-scrollbar flex-1 overscroll-contain">
-              
-              {/* 16:9 Video Embed Player with Poster & Autoplay Countdown Overlay */}
-              <div className="relative aspect-video w-full bg-black overflow-hidden">
-                {activeVideo.thumbnail && (
-                  <img 
-                    src={getVideoThumbnail(activeVideo)} 
-                    alt="" 
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-40" 
-                  />
-                )}
-                {isDirectVideoUrl(activeVideo.youtubeUrl || activeVideo.youtubeId) ? (
-                  <video 
-                    src={activeVideo.youtubeUrl || activeVideo.youtubeId}
-                    poster={getVideoThumbnail(activeVideo)}
-                    preload="metadata"
-                    controls
-                    controlsList="nodownload"
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-contain relative z-10 bg-black"
-                    onEnded={() => {
-                      if (isAutoPlay) setCountdown(3);
-                    }}
-                  />
-                ) : (
-                  <iframe 
-                    ref={iframeRef}
-                    key={activeVideo.youtubeId}
-                    src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
-                    title={activeVideo.title}
-                    onLoad={onIframeLoad}
-                    className="w-full h-full border-0 relative z-10"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                )}
-
-                {/* Countdown Overlay when current video ends & next is loading */}
-                {countdown !== null && nextVideo && (
-                  <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
-                    <div className="relative flex items-center justify-center mb-4">
-                      <div className="w-16 h-16 rounded-full border-4 border-red-500/30 border-t-red-500 animate-spin"></div>
-                      <span className="absolute font-mono text-white text-xl font-black">{countdown}</span>
-                    </div>
-                    <p className="text-red-400 font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                      अगला बुलेटिन {countdown} सेकंड में शुरू हो रहा है...
-                    </p>
-                    <h3 className="text-white font-black text-sm sm:text-base max-w-lg line-clamp-2 mb-4">
-                      {nextVideo.title}
-                    </h3>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={handleNext}
-                        className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-red-600/40 flex items-center gap-2 cursor-pointer transition active:scale-95"
-                      >
-                        <Play size={14} className="fill-white" />
-                        <span>तुरंत चलाएं (Play Now)</span>
-                      </button>
-                      <button
-                        onClick={() => setCountdown(null)}
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition"
-                      >
-                        रद्द करें (Cancel)
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Video Details & Actions */}
-              <div className="p-4 sm:p-6 space-y-4 text-white">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-red-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                      {activeVideo.category || 'कवर्धा विशेष'}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      {activeVideo.views} • {activeVideo.timeAgo}
-                    </span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleShare(activeVideo)}
-                      aria-label="यह वीडियो व्हाट्सएप पर शेयर करें"
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95 cursor-pointer"
-                    >
-                      <WhatsAppIcon size={15} />
-                      <span>WhatsApp शेयर</span>
-                    </button>
-
-                    <a 
-                      href={activeVideo.youtubeUrl || `https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="यूट्यूब पर यह वीडियो देखें"
-                      className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95"
-                    >
-                      <YoutubeIcon size={15} />
-                      <span>YouTube पर देखें</span>
-                    </a>
-                  </div>
-                </div>
-
-                <h3 className="text-base sm:text-xl font-bold leading-snug">
-                  {activeVideo.title}
-                </h3>
-
-                {/* UP NEXT PLAYLIST RECOMMENDATIONS */}
-                <div className="pt-4 border-t border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                      अगला वीडियो (Up Next Playlist)
-                    </h4>
-                    <span className="text-[11px] text-slate-400">क्लिक करके तुरंत चलाएं</span>
-                  </div>
-
-                  <div className={`grid grid-cols-1 sm:grid-cols-2 ${
-                    bulletins.filter(b => b.youtubeId !== activeVideo.youtubeId).slice(0, 4).length >= 4 
-                      ? 'lg:grid-cols-4' 
-                      : bulletins.filter(b => b.youtubeId !== activeVideo.youtubeId).slice(0, 4).length === 3 
-                        ? 'lg:grid-cols-3' 
-                        : 'lg:grid-cols-2'
-                  } gap-3`}>
-                    {bulletins
-                      .filter(b => b.youtubeId !== activeVideo.youtubeId)
-                      .slice(0, 4)
-                      .map(nextVid => (
-                        <div
-                          key={nextVid.id}
-                          onClick={() => {
-                            setCountdown(null);
-                            setActiveVideo(nextVid);
-                          }}
-                          className="group rounded-xl border border-white/10 overflow-hidden bg-slate-900/80 hover:border-red-500/60 cursor-pointer transition flex flex-col justify-between"
-                        >
-                          <div className="relative aspect-video w-full bg-slate-950 overflow-hidden">
-                            <img 
-                              src={getVideoThumbnail(nextVid)} 
-                              alt={nextVid.title}
-                              loading="lazy"
-                              decoding="async"
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
-                            />
-                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 flex items-center justify-center transition">
-                              <Play size={14} className="fill-white text-white group-hover:scale-110 transition" />
-                            </div>
-                            <span className="absolute bottom-1 right-1 bg-black/80 font-mono text-[9px] text-white px-1 rounded">
-                              {nextVid.duration}
-                            </span>
-                          </div>
-                          <div className="p-2">
-                            <h5 className="text-[11px] font-bold text-slate-200 line-clamp-2 leading-tight group-hover:text-red-400 transition">
-                              {nextVid.title}
-                            </h5>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </div>
+      {/* 6. INTERACTIVE VIDEO PLAYER MODAL (Rendered if not delegated to App level) */}
+      {!onOpenVideo && activeVideo && (
+        <VideoPlayerModal
+          video={activeVideo}
+          bulletins={bulletins}
+          onClose={() => setActiveVideo(null)}
+          onSelectVideo={(v) => setActiveVideo(v)}
+          onShareWhatsApp={onShareWhatsApp}
+        />
       )}
 
     </section>

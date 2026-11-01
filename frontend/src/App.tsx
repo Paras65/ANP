@@ -33,6 +33,7 @@ const Footer = React.lazy(() => import('./components/Footer').then(m => ({ defau
 import { StoriesTray } from './components/StoriesTray';
 const StoryViewerModal = React.lazy(() => import('./components/StoryViewerModal').then(m => ({ default: m.StoryViewerModal })));
 const ReelsViewerModal = React.lazy(() => import('./components/ReelsViewerModal').then(m => ({ default: m.ReelsViewerModal })));
+const VideoPlayerModal = React.lazy(() => import('./components/VideoPlayerModal').then(m => ({ default: m.VideoPlayerModal })));
 const DistrictPickerModal = React.lazy(() => import('./components/DistrictPickerModal').then(m => ({ default: m.DistrictPickerModal })));
 const ReporterModal = React.lazy(() => import('./components/ReporterModal').then(m => ({ default: m.ReporterModal })));
 const ComplianceModal = React.lazy(() => import('./components/ComplianceModal').then(m => ({ default: m.ComplianceModal })));
@@ -43,6 +44,7 @@ import { useVoiceTyping } from './hooks/useVoiceTyping';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './components/SocialIcons';
 import { getSmartCoverImage } from './utils/categoryTheme';
 import { getOptimizedImageUrl } from './utils/imageUtils';
+import { getVideoThumbnail } from './utils/mediaUtils';
 
 import { 
   ALL_DISTRICTS_DEMO, 
@@ -95,6 +97,7 @@ export const App: React.FC = () => {
   const [activeArticle, setActiveArticle] = useState<Article | null>(null);
   const [activeStory, setActiveStory] = useState<StoryItem | null>(null);
   const [activeReelId, setActiveReelId] = useState<string | null>(null);
+  const [activeVideoModal, setActiveVideoModal] = useState<VideoBulletin | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [savedArticles, setSavedArticles] = useState<Article[]>(() => {
     try {
@@ -1029,6 +1032,24 @@ export const App: React.FC = () => {
     } catch {}
   };
 
+  const openVideoModal = (v?: VideoBulletin) => {
+    const target = v || videoBulletins[0];
+    if (target) {
+      setActiveStory(null);
+      setActiveReelId(null);
+      setActiveVideoModal(target);
+      try {
+        window.history.pushState({ modal: 'video', id: target.id || target.youtubeId }, '');
+      } catch {}
+    } else {
+      window.open(SOCIAL_LINKS.youtube, '_blank');
+    }
+  };
+
+  const closeVideoModal = () => {
+    setActiveVideoModal(null);
+  };
+
   const openDistrictModal = () => {
     setShowDistrictModal(true);
     try {
@@ -1047,6 +1068,10 @@ export const App: React.FC = () => {
         setShowDistrictModal(false);
         return;
       }
+      if (activeVideoModal) {
+        setActiveVideoModal(null);
+        return;
+      }
       if (activeArticle) {
         setActiveArticle(null);
         return;
@@ -1063,7 +1088,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [showDistrictModal, activeArticle, activeReelId, activeStory]);
+  }, [showDistrictModal, activeVideoModal, activeArticle, activeReelId, activeStory]);
 
   // Initial Deep-linking & horizontal scroll lock reset
   useEffect(() => {
@@ -1153,9 +1178,7 @@ export const App: React.FC = () => {
       return;
     }
     if (story.id === 's-live') {
-      setActiveTab('videos');
-      const el = document.getElementById('video-bulletins-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      openVideoModal(videoBulletins[0]);
       return;
     }
     if (story.articleId) {
@@ -1468,6 +1491,7 @@ export const App: React.FC = () => {
                   isDark={isDark} 
                   youtubeSubs={youtubeSubs}
                   autoPlayOnMount={true}
+                  onOpenVideo={openVideoModal}
                   onShareWhatsApp={(title, url) => {
                     const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2169,27 +2193,41 @@ export const App: React.FC = () => {
 
                     <div 
                       className="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-red-950/90 border border-red-900/40 cursor-pointer group shadow-md"
-                      onClick={() => window.open(SOCIAL_LINKS.youtube, '_blank')}
+                      onClick={() => openVideoModal(videoBulletins[0])}
                     >
                       {/* Ambient Studio Lighting Glow */}
                       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-600/20 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition duration-500"></div>
 
-                      {/* Official Ambition Logo Center Backdrop */}
-                      <div className="absolute inset-0 flex items-center justify-center p-3">
-                        <picture>
-                          <source srcSet="/logo-96.webp" type="image/webp" />
+                      {/* Real Video Thumbnail if available */}
+                      {videoBulletins[0] && getVideoThumbnail(videoBulletins[0]) && !getVideoThumbnail(videoBulletins[0]).includes("/logo.") ? (
+                        <>
                           <img 
-                            src="/logo-96.webp" 
-                            alt="Ambition TV Logo"
-                            loading="lazy"
-                            decoding="async"
-                            width="96"
-                            height="96"
-                            onError={(e) => { (e.target as HTMLImageElement).src = '/logo.webp'; }}
-                            className="w-24 h-24 object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.5)] group-hover:scale-110 transition duration-500" 
+                            src={getVideoThumbnail(videoBulletins[0])} 
+                            alt={videoBulletins[0].title || "Ambition TV Video"} 
+                            loading="lazy" 
+                            decoding="async" 
+                            className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:scale-105 group-hover:opacity-85 transition-all duration-500" 
                           />
-                        </picture>
-                      </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                        </>
+                      ) : (
+                        /* Official Ambition Logo Center Backdrop */
+                        <div className="absolute inset-0 flex items-center justify-center p-3">
+                          <picture>
+                            <source srcSet="/logo-96.webp" type="image/webp" />
+                            <img 
+                              src="/logo-96.webp" 
+                              alt="Ambition TV Logo"
+                              loading="lazy" 
+                              decoding="async" 
+                              width="96" 
+                              height="96" 
+                              onError={(e) => { (e.target as HTMLImageElement).src = "/logo.webp"; }}
+                              className="w-24 h-24 object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.5)] group-hover:scale-110 transition duration-500" 
+                            />
+                          </picture>
+                        </div>
+                      )}
 
                       {/* Top Badges */}
                       <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10 pointer-events-none">
@@ -2212,7 +2250,7 @@ export const App: React.FC = () => {
                       {/* Bottom Title Banner */}
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent p-2.5 pt-6 text-center z-10">
                         <p className="text-white text-[11px] font-extrabold tracking-wide drop-shadow line-clamp-1">
-                          कवर्धा व CG-MP का महाबुलेटिन
+                          {videoBulletins[0]?.title || 'कवर्धा व CG-MP का महाबुलेटिन'}
                         </p>
                         <p className="text-amber-400 text-[9px] font-medium tracking-wider flex items-center justify-center gap-1 mt-0.5">
                           <span>Ambition News</span> • <span>24x7 डिजिटल प्रसारण</span>
@@ -2346,6 +2384,7 @@ export const App: React.FC = () => {
                 bulletins={videoBulletins} 
                 isDark={isDark} 
                 youtubeSubs={youtubeSubs}
+                onOpenVideo={openVideoModal}
                 onShareWhatsApp={(title, url) => {
                   const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2421,9 +2460,8 @@ export const App: React.FC = () => {
               onReadFullArticle={handleOpenFromStory}
               onShareWhatsApp={handleShareStoryWhatsApp}
               onOpenVideo={() => {
-                setActiveTab('videos');
-                const el = document.getElementById('video-bulletins-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                closeStoryModal();
+                openVideoModal(videoBulletins[0]);
               }}
               onOpenMandi={() => {
                 setActiveTab('mandi');
@@ -2482,6 +2520,20 @@ export const App: React.FC = () => {
               initialTab={complianceModalTab}
               isDark={isDark}
               onClose={() => setComplianceModalTab(null)}
+            />
+          )}
+
+          {/* 13. IN-APP CINEMATIC VIDEO PLAYER MODAL */}
+          {activeVideoModal && (
+            <VideoPlayerModal 
+              video={activeVideoModal}
+              bulletins={videoBulletins}
+              onClose={closeVideoModal}
+              onSelectVideo={(v) => setActiveVideoModal(v)}
+              onShareWhatsApp={(title, url) => {
+                const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+              }}
             />
           )}
         </React.Suspense>
