@@ -269,16 +269,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
                   <span>WhatsApp शेयर</span>
                 </button>
 
-                <a 
-                  href={video.youtubeUrl || `https://www.youtube.com/watch?v=${video.youtubeId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="यूट्यूब पर यह वीडियो देखें"
-                  className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95"
-                >
-                  <YoutubeIcon size={15} />
-                  <span>YouTube पर देखें</span>
-                </a>
+                
               </div>
             </div>
 

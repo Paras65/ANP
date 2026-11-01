@@ -15,8 +15,8 @@ import {
   Eye,
   ChevronDown,
   MapPinOff,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+  X} from 'lucide-react';
 import { formatRelativeHindiTime, estimateReadingTime, formatHindiViews } from './utils/dateUtils';
 
 import { Header } from './components/Header';
@@ -44,7 +44,7 @@ import { useVoiceTyping } from './hooks/useVoiceTyping';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './components/SocialIcons';
 import { getSmartCoverImage } from './utils/categoryTheme';
 import { getOptimizedImageUrl } from './utils/imageUtils';
-import { getVideoThumbnail } from './utils/mediaUtils';
+import { getVideoThumbnail, isDirectVideoUrl } from './utils/mediaUtils';
 
 import { 
   ALL_DISTRICTS_DEMO, 
@@ -98,6 +98,7 @@ export const App: React.FC = () => {
   const [activeStory, setActiveStory] = useState<StoryItem | null>(null);
   const [activeReelId, setActiveReelId] = useState<string | null>(null);
   const [activeVideoModal, setActiveVideoModal] = useState<VideoBulletin | null>(null);
+  const [isSidebarVideoPlaying, setIsSidebarVideoPlaying] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [savedArticles, setSavedArticles] = useState<Article[]>(() => {
     try {
@@ -2191,84 +2192,138 @@ export const App: React.FC = () => {
                       </span>
                     </div>
 
-                    <div 
-                      className="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-red-950/90 border border-red-900/40 cursor-pointer group shadow-md"
-                      onClick={() => openVideoModal(videoBulletins[0])}
-                    >
-                      {/* Ambient Studio Lighting Glow */}
-                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-600/20 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition duration-500"></div>
+                    {/* OPTION 2: IN-LINE EMBED PLAYER (NO MODAL, NO POPUP, NO NEW WINDOW) */}
+                    {isSidebarVideoPlaying && videoBulletins[0] ? (
+                      <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-red-900/60 shadow-lg group">
+                        {/* Collapse/Close button to return to thumbnail */}
+                        <button
+                          type="button"
+                          onClick={() => setIsSidebarVideoPlaying(false)}
+                          aria-label="वीडियो बंद करें"
+                          title="वीडियो बंद करें"
+                          className="absolute top-2 right-2 z-20 bg-black/80 hover:bg-red-600 text-white p-1 rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow-md"
+                        >
+                          <X size={14} />
+                        </button>
 
-                      {/* Real Video Thumbnail if available */}
-                      {videoBulletins[0] && getVideoThumbnail(videoBulletins[0]) && !getVideoThumbnail(videoBulletins[0]).includes("/logo.") ? (
-                        <>
-                          <img 
-                            src={getVideoThumbnail(videoBulletins[0])} 
-                            alt={videoBulletins[0].title || "Ambition TV Video"} 
-                            loading="lazy" 
-                            decoding="async" 
-                            className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:scale-105 group-hover:opacity-85 transition-all duration-500" 
+                        {isDirectVideoUrl(videoBulletins[0].youtubeUrl || videoBulletins[0].youtubeId) ? (
+                          <video
+                            src={videoBulletins[0].youtubeUrl || videoBulletins[0].youtubeId}
+                            poster={getVideoThumbnail(videoBulletins[0])}
+                            controls
+                            autoPlay
+                            playsInline
+                            className="w-full h-full object-contain bg-black"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-                        </>
-                      ) : (
-                        /* Official Ambition Logo Center Backdrop */
-                        <div className="absolute inset-0 flex items-center justify-center p-3">
-                          <picture>
-                            <source srcSet="/logo-96.webp" type="image/webp" />
+                        ) : (
+                          <iframe
+                            src={`https://www.youtube-nocookie.com/embed/${videoBulletins[0].youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
+                            title={videoBulletins[0].title}
+                            className="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        )}
+                      </div>
+                    ) : (
+                      <div 
+                        className="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-red-950/90 border border-red-900/40 cursor-pointer group shadow-md"
+                        onClick={() => {
+                          if (videoBulletins[0]) {
+                            setIsSidebarVideoPlaying(true);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            if (videoBulletins[0]) setIsSidebarVideoPlaying(true);
+                          }
+                        }}
+                        aria-label="यहीं वीडियो चलाएं"
+                        title="क्लिक करके यहीं वीडियो चलाएं"
+                      >
+                        {/* Ambient Studio Lighting Glow */}
+                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-600/20 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition duration-500"></div>
+
+                        {/* Real Video Thumbnail if available */}
+                        {videoBulletins[0] && getVideoThumbnail(videoBulletins[0]) && !getVideoThumbnail(videoBulletins[0]).includes("/logo.") ? (
+                          <>
                             <img 
-                              src="/logo-96.webp" 
-                              alt="Ambition TV Logo"
+                              src={getVideoThumbnail(videoBulletins[0])} 
+                              alt={videoBulletins[0].title || "Ambition TV Video"} 
                               loading="lazy" 
                               decoding="async" 
-                              width="96" 
-                              height="96" 
-                              onError={(e) => { (e.target as HTMLImageElement).src = "/logo.webp"; }}
-                              className="w-24 h-24 object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.5)] group-hover:scale-110 transition duration-500" 
+                              className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:scale-105 group-hover:opacity-85 transition-all duration-500" 
                             />
-                          </picture>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                          </>
+                        ) : (
+                          /* Official Ambition Logo Center Backdrop */
+                          <div className="absolute inset-0 flex items-center justify-center p-3">
+                            <picture>
+                              <source srcSet="/logo-96.webp" type="image/webp" />
+                              <img 
+                                src="/logo-96.webp" 
+                                alt="Ambition TV Logo"
+                                loading="lazy" 
+                                decoding="async" 
+                                width="96" 
+                                height="96" 
+                                onError={(e) => { (e.target as HTMLImageElement).src = "/logo.webp"; }}
+                                className="w-24 h-24 object-contain drop-shadow-[0_4px_16px_rgba(220,38,38,0.5)] group-hover:scale-110 transition duration-500" 
+                              />
+                            </picture>
+                          </div>
+                        )}
+
+                        {/* Top Badges */}
+                        <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10 pointer-events-none">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-600 text-white shadow-lg animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                            LIVE TV
+                          </span>
+                          <span className="text-[9px] font-black tracking-widest text-amber-400 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded border border-amber-500/30">
+                            HD 1080p
+                          </span>
                         </div>
-                      )}
 
-                      {/* Top Badges */}
-                      <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10 pointer-events-none">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-600 text-white shadow-lg animate-pulse">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-                          LIVE TV
-                        </span>
-                        <span className="text-[9px] font-black tracking-widest text-amber-400 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded border border-amber-500/30">
-                          HD 1080p
-                        </span>
-                      </div>
+                        {/* Central Play Button Overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                          <div className="w-11 h-11 bg-red-600/95 group-hover:bg-red-500 rounded-full flex items-center justify-center shadow-xl shadow-red-600/50 group-hover:scale-110 transition duration-300 border-2 border-white/80">
+                            <div className="w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[11px] border-l-white ml-0.5"></div>
+                          </div>
+                        </div>
 
-                      {/* Central Play Button Overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                        <div className="w-11 h-11 bg-red-600/95 group-hover:bg-red-500 rounded-full flex items-center justify-center shadow-xl shadow-red-600/50 group-hover:scale-110 transition duration-300 border-2 border-white/80">
-                          <div className="w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[11px] border-l-white ml-0.5"></div>
+                        {/* Bottom Title Banner */}
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent p-2.5 pt-6 text-center z-10">
+                          <p className="text-white text-[11px] font-extrabold tracking-wide drop-shadow line-clamp-1">
+                            {videoBulletins[0]?.title || 'कवर्धा व CG-MP का महाबुलेटिन'}
+                          </p>
+                          <p className="text-amber-400 text-[9px] font-medium tracking-wider flex items-center justify-center gap-1 mt-0.5">
+                            <span>Ambition News</span> • <span>24x7 डिजिटल प्रसारण</span>
+                          </p>
                         </div>
                       </div>
-
-                      {/* Bottom Title Banner */}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent p-2.5 pt-6 text-center z-10">
-                        <p className="text-white text-[11px] font-extrabold tracking-wide drop-shadow line-clamp-1">
-                          {videoBulletins[0]?.title || 'कवर्धा व CG-MP का महाबुलेटिन'}
-                        </p>
-                        <p className="text-amber-400 text-[9px] font-medium tracking-wider flex items-center justify-center gap-1 mt-0.5">
-                          <span>Ambition News</span> • <span>24x7 डिजिटल प्रसारण</span>
-                        </p>
-                      </div>
-                    </div>
+                    )}
 
                     <div className="mt-2.5">
-                      <a 
-                        href={SOCIAL_LINKS.youtube}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="एम्बिशन न्यूज़ आधिकारिक यूट्यूब चैनल खोलें"
-                        className="w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow transition"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const el = document.getElementById('video-bulletins-section');
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth' });
+                          } else if (videoBulletins[0]) {
+                            setIsSidebarVideoPlaying(true);
+                          }
+                        }}
+                        aria-label="सभी वीडियो बुलेटिन देखें"
+                        className="w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow transition active:scale-95 cursor-pointer"
                       >
                         <YoutubeIcon size={13} />
-                        <span>चैनल खोलें (@ambition_news)</span>
-                      </a>
+                        <span>सभी वीडियो बुलेटिन देखें</span>
+                      </button>
                     </div>
                   </div>
 
