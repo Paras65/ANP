@@ -16,6 +16,8 @@ import {
   ChevronDown,
   MapPinOff,
   Loader2,
+  Tv,
+  Camera,
   X} from 'lucide-react';
 import { formatRelativeHindiTime, estimateReadingTime, formatHindiViews } from './utils/dateUtils';
 
@@ -99,7 +101,6 @@ export const App: React.FC = () => {
   const [activeReelId, setActiveReelId] = useState<string | null>(null);
   const [isSidebarVideoPlaying, setIsSidebarVideoPlaying] = useState<boolean>(false);
   const [globalPlayingVideo, setGlobalPlayingVideo] = useState<VideoBulletin | null>(null);
-  const [isHeroVideoInView, setIsHeroVideoInView] = useState<boolean>(false);
 
   // Exclusive lock: Playing global video shuts down sidebar mini video
   const handleSelectGlobalVideo = useCallback((v: VideoBulletin | null) => {
@@ -1544,7 +1545,6 @@ export const App: React.FC = () => {
                   playingVideo={globalPlayingVideo}
                   onSelectVideo={handleSelectGlobalVideo}
                   isHeroInView={true}
-                  onHeroInViewChange={setIsHeroVideoInView}
                   onShareWhatsApp={(title, url) => {
                     const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2366,14 +2366,7 @@ export const App: React.FC = () => {
                     <div className="mt-2.5">
                       <button
                         type="button"
-                        onClick={() => {
-                          const el = document.getElementById('video-bulletins-section');
-                          if (el) {
-                            el.scrollIntoView({ behavior: 'smooth' });
-                          } else if (videoBulletins[0]) {
-                            setIsSidebarVideoPlaying(true);
-                          }
-                        }}
+                        onClick={() => setActiveTab('videos')}
                         aria-label="सभी वीडियो बुलेटिन देखें"
                         className="w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow transition active:scale-95 cursor-pointer"
                       >
@@ -2490,27 +2483,62 @@ export const App: React.FC = () => {
               </div>
             )}
 
-              {/* DEDICATED YOUTUBE BULLETINS SECTION */}
-              <VideoSection 
-                bulletins={videoBulletins} 
-                isDark={isDark} 
-                youtubeSubs={youtubeSubs}
-                playingVideo={globalPlayingVideo}
-                onSelectVideo={handleSelectGlobalVideo}
-                isHeroInView={isHeroVideoInView}
-                onHeroInViewChange={setIsHeroVideoInView}
-                onShareWhatsApp={(title, url) => {
-                  const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
-                  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-                }}
-              />
+              {/* COMPACT MULTIMEDIA HUB TEASERS (FAST LINKS TO DEDICATED TABS) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+                {/* 1. Ambition TV Video Bulletins Banner */}
+                <div 
+                  onClick={() => setActiveTab('videos')}
+                  className={`p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer flex items-center justify-between gap-3.5 group ${
+                    isDark ? 'bg-gradient-to-r from-red-950/40 via-slate-900 to-slate-950 border-red-900/40' : 'bg-gradient-to-r from-red-50 via-white to-slate-50 border-red-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                      <Tv size={20} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black text-red-500 uppercase tracking-wide">Ambition TV</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                      </div>
+                      <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {videoBulletins[0]?.title || 'ताज़ा वीडियो बुलेटिन'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-bold text-red-500 shrink-0 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                    <span>देखें</span>
+                    <ChevronRight size={14} />
+                  </span>
+                </div>
 
-              {/* DEDICATED INSTAGRAM KAWARDHA SECTION */}
-              <InstagramSection 
-                posts={instagramPosts} 
-                onSelectReel={(id) => openReelModal(id)}
-                isDark={isDark} 
-              />
+                {/* 2. Instagram & Shorts Reels Banner */}
+                <div 
+                  onClick={() => setActiveTab('insta')}
+                  className={`p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer flex items-center justify-between gap-3.5 group ${
+                    isDark ? 'bg-gradient-to-r from-pink-950/40 via-slate-900 to-slate-950 border-pink-900/40' : 'bg-gradient-to-r from-pink-50 via-white to-slate-50 border-pink-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                      <Camera size={20} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black text-pink-500 uppercase tracking-wide">कवर्धा रील्स</span>
+                        <span className="text-[9px] bg-pink-500/20 text-pink-400 px-1 rounded font-bold">शॉर्ट्स</span>
+                      </div>
+                      <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {instagramPosts[0]?.caption || 'ट्रेंडिंग वायरल रील्स'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-bold text-pink-500 shrink-0 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                    <span>देखें</span>
+                    <ChevronRight size={14} />
+                  </span>
+                </div>
+              </div>
             </>
           )}
 
@@ -2548,7 +2576,7 @@ export const App: React.FC = () => {
         <BackToTop />
 
         {/* PERSISTENT CROSS-TAB & IN-ARTICLE FLOATING MINI-PLAYER */}
-        {globalPlayingVideo && !activeStory && !activeReelId && (activeArticle !== null || (activeTab !== 'videos' && (!isHeroVideoInView || activeTab !== 'home'))) && (
+        {globalPlayingVideo && !activeStory && !activeReelId && (activeArticle !== null || activeTab !== 'videos') && (
           <FloatingMiniPlayer
             video={globalPlayingVideo}
             onClose={() => setGlobalPlayingVideo(null)}
