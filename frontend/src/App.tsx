@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
   MapPin, 
   RefreshCw, 
@@ -175,6 +175,20 @@ export const App: React.FC = () => {
       return [];
     }
   });
+
+  // Global Floating Mini-Player playlist index & next bulletin handler
+  const currentGlobalVideoIdx = useMemo(() => {
+    if (!globalPlayingVideo || !videoBulletins.length) return -1;
+    return videoBulletins.findIndex(v => v.id === globalPlayingVideo.id || v.youtubeId === globalPlayingVideo.youtubeId);
+  }, [globalPlayingVideo, videoBulletins]);
+
+  const hasNextGlobalVideo = currentGlobalVideoIdx >= 0 && currentGlobalVideoIdx < videoBulletins.length - 1;
+
+  const handleNextGlobalVideo = useCallback(() => {
+    if (hasNextGlobalVideo && videoBulletins[currentGlobalVideoIdx + 1]) {
+      setGlobalPlayingVideo(videoBulletins[currentGlobalVideoIdx + 1]);
+    }
+  }, [hasNextGlobalVideo, videoBulletins, currentGlobalVideoIdx]);
 
   // Dynamic Live Mandi Rates
   const [mandiRates, setMandiRates] = useState<MandiRate[]>(() => {
@@ -2527,6 +2541,8 @@ export const App: React.FC = () => {
             video={globalPlayingVideo}
             onClose={() => setGlobalPlayingVideo(null)}
             onExpand={handleExpandGlobalVideo}
+            onNext={hasNextGlobalVideo ? handleNextGlobalVideo : undefined}
+            hasNext={hasNextGlobalVideo}
           />
         )}
 
