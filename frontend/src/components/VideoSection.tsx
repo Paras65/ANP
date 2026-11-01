@@ -11,7 +11,7 @@ import {
 import { YoutubeIcon, WhatsAppIcon } from './SocialIcons';
 import type { VideoBulletin } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
-import { sortMediaLatestFirst, getVideoThumbnail, isDirectVideoUrl } from '../utils/mediaUtils';
+import { sortMediaLatestFirst, getVideoThumbnail } from '../utils/mediaUtils';
 
 interface VideoSectionProps {
   bulletins: VideoBulletin[];
@@ -22,7 +22,6 @@ interface VideoSectionProps {
   onOpenVideo?: (video: VideoBulletin) => void;
   playingVideo?: VideoBulletin | null;
   onSelectVideo?: (video: VideoBulletin | null) => void;
-  isHeroInView?: boolean;
   onHeroInViewChange?: (inView: boolean) => void;
 }
 
@@ -44,7 +43,6 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   autoPlayOnMount = false,
   playingVideo,
   onSelectVideo,
-  isHeroInView = true,
   onHeroInViewChange
 }) => {
   const [internalPlayingVideo, setInternalPlayingVideo] = useState<VideoBulletin | null>(null);
@@ -120,11 +118,11 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
     if (autoPlayOnMount && bulletins && bulletins.length > 0 && !hasAutoPlayedRef.current) {
       hasAutoPlayedRef.current = true;
       const topVideo = bulletins[0];
-      if (topVideo) {
+      if (topVideo && !playingVideo) {
         openVideo(topVideo);
       }
     }
-  }, [autoPlayOnMount, bulletins, openVideo]);
+  }, [autoPlayOnMount, bulletins, openVideo, playingVideo]);
 
   // Dynamic Categories calculation with real video counts
   const categoriesWithCounts = useMemo(() => {
@@ -286,66 +284,59 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             {/* 16:9 Cinema Screen (Active In-Page Player or Poster Thumbnail) */}
             <div className="lg:col-span-7 relative aspect-video w-full bg-black overflow-hidden select-none">
               {activePlayingVideo ? (
-                !isHeroInView ? (
-                  /* PLACEHOLDER WHEN ACTIVE IN FLOATING MINI-PLAYER (PREVENTS DOUBLE-AUDIO ECHO) */
-                  <div className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 border border-red-950 select-none">
-                    <div className="w-12 h-12 rounded-2xl bg-red-600/20 text-red-500 border border-red-600/30 flex items-center justify-center mb-3 animate-pulse shadow-lg">
-                      <Tv size={24} />
-                    </div>
-                    <p className="text-white text-xs sm:text-sm font-bold">वीडियो नीचे मिनी-प्लेयर में चल रहा है</p>
-                    <p className="text-slate-400 text-[11px] mt-1 max-w-xs truncate">{activePlayingVideo.title}</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        heroVideoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }}
-                      className="mt-3.5 px-3.5 py-1.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer shadow flex items-center gap-1.5"
-                    >
-                      <Maximize2 size={13} />
-                      <span>यहाँ बड़ी स्क्रीन में लाएं</span>
-                    </button>
-                  </div>
-                ) : (
-                  /* ACTIVE IN-PAGE EMBED PLAYER */
-                  <div className="relative w-full h-full bg-black">
-                    {/* Close button to stop video & return to poster view */}
-                    <button
-                      type="button"
-                      onClick={() => setVideo(null)}
-                      aria-label="वीडियो बंद करें"
-                      title="वीडियो बंद करें (थंबनेल पर लौटें)"
-                      className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-red-600 text-white p-1.5 rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow-lg"
-                    >
-                      <X size={15} />
-                    </button>
+                /* ACTIVE PLAYING VIDEO SPOTLIGHT CARD (CONTROLLED VIA MASTER PLAYER) */
+                <div className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 border border-red-950 select-none overflow-hidden group">
+                  {/* Blurred Backdrop of Current Playing Video */}
+                  <img
+                    src={getVideoThumbnail(activePlayingVideo)}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover opacity-35 blur-xs scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/60" />
 
-                    <div className="absolute top-3 left-3 z-30 pointer-events-none">
-                      <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-lg animate-pulse">
-                        <span className="w-2 h-2 rounded-full bg-white"></span>
-                        अब चल रहा है (NOW PLAYING)
-                      </span>
+                  <div className="relative z-10 flex flex-col items-center max-w-sm px-4">
+                    {/* Live Equalizer Animation */}
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-red-600/90 text-white rounded-full text-[11px] font-black uppercase tracking-wider mb-2.5 shadow-lg shadow-red-600/40 animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-white"></span>
+                      <span>अब लाइव चल रहा है</span>
+                      <div className="flex items-end gap-0.5 h-3 ml-1">
+                        <span className="w-0.5 bg-white rounded-full animate-bounce [animation-delay:0ms] h-full" />
+                        <span className="w-0.5 bg-white rounded-full animate-bounce [animation-delay:150ms] h-2/3" />
+                        <span className="w-0.5 bg-white rounded-full animate-bounce [animation-delay:300ms] h-4/5" />
+                      </div>
                     </div>
 
-                    {isDirectVideoUrl(activePlayingVideo.youtubeUrl || activePlayingVideo.youtubeId) ? (
-                      <video
-                        src={activePlayingVideo.youtubeUrl || activePlayingVideo.youtubeId}
-                        poster={getVideoThumbnail(activePlayingVideo)}
-                        controls
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-contain bg-black"
-                      />
-                    ) : (
-                      <iframe
-                        src={`https://www.youtube-nocookie.com/embed/${activePlayingVideo.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
-                        title={activePlayingVideo.title}
-                        className="w-full h-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    )}
+                    <h3 className="text-white text-sm sm:text-base font-bold line-clamp-2 leading-snug drop-shadow-md">
+                      {activePlayingVideo.title}
+                    </h3>
+                    <p className="text-red-400 text-xs font-semibold mt-1">
+                      ● लाइव वीडियो फ़्लोटिंग प्लेयर में सक्रिय है
+                    </p>
+
+                    <div className="flex items-center gap-2 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer shadow-lg flex items-center gap-1.5"
+                      >
+                        <Maximize2 size={13} />
+                        <span>बड़ी स्क्रीन / सिनेमा मोड</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setVideo(null)}
+                        className="p-2 bg-black/60 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl border border-white/20 transition active:scale-95 cursor-pointer"
+                        title="वीडियो बंद करें"
+                        aria-label="वीडियो बंद करें"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                   </div>
-                )
+                </div>
               ) : (
                 /* POSTER THUMBNAIL WITH 1-CLICK IN-PAGE PLAY */
                 <div 

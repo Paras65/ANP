@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Maximize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2 } from 'lucide-react';
+import { X, Maximize2, Minimize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2 } from 'lucide-react';
 import type { VideoBulletin } from '../types';
 import { isDirectVideoUrl, getVideoThumbnail } from '../utils/mediaUtils';
 
@@ -8,11 +8,12 @@ type DockCorner = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 interface FloatingMiniPlayerProps {
   video: VideoBulletin;
   onClose: () => void;
-  onExpand: () => void;
+  onExpand?: () => void;
   onNext?: () => void;
   onPrev?: () => void;
   hasNext?: boolean;
   hasPrev?: boolean;
+  activeTab?: string;
 }
 
 export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
@@ -26,6 +27,10 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
   // Ultra-compact audio-pill mode (ideal when reading articles)
   const [isCollapsed, setIsCollapsed] = useState(false);
+  // Full Cinema Theater Mode (smoothly expands without iframe reload)
+  const [isCinemaMode, setIsCinemaMode] = useState<boolean>(false);
+  // Top header dismiss drop-zone detection
+  const [isOverTopDismissZone, setIsOverTopDismissZone] = useState<boolean>(false);
 
   // Dynamic 4-Corner Dock Position
   const getInitialDock = (): DockCorner => {
@@ -103,6 +108,18 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       window.removeEventListener('orientationchange', handleWindowResize);
     };
   }, []);
+
+  // 3. AUTO-COLLAPSE CINEMA MODE TO FLOATING PiP WHEN USER SCROLLS DOWN
+  useEffect(() => {
+    if (!isCinemaMode) return;
+    const handleScroll = () => {
+      if (window.scrollY > 250) {
+        setIsCinemaMode(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isCinemaMode]);
 
   // Reset video loaded state when video changes
   useEffect(() => {
@@ -197,6 +214,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       hasMoved: false
     };
     setIsDragging(true);
+    setIsOverTopDismissZone(false);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -205,12 +223,16 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     const deltaY = e.clientY - dragStartRef.current.y;
     const dist = Math.hypot(deltaX, deltaY);
 
-    if (dist > 6) {
+    if (dist > 8) {
       dragStartRef.current.hasMoved = true;
     }
 
     setDragOffset({ x: deltaX, y: deltaY });
-    setIsPastDismissThreshold(dist > 75);
+
+    // Dismiss check: Top header dismiss area (pointer near top: e.clientY < 110)
+    const inTopZone = e.clientY < 110;
+    setIsOverTopDismissZone(inTopZone);
+    setIsPastDismissThreshold(inTopZone);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -232,25 +254,28 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     if (!dragStartRef.current.hasMoved && deltaTime < 300) {
       setShowControls(prev => !prev);
       dragStartRef.current = null;
+      setIsOverTopDismissZone(false);
       return;
     }
 
-    // CASE B: DISMISS SWIPE (Distance > 80px or quick flick > 0.45 px/ms)
-    if (distance > 80 || (speed > 0.45 && distance > 30)) {
+    // CASE B: DISMISS ONLY IF DROPPED IN TOP HEADER DISMISS ZONE OR FLICKED HARD UPWARDS
+    const isTopDrop = isOverTopDismissZone || e.clientY < 110;
+    const isUpwardFlick = deltaY < -130 && speed > 0.6;
+    if (isTopDrop || isUpwardFlick) {
       setIsDismissing(true);
-      const exitMultiplier = 400 / Math.max(distance, 1);
       setDragOffset({
-        x: deltaX * exitMultiplier,
-        y: deltaY * exitMultiplier
+        x: deltaX,
+        y: -window.innerHeight
       });
       setTimeout(() => {
         onClose();
       }, 200);
       dragStartRef.current = null;
+      setIsOverTopDismissZone(false);
       return;
     }
 
-    // CASE C: 4-CORNER DOCKING (Snap to closest safe corner)
+    // CASE C: 4-CORNER DOCKING (Any other normal drag snaps to nearest corner without closing!)
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -272,6 +297,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     // Smoothly reset drag offset
     setDragOffset({ x: 0, y: 0 });
     dragStartRef.current = null;
+    setIsOverTopDismissZone(false);
   };
 
   // Determine CSS positioning based on dockCorner
@@ -289,201 +315,243 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     }
   };
 
+  const handleToggleCinema = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setIsCinemaMode(prev => !prev);
+    onExpand?.();
+  };
+
   return (
-    <div
-      ref={containerRef}
-      style={{
-        transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) scale(${isDragging ? 1.02 : 1})`,
-        transition: (dragOffset.x === 0 && dragOffset.y === 0 && !isDragging && !isResizing)
-          ? 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out'
-          : isDismissing ? 'transform 0.2s ease-in, opacity 0.2s ease-in' : 'none',
-        touchAction: 'none'
-      }}
-      className={`fixed z-40 select-none ${getDockClasses()} ${
-        isDismissing ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'
-      }`}
-    >
+    <>
       {/* 
-        PERSISTENT VIDEO / AUDIO EMBED CONTAINER
-        Kept mounted in both views so playback / audio NEVER pauses or reloads when collapsing/expanding.
+        TOP HEADER DISMISS DROP ZONE (TRIGGERED ON DRAG)
+        Shows a bright red circle with white cross icon and clear dismiss guide
       */}
-      <div className={isCollapsed ? 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none absolute' : 'w-full'}>
+      {isDragging && (
         <div 
-          style={{ width: `${playerWidth}px` }}
-          className={`relative rounded-2xl overflow-hidden shadow-2xl bg-black border-2 transition-colors duration-200 group ${
-            isPastDismissThreshold 
-              ? 'border-red-500 shadow-red-600/60 ring-4 ring-red-500/50' 
-              : 'border-red-600 ring-2 ring-red-600/30'
+          className={`fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 flex items-center gap-2.5 px-4 py-2 rounded-full shadow-2xl backdrop-blur-md border ${
+            isOverTopDismissZone
+              ? 'bg-red-600 border-white text-white scale-110 shadow-red-600/70 ring-4 ring-red-500/50 animate-pulse'
+              : 'bg-slate-950/92 border-red-500/60 text-white shadow-black/80'
           }`}
         >
-          {/* VISUAL DISMISS INDICATOR OVERLAY */}
-          {isPastDismissThreshold && (
-            <div className="absolute inset-0 z-40 bg-red-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-white pointer-events-none animate-in fade-in duration-150">
-              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center mb-1 shadow-lg animate-bounce">
-                <X size={20} className="stroke-[3]" />
-              </div>
-              <span className="text-[11px] font-black tracking-wide">हटाने के लिए छोड़ें</span>
-            </div>
-          )}
-
-          {/* ONE-THUMB CORNER RESIZE DRAG HANDLE (TOP-LEFT CORNER) */}
-          <div
-            onPointerDown={handleResizePointerDown}
-            onPointerMove={handleResizePointerMove}
-            onPointerUp={handleResizePointerUp}
-            onPointerCancel={handleResizePointerUp}
-            title="खींचकर छोटा या बड़ा करें (Resize handle)"
-            aria-label="छोटा या बड़ा करें"
-            className="no-drag absolute top-1.5 left-1.5 z-40 p-1.5 rounded-lg bg-black/85 hover:bg-red-600 border border-white/25 text-white/90 hover:text-white cursor-nwse-resize transition active:scale-95 shadow flex items-center justify-center pointer-events-auto touch-none"
-          >
-            <Scaling size={11} className="-rotate-90" />
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+            isOverTopDismissZone ? 'bg-white text-red-600' : 'bg-red-600 text-white shadow-md'
+          }`}>
+            <X size={16} className="stroke-[3]" />
           </div>
+          <span className="text-xs font-black tracking-wide">
+            {isOverTopDismissZone ? 'छोड़ते ही बंद होगा!' : 'बंद करने के लिए यहाँ छोड़ें'}
+          </span>
+        </div>
+      )}
 
-          {/* TOP CONTROLS BAR (RESPONSIVE & CLEAN) */}
+      {/* BACKDROP FOR CINEMA MODE */}
+      {isCinemaMode && !isCollapsed && (
+        <div 
+          onClick={() => setIsCinemaMode(false)}
+          className="fixed inset-0 z-45 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+        />
+      )}
+
+      <div
+        ref={containerRef}
+        style={{
+          transform: isCinemaMode 
+            ? 'none' 
+            : `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) scale(${isDragging ? 1.02 : 1})`,
+          transition: (dragOffset.x === 0 && dragOffset.y === 0 && !isDragging && !isResizing)
+            ? 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out'
+            : isDismissing ? 'transform 0.2s ease-in, opacity 0.2s ease-in' : 'none',
+          touchAction: isCinemaMode ? 'auto' : 'none'
+        }}
+        className={isCinemaMode
+          ? 'fixed inset-x-3 sm:inset-x-6 top-16 sm:top-20 z-50 max-w-4xl mx-auto select-none animate-in zoom-in-95 duration-200'
+          : `fixed z-40 select-none ${getDockClasses()} ${
+              isDismissing ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'
+            }`
+        }
+      >
+        {/* 
+          PERSISTENT VIDEO / AUDIO EMBED CONTAINER
+          Kept mounted in both views so playback / audio NEVER pauses or reloads when collapsing/expanding.
+        */}
+        <div className={isCollapsed ? 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none absolute' : 'w-full'}>
           <div 
-            onClick={handleCyclePresetSize}
-            className={`absolute top-0 left-0 right-0 h-9 px-2 flex items-center justify-between z-30 transition-opacity duration-200 bg-gradient-to-b from-black/85 via-black/45 to-transparent pointer-events-none ${
-              showControls ? 'opacity-100' : 'opacity-0'
+            style={{ width: isCinemaMode ? '100%' : `${playerWidth}px` }}
+            className={`relative rounded-2xl overflow-hidden shadow-2xl bg-black border-2 transition-colors duration-200 group ${
+              isCinemaMode
+                ? 'border-red-600 shadow-red-600/40 ring-2 ring-red-600/30'
+                : isPastDismissThreshold 
+                  ? 'border-red-500 shadow-red-600/60 ring-4 ring-red-500/50' 
+                  : 'border-red-600 ring-2 ring-red-600/30'
             }`}
           >
-            {/* Live TV Badge & Drag Grip */}
-            <div className="flex items-center gap-1.5 ml-7">
-              {playerWidth >= 250 && (
-                <span className="bg-red-600 text-white text-[8.5px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-                  LIVE TV
-                </span>
-              )}
-              <div className="flex items-center text-white/50">
-                <GripHorizontal size={13} />
+            {/* ONE-THUMB CORNER RESIZE DRAG HANDLE (TOP-LEFT CORNER) */}
+            {!isCinemaMode && (
+              <div
+                onPointerDown={handleResizePointerDown}
+                onPointerMove={handleResizePointerMove}
+                onPointerUp={handleResizePointerUp}
+                onPointerCancel={handleResizePointerUp}
+                title="खींचकर छोटा या बड़ा करें (Resize handle)"
+                aria-label="छोटा या बड़ा करें"
+                className="no-drag absolute top-1.5 left-1.5 z-40 p-1.5 rounded-lg bg-black/85 hover:bg-red-600 border border-white/25 text-white/90 hover:text-white cursor-nwse-resize transition active:scale-95 shadow flex items-center justify-center pointer-events-auto touch-none"
+              >
+                <Scaling size={11} className="-rotate-90" />
               </div>
-            </div>
+            )}
 
-            {/* Action Buttons (Strictly No-Drag so clicks are 100% instantaneous) */}
-            <div className="flex items-center gap-1 pointer-events-auto no-drag">
-              {/* Skip to Next Bulletin */}
-              {onNext && hasNext && playerWidth >= 280 && (
+            {/* TOP CONTROLS BAR (RESPONSIVE & CLEAN) */}
+            <div 
+              onClick={handleCyclePresetSize}
+              className={`absolute top-0 left-0 right-0 h-9 px-2 flex items-center justify-between z-30 transition-opacity duration-200 bg-gradient-to-b from-black/85 via-black/45 to-transparent pointer-events-none ${
+                showControls || isCinemaMode ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              {/* Live TV Badge & Drag Grip */}
+              <div className="flex items-center gap-1.5 ml-7">
+                {(playerWidth >= 250 || isCinemaMode) && (
+                  <span className="bg-red-600 text-white text-[8.5px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                    LIVE TV
+                  </span>
+                )}
+                {!isCinemaMode && (
+                  <div className="flex items-center text-white/50">
+                    <GripHorizontal size={13} />
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons (Strictly No-Drag so clicks are 100% instantaneous) */}
+              <div className="flex items-center gap-1 pointer-events-auto no-drag">
+                {/* Skip to Next Bulletin */}
+                {onNext && hasNext && (playerWidth >= 280 || isCinemaMode) && (
+                  <button
+                    type="button"
+                    onClick={onNext}
+                    aria-label="अगला बुलेटिन देखें"
+                    title="अगला बुलेटिन देखें"
+                    className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+                  >
+                    <SkipForward size={11} />
+                  </button>
+                )}
+
+                {/* Minimize to Audio Pill */}
                 <button
                   type="button"
-                  onClick={onNext}
-                  aria-label="अगला बुलेटिन देखें"
-                  title="अगला बुलेटिन देखें"
+                  onClick={() => {
+                    setIsCinemaMode(false);
+                    setIsCollapsed(true);
+                  }}
+                  aria-label="ऑडियो मोड (छोटा करें)"
+                  title="ऑडियो मोड (छोटा करें)"
                   className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
                 >
-                  <SkipForward size={11} />
+                  <ChevronDown size={11} />
                 </button>
+
+                {/* Cinema Mode Toggle (Expand / Shrink) */}
+                <button
+                  type="button"
+                  onClick={handleToggleCinema}
+                  aria-label={isCinemaMode ? "फ्लोटिंग मिनी-प्लेयर में बदलें" : "बड़ी स्क्रीन (सिनेमा मोड) में देखें"}
+                  title={isCinemaMode ? "फ्लोटिंग मिनी-प्लेयर में बदलें" : "बड़ी स्क्रीन (सिनेमा मोड) में देखें"}
+                  className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+                >
+                  {isCinemaMode ? <Minimize2 size={11} /> : <Maximize2 size={11} />}
+                </button>
+
+                {/* Close Video button */}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="वीडियो बंद करें"
+                  title="वीडियो बंद करें"
+                  className="p-1 bg-black/80 hover:bg-red-600 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            </div>
+
+            {/* 16:9 VIDEO CONTAINER WITH ZERO BLACK VOID & FULL-SURFACE DRAG */}
+            <div className="relative aspect-video w-full bg-black overflow-hidden">
+              {/* Poster Thumbnail + Spinner (Visible until iframe is fully active) */}
+              {!isVideoLoaded && (
+                <div className="absolute inset-0 z-0 bg-slate-950 flex items-center justify-center">
+                  <img
+                    src={getVideoThumbnail(video)}
+                    alt=""
+                    className="w-full h-full object-cover opacity-60 blur-xs"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-red-500 animate-spin" />
+                  </div>
+                </div>
               )}
 
-              {/* Minimize to Audio Pill */}
-              <button
-                type="button"
-                onClick={() => setIsCollapsed(true)}
-                aria-label="ऑडियो मोड (छोटा करें)"
-                title="ऑडियो मोड (छोटा करें)"
-                className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
-              >
-                <ChevronDown size={11} />
-              </button>
+              {/* Video Player */}
+              {isDirectVideoUrl(video.youtubeUrl || video.youtubeId) ? (
+                <video
+                  src={video.youtubeUrl || video.youtubeId}
+                  controls
+                  autoPlay
+                  playsInline
+                  onLoadedData={() => setIsVideoLoaded(true)}
+                  className="w-full h-full object-contain bg-black relative z-10"
+                />
+              ) : (
+                <iframe
+                  onLoad={() => setIsVideoLoaded(true)}
+                  src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
+                  title={video.title}
+                  className="w-full h-full border-0 relative z-10"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              )}
 
-              {/* Expand to Large Cinema Screen */}
-              <button
-                type="button"
-                onClick={onExpand}
-                aria-label="बड़ी स्क्रीन में देखें"
-                title="बड़ी स्क्रीन में देखें"
-                className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
-              >
-                <Maximize2 size={11} />
-              </button>
+              {/* 
+                FULL-SURFACE TOUCH & DRAG TRANSPARENT OVERLAY:
+                Intercepts touches across 100% of the video box!
+                Tap toggles controls; Drag floats/flicks the player.
+                Only active when in floating PiP mode (not in Cinema mode).
+              */}
+              {!isCinemaMode && (
+                <div
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
+                  className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
+                  title="खींचकर किसी भी कोने में ले जाएं या ऊपर ले जाकर बंद करें"
+                />
+              )}
+            </div>
 
-              {/* Close Video button */}
+            {/* BOTTOM TITLE BAR & CLICK TO EXPAND */}
+            <div 
+              onClick={handleCyclePresetSize}
+              className="p-1.5 px-2 bg-gradient-to-t from-black via-black/95 to-black/80 text-white flex items-center justify-between gap-1.5 border-t border-white/10"
+              title="क्लिक करके बड़ा करें या डबल-टैप से साइज बदलें"
+            >
+              <p className="text-[10px] font-bold truncate flex-1 leading-tight pointer-events-none">
+                {video.title}
+              </p>
               <button
                 type="button"
-                onClick={onClose}
-                aria-label="वीडियो बंद करें"
-                title="वीडियो बंद करें"
-                className="p-1 bg-black/80 hover:bg-red-600 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
+                onClick={handleToggleCinema}
+                className="no-drag text-[8.5px] text-red-400 font-bold shrink-0 hover:underline cursor-pointer flex items-center gap-0.5"
               >
-                <X size={11} />
+                <span>{isCinemaMode ? 'छोटा करें' : 'बड़ा करें'}</span>
+                <span>{isCinemaMode ? '↙' : '⛶'}</span>
               </button>
             </div>
           </div>
-
-          {/* 16:9 VIDEO CONTAINER WITH ZERO BLACK VOID & FULL-SURFACE DRAG */}
-          <div className="relative aspect-video w-full bg-black overflow-hidden">
-            {/* Poster Thumbnail + Spinner (Visible until iframe is fully active) */}
-            {!isVideoLoaded && (
-              <div className="absolute inset-0 z-0 bg-slate-950 flex items-center justify-center">
-                <img
-                  src={getVideoThumbnail(video)}
-                  alt=""
-                  className="w-full h-full object-cover opacity-60 blur-xs"
-                />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Loader2 className="w-6 h-6 text-red-500 animate-spin" />
-                </div>
-              </div>
-            )}
-
-            {/* Video Player */}
-            {isDirectVideoUrl(video.youtubeUrl || video.youtubeId) ? (
-              <video
-                src={video.youtubeUrl || video.youtubeId}
-                controls
-                autoPlay
-                playsInline
-                onLoadedData={() => setIsVideoLoaded(true)}
-                className="w-full h-full object-contain bg-black relative z-10"
-              />
-            ) : (
-              <iframe
-                onLoad={() => setIsVideoLoaded(true)}
-                src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
-                title={video.title}
-                className="w-full h-full border-0 relative z-10"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            )}
-
-            {/* 
-              FULL-SURFACE TOUCH & DRAG TRANSPARENT OVERLAY:
-              Intercepts touches across 100% of the video box!
-              Tap toggles controls; Drag floats/flicks the player.
-            */}
-            <div
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
-              title="खींचकर किसी भी कोने में ले जाएं या बाहर फेंककर हटाएं"
-            />
-          </div>
-
-          {/* BOTTOM TITLE BAR & CLICK TO EXPAND */}
-          <div 
-            onClick={handleCyclePresetSize}
-            className="p-1.5 px-2 bg-gradient-to-t from-black via-black/95 to-black/80 text-white flex items-center justify-between gap-1.5 border-t border-white/10"
-            title="क्लिक करके बड़ा करें या डबल-टैप से साइज बदलें"
-          >
-            <p className="text-[10px] font-bold truncate flex-1 leading-tight pointer-events-none">
-              {video.title}
-            </p>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onExpand();
-              }}
-              className="no-drag text-[8.5px] text-red-400 font-bold shrink-0 hover:underline cursor-pointer flex items-center gap-0.5"
-            >
-              <span>बड़ा करें</span>
-              <span>⛶</span>
-            </button>
-          </div>
         </div>
-      </div>
 
       {/* 
         ULTRA-COMPACT FLOATING AUDIO PILL (COLLAPSED MODE)
@@ -560,6 +628,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };

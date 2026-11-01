@@ -1537,14 +1537,12 @@ export const App: React.FC = () => {
                 </div>
               }>
                 <VideoSection 
-                  key={`videos-tab-player-${videoBulletins[0]?.youtubeId || 'latest'}`}
                   bulletins={videoBulletins} 
                   isDark={isDark} 
                   youtubeSubs={youtubeSubs}
-                  autoPlayOnMount={true}
+                  autoPlayOnMount={!globalPlayingVideo}
                   playingVideo={globalPlayingVideo}
                   onSelectVideo={handleSelectGlobalVideo}
-                  isHeroInView={true}
                   onShareWhatsApp={(title, url) => {
                     const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2576,13 +2574,14 @@ export const App: React.FC = () => {
         <BackToTop />
 
         {/* PERSISTENT CROSS-TAB & IN-ARTICLE FLOATING MINI-PLAYER */}
-        {globalPlayingVideo && !activeStory && !activeReelId && (activeArticle !== null || activeTab !== 'videos') && (
+        {globalPlayingVideo && !activeStory && !activeReelId && (
           <FloatingMiniPlayer
             video={globalPlayingVideo}
             onClose={() => setGlobalPlayingVideo(null)}
             onExpand={handleExpandGlobalVideo}
             onNext={hasNextGlobalVideo ? handleNextGlobalVideo : undefined}
             hasNext={hasNextGlobalVideo}
+            activeTab={activeTab}
           />
         )}
 
