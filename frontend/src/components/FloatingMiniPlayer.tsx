@@ -38,10 +38,24 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   // Bottom dismiss drop-zone detection (users swipe down to dismiss)
   const [isOverBottomDismissZone, setIsOverBottomDismissZone] = useState<boolean>(false);
 
-  // Dynamic Resizing State (Width clamped between 200px and 440px / screen width)
+  // Device-aware safe margins and boundaries calculation
+  const getDeviceBoundaries = useCallback((width: number, height: number) => {
+    if (typeof window === 'undefined') return { minX: 12, maxX: 400, minY: 72, maxY: 500 };
+    const isDesktopOrTablet = window.innerWidth >= 768;
+    const minX = isDesktopOrTablet ? 24 : 8;
+    const maxX = Math.max(minX, window.innerWidth - width - (isDesktopOrTablet ? 24 : 8));
+    const minY = isDesktopOrTablet ? 76 : 68; // Safe gap below desktop sticky header
+    // On desktop/tablet there is no bottom nav bar; on mobile bottom nav takes ~64px
+    const maxY = Math.max(minY, window.innerHeight - height - (isDesktopOrTablet ? 24 : 76));
+    return { minX, maxX, minY, maxY };
+  }, []);
+
+  // Dynamic Resizing State (Desktop: up to 600px, Tablet: 480px, Mobile: clamped to screen)
   const getInitialWidth = () => {
-    if (typeof window === 'undefined') return 310;
-    const maxSafe = Math.min(window.innerWidth - 24, 440);
+    if (typeof window === 'undefined') return 340;
+    const isDesktop = window.innerWidth >= 1024;
+    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+    const maxSafe = isDesktop ? 600 : isTablet ? 480 : Math.min(window.innerWidth - 24, 440);
     const saved = localStorage.getItem('anp_mini_player_width');
     if (saved) {
       const parsed = parseInt(saved, 10);
@@ -49,25 +63,32 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
         return parsed;
       }
     }
-    return Math.min(310, maxSafe);
+    return isDesktop ? 390 : isTablet ? 340 : Math.min(310, maxSafe);
   };
 
   const [playerWidth, setPlayerWidth] = useState<number>(getInitialWidth);
 
-  // Persistent Free-Floating Position (Stays exactly where dropped, clamped safely within screen bounds)
+  // Persistent Free-Floating Position (Optimized for desktop/tablet vs mobile)
   const getInitialPosition = (): { x: number; y: number } => {
-    if (typeof window === 'undefined') return { x: 16, y: 100 };
-    const width = 310;
+    if (typeof window === 'undefined') return { x: 24, y: 100 };
+    const isDesktopOrTablet = window.innerWidth >= 768;
+    const isDesktop = window.innerWidth >= 1024;
+    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+    const width = isDesktop ? 390 : isTablet ? 340 : Math.min(310, window.innerWidth - 24);
     const height = Math.round(width * 0.5625) + 32;
-    const defaultX = Math.max(12, window.innerWidth - width - 16);
-    const defaultY = Math.max(76, window.innerHeight - height - 84);
+
+    // Desktop/Tablet default: bottom-right with 24px clearance (no bottom nav)
+    const defaultX = Math.max(isDesktopOrTablet ? 24 : 12, window.innerWidth - width - (isDesktopOrTablet ? 24 : 16));
+    const defaultY = Math.max(76, window.innerHeight - height - (isDesktopOrTablet ? 24 : 80));
+
     const saved = localStorage.getItem('anp_mini_player_pos');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
-          const clampedX = Math.min(Math.max(parsed.x, 8), Math.max(8, window.innerWidth - width - 8));
-          const clampedY = Math.min(Math.max(parsed.y, 68), Math.max(68, window.innerHeight - height - 76));
+          const { minX, maxX, minY, maxY } = getDeviceBoundaries(width, height);
+          const clampedX = Math.min(Math.max(parsed.x, minX), maxX);
+          const clampedY = Math.min(Math.max(parsed.y, minY), maxY);
           return { x: clampedX, y: clampedY };
         }
       } catch {}
@@ -161,19 +182,18 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     };
   }, []);
 
-  // 2. ENFORCE SCREEN BOUNDARY CLAMPS ON WINDOW RESIZE OR PHONE ROTATION
+  // 2. ENFORCE SCREEN BOUNDARY CLAMPS ON WINDOW RESIZE OR ROTATION
   useEffect(() => {
     const handleWindowResize = () => {
-      const maxSafe = Math.min(window.innerWidth - 24, 440);
+      const isDesktop = window.innerWidth >= 1024;
+      const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      const maxSafe = isDesktop ? 600 : isTablet ? 480 : Math.min(window.innerWidth - 24, 440);
       setPlayerWidth(prev => Math.min(Math.max(prev, 200), maxSafe));
 
       setPosition(prev => {
         const currentWidth = isCollapsed ? 260 : playerWidth;
         const playerHeight = isCollapsed ? 44 : Math.round(playerWidth * 0.5625) + 32;
-        const minX = 8;
-        const maxX = Math.max(8, window.innerWidth - currentWidth - 8);
-        const minY = 68;
-        const maxY = Math.max(68, window.innerHeight - playerHeight - 76);
+        const { minX, maxX, minY, maxY } = getDeviceBoundaries(currentWidth, playerHeight);
         return {
           x: Math.min(Math.max(prev.x, minX), maxX),
           y: Math.min(Math.max(prev.y, minY), maxY)
@@ -187,7 +207,40 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       window.removeEventListener('resize', handleWindowResize);
       window.removeEventListener('orientationchange', handleWindowResize);
     };
-  }, [playerWidth, isCollapsed]);
+  }, [playerWidth, isCollapsed, getDeviceBoundaries]);
+
+  // DESKTOP KEYBOARD SHORTCUTS (Space = Play/Pause, F = Cinema, Esc = Minimize, M = Mute)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
+
+      if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        handleTogglePlayPause();
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        setIsCinemaMode(prev => !prev);
+      } else if (e.key === 'Escape') {
+        if (isCinemaMode) {
+          setIsCinemaMode(false);
+        } else if (isLandscapeRotated) {
+          setIsLandscapeRotated(false);
+        } else if (!isCollapsed) {
+          setIsCollapsed(true);
+        }
+      } else if (e.key === 'm' || e.key === 'M') {
+        if (videoElementRef.current) {
+          videoElementRef.current.muted = !videoElementRef.current.muted;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleTogglePlayPause, isCinemaMode, isLandscapeRotated, isCollapsed]);
 
   // FULLSCREEN CHANGE LISTENER FOR ROTATE MODE
   useEffect(() => {
@@ -299,8 +352,10 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     const deltaX = isRightSide 
       ? resizeStartRef.current.startX - e.clientX
       : e.clientX - resizeStartRef.current.startX;
-    const maxSafe = Math.min(window.innerWidth - 24, 440);
-    const newWidth = Math.min(Math.max(resizeStartRef.current.startWidth + deltaX, 200), maxSafe);
+    const isDesktop = window.innerWidth >= 1024;
+    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+    const maxSafe = isDesktop ? 600 : isTablet ? 480 : Math.min(window.innerWidth - 24, 440);
+    const newWidth = Math.min(Math.max(resizeStartRef.current.startWidth + deltaX, 220), maxSafe);
     setPlayerWidth(newWidth);
 
     if (isRightSide) {
@@ -405,16 +460,21 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     // CASE C: FREE POSITIONING (Stay exactly where released, clamped safely within screen bounds)
     const currentWidth = isCollapsed ? 260 : playerWidth;
     const playerHeight = isCollapsed ? 44 : Math.round(playerWidth * 0.5625) + 32;
-    const minX = 8;
-    const maxX = Math.max(8, window.innerWidth - currentWidth - 8);
-    const minY = 68;
-    const maxY = Math.max(68, window.innerHeight - playerHeight - 76);
+    const { minX, maxX, minY, maxY } = getDeviceBoundaries(currentWidth, playerHeight);
 
     const targetX = dragStartRef.current.startPosX + deltaX;
     const targetY = dragStartRef.current.startPosY + deltaY;
 
-    const finalX = Math.min(Math.max(targetX, minX), maxX);
-    const finalY = Math.min(Math.max(targetY, minY), maxY);
+    // Desktop/Tablet Edge Snap: Clean magnetic attraction when released near screen edges
+    const isDesktopOrTablet = window.innerWidth >= 768;
+    let finalX = Math.min(Math.max(targetX, minX), maxX);
+    let finalY = Math.min(Math.max(targetY, minY), maxY);
+
+    if (isDesktopOrTablet) {
+      if (Math.abs(finalX - maxX) < 28) finalX = maxX;
+      if (Math.abs(finalX - minX) < 28) finalX = minX;
+      if (Math.abs(finalY - maxY) < 28) finalY = maxY;
+    }
 
     setPosition({ x: finalX, y: finalY });
     savePosition({ x: finalX, y: finalY });
@@ -422,6 +482,20 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     setDragOffset({ x: 0, y: 0 });
     dragStartRef.current = null;
     setIsOverBottomDismissZone(false);
+  };
+
+  // Desktop Hover Controls Trigger
+  const handleMouseEnter = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      setShowControls(true);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768 && isPlaying) {
+      resetControlsTimer();
+    }
   };
 
   const handleToggleCinema = (e?: React.MouseEvent) => {
@@ -506,6 +580,8 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
       <div
         ref={containerRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         style={
           isLandscapeRotated
             ? { transform: 'none', touchAction: 'auto' }
@@ -526,7 +602,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
           : isLandscapeRotated
             ? 'fixed inset-0 z-50 bg-black flex items-center justify-center select-none overflow-hidden'
             : isCinemaMode
-              ? 'fixed inset-x-3 sm:inset-x-6 top-16 sm:top-20 z-50 max-w-4xl mx-auto select-none animate-in zoom-in-95 duration-200'
+              ? 'fixed inset-x-3 sm:inset-x-6 md:inset-x-10 top-16 md:top-20 z-50 max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto select-none animate-in zoom-in-95 duration-200 shadow-2xl'
               : `fixed z-40 select-none ${
                   isDismissing ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'
                 }`
@@ -791,6 +867,19 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* DESKTOP KEYBOARD SHORTCUT HINTS (SHOWN IN CINEMA MODE) */}
+            {isCinemaMode && (
+              <div className="hidden md:flex items-center justify-between px-3.5 py-1.5 bg-black/85 backdrop-blur-md text-[10px] text-white/60 border-t border-white/10">
+                <span className="font-bold text-white/80">कीबोर्ड शॉर्टकट्स:</span>
+                <div className="flex items-center gap-3">
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">Space</kbd> प्ले / रोकें</span>
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">F</kbd> सिनेमा</span>
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">M</kbd> म्यूट</span>
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">Esc</kbd> छोटा करें</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -286,10 +286,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
               : 'bg-white border-slate-200/90 shadow-xl'
           }`}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
             
             {/* 16:9 Cinema Screen (Active Spotlight or Live Poster Thumbnail) */}
-            <div className="lg:col-span-7 relative aspect-video w-full bg-black overflow-hidden select-none">
+            <div className="md:col-span-7 relative aspect-video w-full bg-black overflow-hidden select-none">
               {activePlayingVideo ? (
                 /* ACTIVE PLAYING VIDEO SPOTLIGHT CARD (CONTROLLED VIA MASTER PLAYER) */
                 <div className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 border border-red-950 select-none overflow-hidden group">
@@ -391,7 +391,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             </div>
 
             {/* Featured Metadata & Action Controls */}
-            <div className="lg:col-span-5 p-3.5 sm:p-5 flex flex-col justify-between">
+            <div className="md:col-span-5 p-4 sm:p-5 lg:p-6 flex flex-col justify-between">
               <div className="space-y-2 sm:space-y-2.5">
                 
                 {/* Category & Timestamp Row */}
@@ -522,15 +522,15 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
         </div>
       )}
 
-      {/* 4. SUBSEQUENT VIDEOS GRID */}
+      {/* 4. SUBSEQUENT VIDEOS GRID (RESPONSIVE: 1 COL MOBILE, 2 COL PHONES, 3 COL TABLETS, 4 COL DESKTOP) */}
       {visibleRemaining.length > 0 && (
-        <div className={`grid grid-cols-1 sm:grid-cols-2 ${
+        <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${
           visibleRemaining.length >= 4 
             ? 'lg:grid-cols-4' 
             : visibleRemaining.length === 3 
               ? 'lg:grid-cols-3' 
               : 'lg:grid-cols-2'
-        } gap-4`}>
+        } gap-4 sm:gap-5`}>
           {visibleRemaining.map((video) => {
             const isCurrentlyPlaying = activePlayingVideo?.id === video.id;
             return (
