@@ -33,7 +33,6 @@ const Footer = React.lazy(() => import('./components/Footer').then(m => ({ defau
 import { StoriesTray } from './components/StoriesTray';
 const StoryViewerModal = React.lazy(() => import('./components/StoryViewerModal').then(m => ({ default: m.StoryViewerModal })));
 const ReelsViewerModal = React.lazy(() => import('./components/ReelsViewerModal').then(m => ({ default: m.ReelsViewerModal })));
-const VideoPlayerModal = React.lazy(() => import('./components/VideoPlayerModal').then(m => ({ default: m.VideoPlayerModal })));
 const DistrictPickerModal = React.lazy(() => import('./components/DistrictPickerModal').then(m => ({ default: m.DistrictPickerModal })));
 const ReporterModal = React.lazy(() => import('./components/ReporterModal').then(m => ({ default: m.ReporterModal })));
 const ComplianceModal = React.lazy(() => import('./components/ComplianceModal').then(m => ({ default: m.ComplianceModal })));
@@ -97,7 +96,6 @@ export const App: React.FC = () => {
   const [activeArticle, setActiveArticle] = useState<Article | null>(null);
   const [activeStory, setActiveStory] = useState<StoryItem | null>(null);
   const [activeReelId, setActiveReelId] = useState<string | null>(null);
-  const [activeVideoModal, setActiveVideoModal] = useState<VideoBulletin | null>(null);
   const [isSidebarVideoPlaying, setIsSidebarVideoPlaying] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [savedArticles, setSavedArticles] = useState<Article[]>(() => {
@@ -1033,24 +1031,6 @@ export const App: React.FC = () => {
     } catch {}
   };
 
-  const openVideoModal = (v?: VideoBulletin) => {
-    const target = v || videoBulletins[0];
-    if (target) {
-      setActiveStory(null);
-      setActiveReelId(null);
-      setActiveVideoModal(target);
-      try {
-        window.history.pushState({ modal: 'video', id: target.id || target.youtubeId }, '');
-      } catch {}
-    } else {
-      window.open(SOCIAL_LINKS.youtube, '_blank');
-    }
-  };
-
-  const closeVideoModal = () => {
-    setActiveVideoModal(null);
-  };
-
   const openDistrictModal = () => {
     setShowDistrictModal(true);
     try {
@@ -1069,10 +1049,6 @@ export const App: React.FC = () => {
         setShowDistrictModal(false);
         return;
       }
-      if (activeVideoModal) {
-        setActiveVideoModal(null);
-        return;
-      }
       if (activeArticle) {
         setActiveArticle(null);
         return;
@@ -1089,7 +1065,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [showDistrictModal, activeVideoModal, activeArticle, activeReelId, activeStory]);
+  }, [showDistrictModal, activeArticle, activeReelId, activeStory]);
 
   // Initial Deep-linking & horizontal scroll lock reset
   useEffect(() => {
@@ -1179,7 +1155,9 @@ export const App: React.FC = () => {
       return;
     }
     if (story.id === 's-live') {
-      openVideoModal(videoBulletins[0]);
+      setActiveTab('videos');
+      const el = document.getElementById('video-bulletins-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
       return;
     }
     if (story.articleId) {
@@ -1451,6 +1429,29 @@ export const App: React.FC = () => {
           {/* Semantic Top-Level H1 for WCAG & Agentic Browsing Heading Hierarchy */}
           <h1 className="sr-only">एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश डिजिटल न्यूज़ नेटवर्क</h1>
 
+          {/* FULL-PAGE ARTICLE READER VIEW (DIRECTLY IN-PAGE, NO POPUP) */}
+          {activeArticle ? (
+            <React.Suspense fallback={
+              <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400">
+                <Loader2 className="animate-spin text-red-600" size={32} />
+                <span className="text-xs font-bold">समाचार लोड हो रहा है...</span>
+              </div>
+            }>
+              <ArticleModal 
+                article={activeArticle}
+                onClose={closeArticleModal}
+                onShareWhatsApp={shareWhatsApp}
+                isDark={isDark}
+                isBookmarked={savedArticles.some(a => a._id === activeArticle._id)}
+                onToggleBookmark={toggleBookmark}
+                ad={articleAd}
+                relatedArticles={articles.filter(a => a._id !== activeArticle._id && (a.category === activeArticle.category || a.district === activeArticle.district)).slice(0, 4)}
+                onSelectArticle={openArticleModal}
+              />
+            </React.Suspense>
+          ) : (
+            <>
+
           {/* TAB: SAVED ARTICLES & REELS VIEW (Lazy-Loaded Split Chunk) */}
           {activeTab === 'saved' && (
             <React.Suspense fallback={
@@ -1492,7 +1493,6 @@ export const App: React.FC = () => {
                   isDark={isDark} 
                   youtubeSubs={youtubeSubs}
                   autoPlayOnMount={true}
-                  onOpenVideo={openVideoModal}
                   onShareWhatsApp={(title, url) => {
                     const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2439,7 +2439,6 @@ export const App: React.FC = () => {
                 bulletins={videoBulletins} 
                 isDark={isDark} 
                 youtubeSubs={youtubeSubs}
-                onOpenVideo={openVideoModal}
                 onShareWhatsApp={(title, url) => {
                   const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2455,6 +2454,8 @@ export const App: React.FC = () => {
             </>
           )}
 
+            </>
+          )}
         </main>
 
         {/* 5. FOOTER (ON-DEMAND LAZY LOADED) */}
@@ -2494,17 +2495,7 @@ export const App: React.FC = () => {
         {/* 7-12. ON-DEMAND LAZY LOADED MODALS CONTAINER (CORE WEB VITALS OPTIMIZATION) */}
         <React.Suspense fallback={null}>
           {/* 7. FULL ARTICLE READER BOTTOM SHEET / MODAL */}
-          {activeArticle && (
-            <ArticleModal 
-              article={activeArticle}
-              onClose={closeArticleModal}
-              onShareWhatsApp={shareWhatsApp}
-              isDark={isDark}
-              isBookmarked={savedArticles.some(a => a._id === activeArticle._id)}
-              onToggleBookmark={toggleBookmark}
-              ad={articleAd}
-            />
-          )}
+          {/* 7. ArticleModal is rendered in-page inside <main> above */}
 
           {/* 8. INSTAGRAM / INSHORTS FULLSCREEN STORY VIEWER */}
           {activeStory && (
@@ -2516,7 +2507,9 @@ export const App: React.FC = () => {
               onShareWhatsApp={handleShareStoryWhatsApp}
               onOpenVideo={() => {
                 closeStoryModal();
-                openVideoModal(videoBulletins[0]);
+                setActiveTab('videos');
+                const el = document.getElementById('video-bulletins-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
               onOpenMandi={() => {
                 setActiveTab('mandi');
@@ -2578,19 +2571,7 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* 13. IN-APP CINEMATIC VIDEO PLAYER MODAL */}
-          {activeVideoModal && (
-            <VideoPlayerModal 
-              video={activeVideoModal}
-              bulletins={videoBulletins}
-              onClose={closeVideoModal}
-              onSelectVideo={(v) => setActiveVideoModal(v)}
-              onShareWhatsApp={(title, url) => {
-                const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
-                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-              }}
-            />
-          )}
+
         </React.Suspense>
 
       </div>
