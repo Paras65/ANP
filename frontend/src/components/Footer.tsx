@@ -28,9 +28,142 @@ export const Footer: React.FC<FooterProps> = ({
     }`}>
       <div className="max-w-7xl mx-auto px-4 space-y-8">
         <h2 className="sr-only">एम्बिशन न्यूज़ पोर्टल पादलेख (Footer)</h2>
+
+        {/* 1-ROW HORIZONTAL SOCIAL MEDIA STRIP (OPTION 2: SIDE-BY-SIDE) */}
+        <div className="pb-6 border-b border-slate-200/80 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-3">
+            <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+              सोशल मीडिया नेटवर्क से जुड़ें
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium hidden sm:inline-block">
+              24x7 ताज़ा अपडेट्स और लाइव कवरेज
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+            {/* 1. YouTube */}
+            <a 
+              href={SOCIAL_LINKS.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="एम्बिशन न्यूज़ आधिकारिक यूट्यूब चैनल"
+              className={`flex items-center justify-between p-2.5 px-3 rounded-xl border transition-all duration-200 hover:scale-[1.01] hover:shadow-md group ${
+                isDark ? 'bg-red-950/25 border-red-900/50 hover:border-red-600 text-red-200' : 'bg-red-50/50 border-red-200 hover:border-red-400 text-slate-800 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                  <YoutubeIcon size={14} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[11px] leading-tight flex items-center gap-1">
+                    <span>YouTube</span>
+                    <span className="text-[9px] bg-red-600/15 text-red-600 dark:text-red-400 px-1 rounded font-black">
+                      {youtubeSubs || SOCIAL_LINKS.youtubeSubs}
+                    </span>
+                  </div>
+                  <div className={`text-[9.5px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {SOCIAL_LINKS.youtubeHandle}
+                  </div>
+                </div>
+              </div>
+              <span className="text-slate-400 group-hover:text-red-500 group-hover:translate-x-0.5 transition-transform text-xs font-bold">↗</span>
+            </a>
+
+            {/* 2. Instagram */}
+            <a 
+              href={SOCIAL_LINKS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="एम्बिशन न्यूज़ आधिकारिक इंस्टाग्राम पेज"
+              className={`flex items-center justify-between p-2.5 px-3 rounded-xl border transition-all duration-200 hover:scale-[1.01] hover:shadow-md group ${
+                isDark ? 'bg-pink-950/25 border-pink-900/50 hover:border-pink-500 text-pink-200' : 'bg-pink-50/50 border-pink-200 hover:border-pink-400 text-slate-800 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                  <InstagramIcon size={14} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[11px] leading-tight flex items-center gap-1">
+                    <span>Instagram</span>
+                    <span className="text-[9px] bg-pink-600/15 text-pink-600 dark:text-pink-400 px-1 rounded font-bold">
+                      रील्स
+                    </span>
+                  </div>
+                  <div className={`text-[9.5px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    कवर्धा स्पेशल
+                  </div>
+                </div>
+              </div>
+              <span className="text-slate-400 group-hover:text-pink-500 group-hover:translate-x-0.5 transition-transform text-xs font-bold">↗</span>
+            </a>
+
+            {/* 3. WhatsApp */}
+            <a 
+              href={whatsappLink || SOCIAL_LINKS.whatsappChannel}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="एम्बिशन न्यूज़ आधिकारिक व्हाट्सएप ग्रुप व चैनल"
+              className={`flex items-center justify-between p-2.5 px-3 rounded-xl border transition-all duration-200 hover:scale-[1.01] hover:shadow-md group ${
+                isDark ? 'bg-emerald-950/25 border-emerald-900/50 hover:border-emerald-500 text-emerald-200' : 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-400 text-slate-800 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                  <WhatsAppIcon size={13} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[11px] leading-tight flex items-center gap-1">
+                    <span>WhatsApp</span>
+                    <span className="text-[9px] bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 px-1 rounded font-bold">
+                      जुड़ें
+                    </span>
+                  </div>
+                  <div className={`text-[9.5px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    88 जिला चैनल ग्रुप
+                  </div>
+                </div>
+              </div>
+              <span className="text-slate-400 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-transform text-xs font-bold">↗</span>
+            </a>
+
+            {/* 4. Facebook */}
+            <a 
+              href={SOCIAL_LINKS.facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="एम्बिशन न्यूज़ आधिकारिक फेसबुक पेज"
+              className={`flex items-center justify-between p-2.5 px-3 rounded-xl border transition-all duration-200 hover:scale-[1.01] hover:shadow-md group ${
+                isDark ? 'bg-blue-950/25 border-blue-900/50 hover:border-blue-500 text-blue-200' : 'bg-blue-50/50 border-blue-200 hover:border-blue-400 text-slate-800 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                  <FacebookIcon size={14} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[11px] leading-tight flex items-center gap-1">
+                    <span>Facebook</span>
+                    <span className="text-[9px] bg-blue-600/15 text-blue-600 dark:text-blue-400 px-1 rounded font-bold">
+                      पेज
+                    </span>
+                  </div>
+                  <div className={`text-[9.5px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {SOCIAL_LINKS.facebookHandle}
+                  </div>
+                </div>
+              </div>
+              <span className="text-slate-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-transform text-xs font-bold">↗</span>
+            </a>
+          </div>
+        </div>
         
-        {/* Row 1: Brand, Address & Socials */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Row 1: Brand, Address & Bureaus */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* Col 1: Brand Info */}
           <div className="space-y-3 md:col-span-1">
@@ -77,91 +210,7 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
-          {/* Col 2: Social Links Hub */}
-          <div className="space-y-2.5">
-            <h3 className={`text-xs font-bold uppercase tracking-wider ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}>
-              सोशल मीडिया नेटवर्क
-            </h3>
-            <div className="space-y-2 text-[11px]">
-              
-              <a 
-                href={SOCIAL_LINKS.youtube}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="एम्बिशन न्यूज़ आधिकारिक यूट्यूब चैनल"
-                className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
-                  isDark ? 'bg-red-950/40 border-red-900/60 hover:border-red-600 text-red-300 hover:text-white' : 'bg-white border-red-200 hover:border-red-400 text-slate-800 shadow-sm'
-                }`}
-              >
-                <div className="p-1 rounded bg-red-600 text-white group-hover:scale-110 transition">
-                  <YoutubeIcon size={14} />
-                </div>
-                <div>
-                  <div className="font-bold">YouTube Official</div>
-                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{SOCIAL_LINKS.youtubeHandle} • {youtubeSubs || SOCIAL_LINKS.youtubeSubs}</div>
-                </div>
-              </a>
-
-              <a 
-                href={SOCIAL_LINKS.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="एम्बिशन न्यूज़ आधिकारिक इंस्टाग्राम पेज"
-                className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
-                  isDark ? 'bg-pink-950/40 border-pink-900/60 hover:border-pink-500 text-pink-300 hover:text-white' : 'bg-white border-pink-200 hover:border-pink-400 text-slate-800 shadow-sm'
-                }`}
-              >
-                <div className="p-1 rounded bg-gradient-to-tr from-amber-500 via-pink-600 to-purple-600 text-white group-hover:scale-110 transition">
-                  <InstagramIcon size={14} />
-                </div>
-                <div>
-                  <div className="font-bold">Instagram Official</div>
-                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Ambition news (कवर्धा)</div>
-                </div>
-              </a>
-
-              <a 
-                href={whatsappLink || SOCIAL_LINKS.whatsappChannel}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="एम्बिशन न्यूज़ आधिकारिक व्हाट्सएप ग्रुप व चैनल"
-                className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
-                  isDark ? 'bg-emerald-950/40 border-emerald-900/60 hover:border-emerald-500 text-emerald-300 hover:text-white' : 'bg-white border-emerald-200 hover:border-emerald-400 text-slate-800 shadow-sm'
-                }`}
-              >
-                <div className="p-1 rounded bg-emerald-600 text-white group-hover:scale-110 transition">
-                  <WhatsAppIcon size={13} />
-                </div>
-                <div>
-                  <div className="font-bold">WhatsApp ग्रुप / चैनल</div>
-                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>कवर्धा व CG-MP 88 जिला न्यूज़</div>
-                </div>
-              </a>
-
-              <a 
-                href={SOCIAL_LINKS.facebook}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="एम्बिशन न्यूज़ आधिकारिक फेसबुक पेज"
-                className={`flex items-center gap-2 p-2 rounded-lg border transition group ${
-                  isDark ? 'bg-blue-950/40 border-blue-900/60 hover:border-blue-500 text-blue-300 hover:text-white' : 'bg-white border-blue-200 hover:border-blue-400 text-slate-800 shadow-sm'
-                }`}
-              >
-                <div className="p-1 rounded bg-blue-600 text-white group-hover:scale-110 transition">
-                  <FacebookIcon size={14} />
-                </div>
-                <div>
-                  <div className="font-bold">Facebook Page</div>
-                  <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{SOCIAL_LINKS.facebookHandle}</div>
-                </div>
-              </a>
-
-            </div>
-          </div>
-
-          {/* Col 3: Regional Bureaus & Helpline */}
+          {/* Col 2: Regional Bureaus & Helpline */}
           <div className="space-y-2">
             <h3 className={`text-xs font-bold uppercase tracking-wider ${
               isDark ? 'text-white' : 'text-slate-900'
@@ -193,7 +242,7 @@ export const Footer: React.FC<FooterProps> = ({
             </ul>
           </div>
 
-          {/* Col 4: IT Rules 2021 Redressal */}
+          {/* Col 3: IT Rules 2021 Redressal */}
           <div className="space-y-2">
             <h3 className="sr-only">कानूनी अनुपालन</h3>
             <button
