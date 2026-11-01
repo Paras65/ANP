@@ -164,7 +164,7 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="district-modal-title"
-        className={`relative w-full max-w-2xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10 ${
+        className={`relative w-full max-w-2xl md:max-w-3xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10 ${
         isDark ? 'bg-[#090d18] border-red-950/60 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
         
@@ -288,7 +288,7 @@ export const DistrictPickerModal: React.FC<DistrictPickerModalProps> = ({
           </button>
 
           {/* Grid of districts */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {filtered.map(d => {
               const isSelected = currentDistrict === d.nameHindi || currentDistrict.includes(d.nameHindi);
               const isKawardhaHQ = d.nameHindi.includes('कवर्धा');

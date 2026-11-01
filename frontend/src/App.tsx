@@ -1470,8 +1470,8 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* 4. MAIN CONTENT CONTAINER (PADDED BOTTOM FOR NATIVE BOTTOM NAV) */}
-        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full max-w-full min-w-0 space-y-6 pb-28">
+        {/* 4. MAIN CONTENT CONTAINER (PADDED BOTTOM FOR NATIVE BOTTOM NAV ON MOBILE, CLEAN SPACING ON DESKTOP) */}
+        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full max-w-full min-w-0 space-y-6 pb-28 md:pb-12">
 
           {/* Semantic Top-Level H1 for WCAG & Agentic Browsing Heading Hierarchy */}
           <h1 className="sr-only">एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश डिजिटल न्यूज़ नेटवर्क</h1>

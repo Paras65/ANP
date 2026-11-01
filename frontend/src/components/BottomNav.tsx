@@ -19,7 +19,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   return (
     <nav 
       aria-label="मुख्य मोबाइल नेविगेशन"
-      className={`fixed bottom-0 inset-x-0 z-40 border-t glass-nav transition-colors ${
+      className={`fixed bottom-0 inset-x-0 z-40 border-t glass-nav transition-colors md:hidden ${
         isDark ? 'bg-slate-950/95 border-slate-800 text-slate-400' : 'bg-white/95 border-slate-200 text-slate-700 shadow-xl'
       } pb-safe`}
     >

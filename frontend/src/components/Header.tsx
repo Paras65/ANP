@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Sun, Moon, MapPin, Smartphone, Monitor, Search, Bookmark } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ShieldCheck, Sun, Moon, MapPin, Smartphone, Monitor, Search, Bookmark, ChevronLeft, ChevronRight } from 'lucide-react';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './SocialIcons';
 import { SOCIAL_LINKS } from '../data/mockData';
 import type { TabType } from './BottomNav';
@@ -30,9 +30,10 @@ const CATEGORIES = [
   'सभी खबरें',
   '🔴 कवर्धा स्पेशल',
   '📺 वीडियो बुलेटिन',
+  '⚡ रील्स व शॉर्ट्स',
+  '🌾 कृषि व मंडी भाव',
   '🏛️ राजनीति',
   '🚔 अपराध व कानून',
-  '🌾 कृषि व मंडी भाव',
   '🏗️ विकास कार्य',
   '📚 शिक्षा व रोजगार',
   '⚖️ हाई कोर्ट',
@@ -107,12 +108,57 @@ export const Header: React.FC<HeaderProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Desktop Category Horizontal Scroll state & helpers
+  const catScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollCatLeft, setCanScrollCatLeft] = useState(false);
+  const [canScrollCatRight, setCanScrollCatRight] = useState(false);
+
+  const checkCatScrollBounds = () => {
+    const el = catScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollCatLeft(scrollLeft > 10);
+    setCanScrollCatRight(scrollLeft + clientWidth < scrollWidth - 10);
+  };
+
+  useEffect(() => {
+    checkCatScrollBounds();
+    const el = catScrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkCatScrollBounds, { passive: true });
+    window.addEventListener('resize', checkCatScrollBounds);
+    return () => {
+      el.removeEventListener('scroll', checkCatScrollBounds);
+      window.removeEventListener('resize', checkCatScrollBounds);
+    };
+  }, []);
+
+  const handleCatScrollBy = (offset: number) => {
+    if (catScrollRef.current) {
+      catScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  };
+
+  const handleCatWheel = (e: React.WheelEvent) => {
+    if (e.deltaY !== 0 && catScrollRef.current) {
+      catScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
   const handleCategoryClick = (cat: string) => {
     setSelectedCategory(cat);
     if (cat.includes('वीडियो')) {
-      if (setActiveTab) {
-        setActiveTab('videos');
-      }
+      if (setActiveTab) setActiveTab('videos');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (cat.includes('रील्स')) {
+      if (setActiveTab) setActiveTab('insta');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (cat.includes('मंडी भाव')) {
+      if (setActiveTab) setActiveTab('mandi');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -399,12 +445,12 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Saved / Bookmarks Button (Desktop Access) */}
+          {/* Saved / Bookmarks Button (Desktop & Tablet Access) */}
           {setActiveTab && (
             <button
               onClick={() => setActiveTab('saved')}
               aria-label="सहेजी गई खबरें व रील्स देखें"
-              className={`hidden lg:flex p-2 sm:px-3 sm:py-2 rounded-xl border transition active:scale-95 shrink-0 items-center gap-1.5 text-xs font-bold min-h-[38px] sm:min-h-[40px] ${
+              className={`hidden md:flex p-2 sm:px-3 sm:py-2 rounded-xl border transition active:scale-95 shrink-0 items-center gap-1.5 text-xs font-bold min-h-[38px] sm:min-h-[40px] ${
                 activeTab === 'saved'
                   ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-sm'
                   : isDark 
@@ -452,32 +498,69 @@ export const Header: React.FC<HeaderProps> = ({
 
       </div>
 
-      {/* 3. CATEGORIES HORIZONTAL MOMENTUM STRIP */}
-      <div className={`w-full max-w-full overflow-x-auto no-scrollbar border-t transition-colors ${
+      {/* 3. CATEGORIES HORIZONTAL MOMENTUM STRIP (WITH DESKTOP NAVIGATION CHEVRONS) */}
+      <div className={`relative group/cat w-full max-w-full border-t transition-colors ${
         isDark ? 'bg-[#05070e] border-red-950/30' : 'bg-slate-50 border-slate-200'
       }`}>
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 flex items-center gap-1.5 text-xs whitespace-nowrap">
-          {CATEGORIES.map((cat) => {
-            const isVideoCategory = cat.includes('वीडियो');
-            const isActive = isVideoCategory 
-              ? activeTab === 'videos' 
-              : (selectedCategory === cat && activeTab === 'home');
-            return (
-              <button 
-                key={cat} 
-                onClick={() => handleCategoryClick(cat)}
-                className={`px-3.5 py-1.5 rounded-full font-bold text-xs transition duration-150 active:scale-95 min-h-[34px] flex items-center justify-center ${
-                  isActive 
-                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/40' 
-                    : isDark 
-                      ? 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700' 
-                      : 'text-slate-700 hover:text-slate-950 hover:bg-slate-200'
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
+        <div className="max-w-7xl mx-auto relative flex items-center">
+          {/* Desktop Left Scroll Button */}
+          {canScrollCatLeft && (
+            <button
+              type="button"
+              onClick={() => handleCatScrollBy(-220)}
+              aria-label="पिछली श्रेणियां देखें"
+              className="hidden md:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-slate-900/90 text-white hover:bg-red-600 shadow-md items-center justify-center border border-white/20 transition active:scale-95 cursor-pointer backdrop-blur-sm"
+            >
+              <ChevronLeft size={16} />
+            </button>
+          )}
+
+          {/* Categories Strip */}
+          <div 
+            ref={catScrollRef}
+            onWheel={handleCatWheel}
+            className="w-full max-w-full overflow-x-auto no-scrollbar px-3 sm:px-4 py-2 flex items-center gap-1.5 text-xs whitespace-nowrap scroll-smooth"
+          >
+            {CATEGORIES.map((cat) => {
+              const isVideoCategory = cat.includes('वीडियो');
+              const isReelsCategory = cat.includes('रील्स');
+              const isMandiCategory = cat.includes('मंडी भाव');
+              const isActive = isVideoCategory 
+                ? activeTab === 'videos' 
+                : isReelsCategory
+                ? activeTab === 'insta'
+                : isMandiCategory
+                ? activeTab === 'mandi'
+                : (selectedCategory === cat && activeTab === 'home');
+              return (
+                <button 
+                  key={cat} 
+                  onClick={() => handleCategoryClick(cat)}
+                  className={`px-3.5 py-1.5 rounded-full font-bold text-xs transition duration-150 active:scale-95 min-h-[34px] flex items-center justify-center cursor-pointer shrink-0 ${
+                    isActive 
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/40 ring-1 ring-red-400/40' 
+                      : isDark 
+                        ? 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700' 
+                        : 'text-slate-700 hover:text-slate-950 hover:bg-slate-200'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Desktop Right Scroll Button */}
+          {canScrollCatRight && (
+            <button
+              type="button"
+              onClick={() => handleCatScrollBy(220)}
+              aria-label="अगली श्रेणियां देखें"
+              className="hidden md:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-slate-900/90 text-white hover:bg-red-600 shadow-md items-center justify-center border border-white/20 transition active:scale-95 cursor-pointer backdrop-blur-sm"
+            >
+              <ChevronRight size={16} />
+            </button>
+          )}
         </div>
       </div>
 

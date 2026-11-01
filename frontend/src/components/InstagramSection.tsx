@@ -121,7 +121,7 @@ export const InstagramSection: React.FC<InstagramSectionProps> = ({
       )}
 
       {/* Visual Reels Grid: Clicking opens the interactive Reel Player */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
         {visiblePosts.map((post) => (
           <div 
             key={post.id}

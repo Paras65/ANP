@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, ChevronRight, MapPin, Pause } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Pause } from 'lucide-react';
 import { EDITORIAL_STORIES, type StoryItem } from '../data/storiesData';
 import { WhatsAppIcon } from './SocialIcons';
 import { getCategoryTheme } from '../utils/categoryTheme';
@@ -102,6 +102,18 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-0 sm:p-4">
+      {/* Desktop Prev Button (Left) */}
+      <button
+        type="button"
+        onClick={handlePrev}
+        disabled={currentIndex === 0}
+        aria-label="पिछली स्टोरी (Left Arrow)"
+        className="hidden md:flex absolute left-6 lg:left-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 rounded-full bg-slate-900/80 hover:bg-red-600 disabled:opacity-20 disabled:hover:bg-slate-900/80 text-white shadow-2xl items-center justify-center border border-white/20 transition-all active:scale-95 cursor-pointer backdrop-blur-sm"
+        title="पिछली स्टोरी (← या A)"
+      >
+        <ChevronLeft size={24} />
+      </button>
+
       {/* Container simulating mobile story aspect ratio */}
       <div 
         className="relative w-full h-full sm:h-[88vh] sm:max-w-md sm:rounded-3xl overflow-hidden shadow-2xl bg-slate-950 flex flex-col justify-between select-none"
@@ -202,10 +214,13 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                 }}
                 aria-label="वेब स्टोरी विंडो बंद करें"
                 className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur transition cursor-pointer"
-                title="बंद करें"
+                title="बंद करें (Esc)"
               >
                 <X size={18} />
               </button>
+              <span className="hidden md:inline text-[9px] font-mono text-white/50 border border-white/20 px-1.5 py-0.5 rounded bg-black/40">
+                ESC
+              </span>
             </div>
           </div>
 
@@ -325,6 +340,17 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         </div>
 
       </div>
+
+      {/* Desktop Next Button (Right) */}
+      <button
+        type="button"
+        onClick={handleNext}
+        aria-label="अगली स्टोरी (Right Arrow)"
+        className="hidden md:flex absolute right-6 lg:right-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 rounded-full bg-slate-900/80 hover:bg-red-600 text-white shadow-2xl items-center justify-center border border-white/20 transition-all active:scale-95 cursor-pointer backdrop-blur-sm"
+        title="अगली स्टोरी (→ या D)"
+      >
+        <ChevronRight size={24} />
+      </button>
     </div>
   );
 };

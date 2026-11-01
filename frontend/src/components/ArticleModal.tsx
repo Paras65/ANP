@@ -96,6 +96,23 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Desktop keyboard shortcuts: Esc to close, Left/Right arrow for previous/next article
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.key === 'Escape') {
+        stopAudio();
+        onClose();
+      } else if (e.key === 'ArrowLeft' && prevArticle && onSelectArticle) {
+        onSelectArticle(prevArticle);
+      } else if (e.key === 'ArrowRight' && nextArticle && onSelectArticle) {
+        onSelectArticle(nextArticle);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [prevArticle, nextArticle, onSelectArticle, onClose]);
+
   // Cancel speech on unmount & reset states when switching articles
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -288,9 +305,13 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           onClick={handleClose}
           aria-label="मुख्य समाचार पर लौटें"
           className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs sm:text-sm px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-1.5 transition active:scale-95 cursor-pointer shrink-0"
+          title="मुख्य समाचार पर लौटें (Esc)"
         >
           <ArrowLeft size={16} />
           <span>मुख्य समाचार पर लौटें</span>
+          <span className="hidden md:inline text-[9px] font-mono bg-red-700/90 text-white/90 px-1.5 py-0.2 rounded border border-red-400/40 ml-0.5">
+            ESC
+          </span>
         </button>
 
         {/* Action Controls: Font size, Audio reader, Share */}
