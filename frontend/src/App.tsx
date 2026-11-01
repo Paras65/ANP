@@ -16,9 +16,8 @@ import {
   ChevronDown,
   MapPinOff,
   Loader2,
-  Tv,
-  Camera,
-  X} from 'lucide-react';
+  X
+} from 'lucide-react';
 import { formatRelativeHindiTime, estimateReadingTime, formatHindiViews } from './utils/dateUtils';
 
 import { Header } from './components/Header';
@@ -1598,126 +1597,131 @@ export const App: React.FC = () => {
           {/* TAB: HOME FEED VIEW (DEFAULT) */}
           {activeTab === 'home' && (
             <>
-              {/* REGIONAL DISTRICT QUICK CHIPS BAR */}
-              <div className={`p-3 sm:p-4 rounded-2xl border transition-colors ${
-                isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-                  
-                  {/* Left: District & Quick Search */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div 
-                      onClick={openDistrictModal}
-                      className="flex items-center gap-2 cursor-pointer group"
-                      title="सभी 88 जिलों की सूची खोलें"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-red-600/10 text-red-500 flex items-center justify-center shrink-0 group-hover:bg-red-600 group-hover:text-white transition">
-                        <MapPin size={16} />
-                      </div>
-                      <div>
-                        <div className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                          <span>जिला अनुसार ({selectedState === 'chhattisgarh' ? 'छ.ग.' : 'म.प्र.'})</span>
-                          <span className="text-red-500 underline text-[9px]">बदलें</span>
-                        </div>
-                        <div className={`text-xs sm:text-sm font-black flex items-center gap-1 ${
-                          isDark ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          <span>{currentDistrict === 'सभी' ? 'सभी 88 जिले' : currentDistrict}</span>
-                          {currentDistrict.includes('कवर्धा') && (
-                            <span className="bg-amber-500/20 text-amber-500 text-[9px] font-black px-1.5 rounded border border-amber-500/30">
-                              मुख्यालय
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Search Bar Toggle */}
-                    <button 
-                      onClick={() => setIsSearching(!isSearching)}
-                      aria-label={isSearching ? "समाचार खोज बंद करें" : "समाचार खोज बार खोलें"}
-                      className={`p-2 rounded-xl text-xs font-bold border transition ${
-                        isSearching 
-                          ? 'bg-red-600 text-white border-red-500' 
-                          : isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-300'
+              {/* 1. DEDICATED SEARCH BAR (CLEAN SLIDE-DOWN WHEN SEARCH IS TOGGLED) */}
+              {isSearching && (
+                <div className={`p-3 rounded-2xl border transition-colors animate-in fade-in slide-in-from-top-2 duration-200 ${
+                  isDark ? 'bg-slate-900 border-red-900/60 shadow-xl' : 'bg-white border-red-200 shadow-md'
+                }`}>
+                  <div className="relative flex items-center gap-2">
+                    <Search size={16} className="text-red-500 shrink-0 ml-1" />
+                    <input 
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="खबरें खोजें (जैसे: कवर्धा, बोनस, धान, अपराध)..."
+                      aria-label="समाचार खोजें"
+                      className={`w-full bg-transparent text-xs sm:text-sm font-medium outline-none pr-20 ${
+                        isDark ? 'text-white placeholder:text-slate-500' : 'text-slate-900 placeholder:text-slate-400'
                       }`}
-                      title="Search articles"
-                    >
-                      <Search size={14} />
-                    </button>
-                  </div>
-
-                  {/* Inline Search Input if open */}
-                  {isSearching && (
-                    <div className="w-full md:w-64 animate-in fade-in relative">
-                      <input 
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="खबरें खोजें (जैसे: कवर्धा, बोनस)..."
-                        aria-label="समाचार खोजें"
-                        className={`w-full border rounded-xl pl-3 pr-8 py-1.5 text-xs outline-none focus:border-red-500 font-medium ${
-                          isDark 
-                            ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500' 
-                            : 'bg-slate-100 border-slate-300 text-slate-900 placeholder:text-slate-400'
-                        }`}
-                        autoFocus
-                      />
+                      autoFocus
+                    />
+                    <div className="absolute right-1 flex items-center gap-1">
                       {isVoiceSupported && (
                         <button
                           type="button"
                           onClick={toggleVoiceSearch}
                           aria-label={isListeningSearch ? "बोलकर खोज बंद करें" : "बोलकर खबर खोजें"}
-                          className={`absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center transition ${
+                          className={`p-1.5 rounded-lg transition ${
                             isListeningSearch 
-                              ? 'text-red-500 animate-pulse' 
+                              ? 'text-red-500 animate-pulse bg-red-500/10' 
                               : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
                           }`}
                           title="बोलकर खबर खोजें (Voice Search)"
                         >
-                          <Mic size={13} className={isListeningSearch ? 'animate-bounce text-red-500' : ''} />
+                          <Mic size={15} className={isListeningSearch ? 'animate-bounce text-red-500' : ''} />
                         </button>
                       )}
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery('')}
+                          className="text-[11px] font-bold text-slate-400 hover:text-red-500 px-1.5 py-0.5 rounded cursor-pointer"
+                          title="खोज साफ़ करें"
+                        >
+                          साफ़
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setIsSearching(false)}
+                        className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+                        title="खोज बंद करें"
+                      >
+                        <X size={15} />
+                      </button>
                     </div>
-                  )}
+                  </div>
+                </div>
+              )}
 
-                  {/* Quick District Pills */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs max-w-full">
-                    <button 
-                      onClick={openDistrictModal}
-                      aria-label="छत्तीसगढ़ व मध्यप्रदेश के सभी 88 जिले चुनें"
-                      className="px-2.5 py-1 rounded-xl text-[11px] font-black transition whitespace-nowrap flex items-center gap-1 bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30 active:scale-95 border border-red-400/40 shrink-0"
-                      title="छत्तीसगढ़ व मध्यप्रदेश के सभी 88 जिले देखें"
-                    >
-                      <MapPin size={11} className="shrink-0" />
-                      <span>सभी 88 जिले...</span>
-                    </button>
+              {/* 2. REGIONAL DISTRICT QUICK CHIPS BAR (CLEAN & NON-REDUNDANT) */}
+              <div className={`p-2.5 sm:p-3 rounded-2xl border transition-colors ${
+                isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div className="flex items-center gap-2">
+                  
+                  {/* Active District Selector Pill */}
+                  <button 
+                    onClick={openDistrictModal}
+                    aria-label={`जिला चुनें: वर्तमान ${currentDistrict}`}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 shrink-0 active:scale-95 shadow-sm border cursor-pointer ${
+                      currentDistrict !== 'सभी'
+                        ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white border-red-500 shadow-red-950/40'
+                        : isDark 
+                          ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' 
+                          : 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200'
+                    }`}
+                    title="जिला बदलें (सभी 88 जिले)"
+                  >
+                    <MapPin size={13} className={currentDistrict !== 'सभी' ? 'text-white' : 'text-red-500'} />
+                    <span>{currentDistrict === 'सभी' ? 'सभी 88 जिले' : currentDistrict}</span>
+                    <ChevronDown size={12} className="opacity-70" />
+                  </button>
+
+                  <div className="h-5 w-[1px] bg-slate-700/40 shrink-0 hidden sm:block" />
+
+                  {/* Quick District Horizontal Pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs flex-1">
                     <button 
                       onClick={() => setCurrentDistrict('सभी')}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-95 shrink-0 cursor-pointer ${
                         currentDistrict === 'सभी' 
                           ? 'bg-red-600 text-white shadow-md shadow-red-600/30' 
-                          : isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-200 text-slate-700'
+                          : isDark ? 'bg-slate-800/80 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
-                      सभी
+                      सभी खबरें
                     </button>
+
                     {popularDistricts.map((dName) => (
                       <button
                         key={dName}
                         onClick={() => setCurrentDistrict(dName)}
-                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition whitespace-nowrap flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition whitespace-nowrap flex items-center gap-1 active:scale-95 shrink-0 cursor-pointer ${
                           currentDistrict === dName 
                             ? 'bg-red-600 text-white shadow-md shadow-red-600/30' 
                             : dName.includes('कवर्धा')
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30'
-                              : isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700'
+                              ? 'bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25'
+                              : isDark ? 'bg-slate-800/80 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                         }`}
                       >
                         {dName.includes('कवर्धा') && <span>📍</span>}
                         <span>{dName}</span>
                       </button>
                     ))}
+
+                    <button 
+                      onClick={openDistrictModal}
+                      aria-label="अन्य सभी 88 जिले देखें"
+                      className={`px-2 py-1 rounded-xl text-[10px] font-bold transition whitespace-nowrap shrink-0 border cursor-pointer ${
+                        isDark 
+                          ? 'border-slate-800 text-slate-400 hover:text-white hover:border-slate-700' 
+                          : 'border-slate-200 text-slate-500 hover:text-slate-900'
+                      }`}
+                      title="अन्य सभी 88 जिले देखें"
+                    >
+                      + 88 जिले...
+                    </button>
                   </div>
 
                 </div>
@@ -2123,8 +2127,8 @@ export const App: React.FC = () => {
                   {/* Sidebar Column (Sticky on Desktop) */}
                   <aside className="space-y-4 lg:sticky lg:top-28 lg:self-start">
                     
-                    {/* 1. TOP 5 TRENDING STORIES WIDGET */}
-                    <div className={`p-3.5 rounded-2xl border ${
+                    {/* 1. TOP 5 TRENDING STORIES WIDGET (DESKTOP SIDEBAR ONLY - ALREADY DISPLAYED AT TOP ON MOBILE) */}
+                    <div className={`hidden lg:block p-3.5 rounded-2xl border ${
                       isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
                     }`}>
                       <div className={`flex items-center justify-between mb-3 pb-2 border-b ${
@@ -2480,63 +2484,6 @@ export const App: React.FC = () => {
 
               </div>
             )}
-
-              {/* COMPACT MULTIMEDIA HUB TEASERS (FAST LINKS TO DEDICATED TABS) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
-                {/* 1. Ambition TV Video Bulletins Banner */}
-                <div 
-                  onClick={() => setActiveTab('videos')}
-                  className={`p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer flex items-center justify-between gap-3.5 group ${
-                    isDark ? 'bg-gradient-to-r from-red-950/40 via-slate-900 to-slate-950 border-red-900/40' : 'bg-gradient-to-r from-red-50 via-white to-slate-50 border-red-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
-                      <Tv size={20} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black text-red-500 uppercase tracking-wide">Ambition TV</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-                      </div>
-                      <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {videoBulletins[0]?.title || 'ताज़ा वीडियो बुलेटिन'}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-bold text-red-500 shrink-0 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
-                    <span>देखें</span>
-                    <ChevronRight size={14} />
-                  </span>
-                </div>
-
-                {/* 2. Instagram & Shorts Reels Banner */}
-                <div 
-                  onClick={() => setActiveTab('insta')}
-                  className={`p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer flex items-center justify-between gap-3.5 group ${
-                    isDark ? 'bg-gradient-to-r from-pink-950/40 via-slate-900 to-slate-950 border-pink-900/40' : 'bg-gradient-to-r from-pink-50 via-white to-slate-50 border-pink-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
-                      <Camera size={20} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black text-pink-500 uppercase tracking-wide">कवर्धा रील्स</span>
-                        <span className="text-[9px] bg-pink-500/20 text-pink-400 px-1 rounded font-bold">शॉर्ट्स</span>
-                      </div>
-                      <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {instagramPosts[0]?.caption || 'ट्रेंडिंग वायरल रील्स'}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-bold text-pink-500 shrink-0 flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
-                    <span>देखें</span>
-                    <ChevronRight size={14} />
-                  </span>
-                </div>
-              </div>
             </>
           )}
 
