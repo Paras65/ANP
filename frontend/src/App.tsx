@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   MapPin, 
   RefreshCw, 
@@ -975,8 +975,14 @@ export const App: React.FC = () => {
     setCurrentDistrict('सभी');
   };
 
+  const scrollPosBeforeArticleRef = useRef<number>(0);
+
   // Safe navigation & modal opener helpers with browser / Android back gesture integration
   const openArticleModal = (art: Article) => {
+    // Preserve current feed scroll position before opening article
+    if (!activeArticle) {
+      scrollPosBeforeArticleRef.current = window.scrollY;
+    }
     setActiveArticle(art);
     try {
       const url = new URL(window.location.href);
@@ -994,6 +1000,10 @@ export const App: React.FC = () => {
         window.history.replaceState({}, '', url.toString());
       }
     } catch {}
+    // Seamlessly restore reader to exact spot in news feed
+    setTimeout(() => {
+      window.scrollTo({ top: scrollPosBeforeArticleRef.current, behavior: 'instant' });
+    }, 20);
   };
 
   const openStoryModal = (s: StoryItem) => {
@@ -1051,6 +1061,9 @@ export const App: React.FC = () => {
       }
       if (activeArticle) {
         setActiveArticle(null);
+        setTimeout(() => {
+          window.scrollTo({ top: scrollPosBeforeArticleRef.current, behavior: 'instant' });
+        }, 20);
         return;
       }
       if (activeReelId) {

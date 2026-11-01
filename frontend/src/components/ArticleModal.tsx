@@ -56,6 +56,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   const [readingProgress, setReadingProgress] = useState(0);
   const [copied, setCopied] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
 
   // Compute Read Time in minutes
   const readingTime = useMemo(() => {
@@ -95,10 +96,14 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Cancel speech on unmount & scroll to top of article
+  // Cancel speech on unmount & reset states when switching articles
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setReadingProgress(0);
+    setIsPlayingAudio(false);
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     return () => {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -223,22 +228,27 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     }
   };
 
-  // Mobile Swipe-Right to Return to Feed Gesture
+  // Mobile Swipe-Right to Return to Feed Gesture (Requires pure horizontal swipe)
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches[0].clientX < 50) {
       touchStartXRef.current = e.touches[0].clientX;
+      touchStartYRef.current = e.touches[0].clientY;
     } else {
       touchStartXRef.current = null;
+      touchStartYRef.current = null;
     }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartXRef.current !== null) {
+    if (touchStartXRef.current !== null && touchStartYRef.current !== null) {
       const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
-      if (deltaX > 80) {
+      const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
+      // Only trigger if horizontal swipe is prominent and vertical scroll is minimal
+      if (deltaX > 80 && Math.abs(deltaY) < 55) {
         handleClose();
       }
       touchStartXRef.current = null;
+      touchStartYRef.current = null;
     }
   };
 

@@ -272,48 +272,70 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             {/* 16:9 Cinema Screen (Active In-Page Player or Poster Thumbnail) */}
             <div className="lg:col-span-7 relative aspect-video w-full bg-black overflow-hidden select-none">
               {playingVideo ? (
-                /* ACTIVE IN-PAGE EMBED PLAYER */
-                <div className="relative w-full h-full bg-black">
-                  {/* Close button to stop video & return to poster view */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPlayingVideo(null);
-                      setIsMiniPlayerVisible(false);
-                    }}
-                    aria-label="वीडियो बंद करें"
-                    title="वीडियो बंद करें (थंबनेल पर लौटें)"
-                    className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-red-600 text-white p-1.5 rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow-lg"
-                  >
-                    <X size={15} />
-                  </button>
-
-                  <div className="absolute top-3 left-3 z-30 pointer-events-none">
-                    <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-lg animate-pulse">
-                      <span className="w-2 h-2 rounded-full bg-white"></span>
-                      अब चल रहा है (NOW PLAYING)
-                    </span>
+                isMiniPlayerVisible ? (
+                  /* PLACEHOLDER WHEN ACTIVE IN FLOATING MINI-PLAYER (PREVENTS DOUBLE-AUDIO ECHO) */
+                  <div className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 border border-red-950 select-none">
+                    <div className="w-12 h-12 rounded-2xl bg-red-600/20 text-red-500 border border-red-600/30 flex items-center justify-center mb-3 animate-pulse shadow-lg">
+                      <Tv size={24} />
+                    </div>
+                    <p className="text-white text-xs sm:text-sm font-bold">वीडियो नीचे मिनी-प्लेयर में चल रहा है</p>
+                    <p className="text-slate-400 text-[11px] mt-1 max-w-xs truncate">{playingVideo.title}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMiniPlayerVisible(false);
+                        heroVideoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className="mt-3.5 px-3.5 py-1.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer shadow flex items-center gap-1.5"
+                    >
+                      <Maximize2 size={13} />
+                      <span>यहाँ बड़ी स्क्रीन में लाएं</span>
+                    </button>
                   </div>
+                ) : (
+                  /* ACTIVE IN-PAGE EMBED PLAYER */
+                  <div className="relative w-full h-full bg-black">
+                    {/* Close button to stop video & return to poster view */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlayingVideo(null);
+                        setIsMiniPlayerVisible(false);
+                      }}
+                      aria-label="वीडियो बंद करें"
+                      title="वीडियो बंद करें (थंबनेल पर लौटें)"
+                      className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-red-600 text-white p-1.5 rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow-lg"
+                    >
+                      <X size={15} />
+                    </button>
 
-                  {isDirectVideoUrl(playingVideo.youtubeUrl || playingVideo.youtubeId) ? (
-                    <video
-                      src={playingVideo.youtubeUrl || playingVideo.youtubeId}
-                      poster={getVideoThumbnail(playingVideo)}
-                      controls
-                      autoPlay
-                      playsInline
-                      className="w-full h-full object-contain bg-black"
-                    />
-                  ) : (
-                    <iframe
-                      src={`https://www.youtube-nocookie.com/embed/${playingVideo.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
-                      title={playingVideo.title}
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
-                  )}
-                </div>
+                    <div className="absolute top-3 left-3 z-30 pointer-events-none">
+                      <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-lg animate-pulse">
+                        <span className="w-2 h-2 rounded-full bg-white"></span>
+                        अब चल रहा है (NOW PLAYING)
+                      </span>
+                    </div>
+
+                    {isDirectVideoUrl(playingVideo.youtubeUrl || playingVideo.youtubeId) ? (
+                      <video
+                        src={playingVideo.youtubeUrl || playingVideo.youtubeId}
+                        poster={getVideoThumbnail(playingVideo)}
+                        controls
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-contain bg-black"
+                      />
+                    ) : (
+                      <iframe
+                        src={`https://www.youtube-nocookie.com/embed/${playingVideo.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
+                        title={playingVideo.title}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    )}
+                  </div>
+                )
               ) : (
                 /* POSTER THUMBNAIL WITH 1-CLICK IN-PAGE PLAY */
                 <div 
