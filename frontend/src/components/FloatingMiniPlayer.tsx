@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Maximize2, ChevronDown, SkipForward, Scaling, GripHorizontal } from 'lucide-react';
+import { X, Maximize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2 } from 'lucide-react';
 import type { VideoBulletin } from '../types';
-import { isDirectVideoUrl } from '../utils/mediaUtils';
+import { isDirectVideoUrl, getVideoThumbnail } from '../utils/mediaUtils';
+
+type DockCorner = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 interface FloatingMiniPlayerProps {
   video: VideoBulletin;
@@ -20,16 +22,27 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   onNext,
   hasNext = false
 }) => {
-  // Container DOM ref (for attaching non-passive event listeners that prevent browser whole-page pinch-zoom)
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Ultra-compact audio-pill mode (ideal when reading articles)
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // Dynamic 4-Corner Dock Position
+  const getInitialDock = (): DockCorner => {
+    if (typeof window === 'undefined') return 'bottom-right';
+    const saved = localStorage.getItem('anp_mini_player_dock') as DockCorner;
+    if (saved && ['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(saved)) {
+      return saved;
+    }
+    return 'bottom-right';
+  };
+
+  const [dockCorner, setDockCorner] = useState<DockCorner>(getInitialDock);
+
   // Dynamic Resizing State (Width clamped between 200px and 460px / screen width)
   const getInitialWidth = () => {
-    if (typeof window === 'undefined') return 320;
-    const maxSafe = Math.min(window.innerWidth - 24, 460);
+    if (typeof window === 'undefined') return 310;
+    const maxSafe = Math.min(window.innerWidth - 24, 440);
     const saved = localStorage.getItem('anp_mini_player_width');
     if (saved) {
       const parsed = parseInt(saved, 10);
@@ -37,19 +50,22 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
         return parsed;
       }
     }
-    return Math.min(320, maxSafe);
+    return Math.min(310, maxSafe);
   };
 
   const [playerWidth, setPlayerWidth] = useState<number>(getInitialWidth);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState<boolean>(false);
+  const [showControls, setShowControls] = useState<boolean>(true);
 
-  // Drag offset for multi-directional swipe-to-dismiss (in pixels)
+  // Drag offset for real-time free-floating movement
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDismissing, setIsDismissing] = useState<boolean>(false);
+  const [isPastDismissThreshold, setIsPastDismissThreshold] = useState<boolean>(false);
 
-  // Drag and Resize tracking refs
-  const dragStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  // Tracking refs
+  const dragStartRef = useRef<{ x: number; y: number; time: number; hasMoved: boolean } | null>(null);
   const resizeStartRef = useRef<{ startX: number; startWidth: number } | null>(null);
   const lastTapRef = useRef<number>(0);
 
@@ -58,7 +74,6 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     const el = containerRef.current;
     if (!el) return;
 
-    // Non-passive listener strictly cancels multi-touch pinch so the browser viewport never zooms!
     const blockViewportPinch = (e: TouchEvent) => {
       if (e.touches.length > 1) {
         e.preventDefault();
@@ -77,7 +92,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   // 2. ENFORCE SCREEN BOUNDARY CLAMPS ON WINDOW RESIZE OR PHONE ROTATION
   useEffect(() => {
     const handleWindowResize = () => {
-      const maxSafe = Math.min(window.innerWidth - 24, 460);
+      const maxSafe = Math.min(window.innerWidth - 24, 440);
       setPlayerWidth(prev => Math.min(Math.max(prev, 200), maxSafe));
     };
 
@@ -89,6 +104,11 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     };
   }, []);
 
+  // Reset video loaded state when video changes
+  useEffect(() => {
+    setIsVideoLoaded(false);
+  }, [video.youtubeId, video.youtubeUrl]);
+
   // Save preferred width to localStorage
   const saveWidth = useCallback((w: number) => {
     try {
@@ -96,22 +116,28 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     } catch {}
   }, []);
 
-  // Double-tap or double-click to cycle preset sizes: Small (240px) <-> Medium (320px) <-> Large (390px)
+  // Save dock position
+  const saveDock = useCallback((dock: DockCorner) => {
+    try {
+      localStorage.setItem('anp_mini_player_dock', dock);
+    } catch {}
+  }, []);
+
+  // Double-tap or double-click to cycle preset sizes: Small (240px) <-> Medium (310px) <-> Large (390px)
   const handleCyclePresetSize = (e: React.MouseEvent | React.TouchEvent) => {
     if ((e.target as HTMLElement)?.closest('button, a, input, .no-drag')) return;
 
     const now = Date.now();
     if (now - lastTapRef.current < 320) {
-      // Double-tap recognized!
-      const maxSafe = Math.min(window.innerWidth - 24, 460);
-      let nextWidth = 320;
+      const maxSafe = Math.min(window.innerWidth - 24, 440);
+      let nextWidth = 310;
 
-      if (playerWidth < 280) {
-        nextWidth = Math.min(330, maxSafe);
-      } else if (playerWidth < 360 && maxSafe >= 380) {
-        nextWidth = Math.min(410, maxSafe);
+      if (playerWidth < 270) {
+        nextWidth = Math.min(320, maxSafe);
+      } else if (playerWidth < 350 && maxSafe >= 370) {
+        nextWidth = Math.min(390, maxSafe);
       } else {
-        nextWidth = 240;
+        nextWidth = 230;
       }
 
       setPlayerWidth(nextWidth);
@@ -122,7 +148,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     }
   };
 
-  // 3. UNIFIED POINTER-BASED ONE-THUMB CORNER RESIZE (TOP-LEFT GRIP)
+  // 3. ONE-THUMB CORNER RESIZE (TOP-LEFT GRIP)
   const handleResizePointerDown = (e: React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -136,9 +162,12 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
   const handleResizePointerMove = (e: React.PointerEvent) => {
     if (!isResizing || !resizeStartRef.current) return;
-    // Because player is docked on bottom-right, dragging LEFT increases width
-    const deltaX = resizeStartRef.current.startX - e.clientX;
-    const maxSafe = Math.min(window.innerWidth - 24, 460);
+    const isDockedLeft = dockCorner.includes('left');
+    // If docked on left, dragging right increases width; if docked right, dragging left increases width
+    const deltaX = isDockedLeft 
+      ? e.clientX - resizeStartRef.current.startX
+      : resizeStartRef.current.startX - e.clientX;
+    const maxSafe = Math.min(window.innerWidth - 24, 440);
     const newWidth = Math.min(Math.max(resizeStartRef.current.startWidth + deltaX, 200), maxSafe);
     setPlayerWidth(newWidth);
   };
@@ -153,9 +182,8 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     resizeStartRef.current = null;
   };
 
-  // 4. UNIFIED POINTER-BASED MULTI-DIRECTIONAL DRAG-TO-DISMISS (TOUCH & MOUSE)
-  const handleDragPointerDown = (e: React.PointerEvent) => {
-    // Never initiate drag when touching buttons or the resize grip
+  // 4. UNIFIED FULL-SURFACE DRAG, DOCKING & DISMISS SYSTEM
+  const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('button, a, input, .no-drag')) return;
 
     try {
@@ -165,23 +193,30 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
-      time: Date.now()
+      time: Date.now(),
+      hasMoved: false
     };
     setIsDragging(true);
   };
 
-  const handleDragPointerMove = (e: React.PointerEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging || !dragStartRef.current) return;
     const deltaX = e.clientX - dragStartRef.current.x;
     const deltaY = e.clientY - dragStartRef.current.y;
+    const dist = Math.hypot(deltaX, deltaY);
 
-    // Freely track movement in any direction
+    if (dist > 6) {
+      dragStartRef.current.hasMoved = true;
+    }
+
     setDragOffset({ x: deltaX, y: deltaY });
+    setIsPastDismissThreshold(dist > 75);
   };
 
-  const handleDragPointerUp = (e: React.PointerEvent) => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDragging || !dragStartRef.current) return;
     setIsDragging(false);
+    setIsPastDismissThreshold(false);
 
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
@@ -191,15 +226,19 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     const deltaY = e.clientY - dragStartRef.current.y;
     const deltaTime = Date.now() - dragStartRef.current.time;
     const distance = Math.hypot(deltaX, deltaY);
-    const speed = distance / Math.max(deltaTime, 1); // px per ms
+    const speed = distance / Math.max(deltaTime, 1);
 
-    // DISMISS TRIGGER:
-    // 1. Dragged > 60px in any direction (down, right, left, up)
-    // 2. OR quick flick gesture (speed > 0.4 px/ms and distance > 25px)
-    if (distance > 60 || (speed > 0.4 && distance > 25)) {
+    // CASE A: TAP (Not dragged) -> Toggle Controls HUD
+    if (!dragStartRef.current.hasMoved && deltaTime < 300) {
+      setShowControls(prev => !prev);
+      dragStartRef.current = null;
+      return;
+    }
+
+    // CASE B: DISMISS SWIPE (Distance > 80px or quick flick > 0.45 px/ms)
+    if (distance > 80 || (speed > 0.45 && distance > 30)) {
       setIsDismissing(true);
-      // Animate smoothly out of the screen along the swipe vector
-      const exitMultiplier = 350 / Math.max(distance, 1);
+      const exitMultiplier = 400 / Math.max(distance, 1);
       setDragOffset({
         x: deltaX * exitMultiplier,
         y: deltaY * exitMultiplier
@@ -207,26 +246,61 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       setTimeout(() => {
         onClose();
       }, 200);
-    } else {
-      // Snap back smoothly into bottom-right dock
-      setDragOffset({ x: 0, y: 0 });
+      dragStartRef.current = null;
+      return;
     }
 
+    // CASE C: 4-CORNER DOCKING (Snap to closest safe corner)
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const isLeft = centerX < window.innerWidth / 2;
+      const isTop = centerY < window.innerHeight / 2;
+
+      let newDock: DockCorner = 'bottom-right';
+      if (isTop && isLeft) newDock = 'top-left';
+      else if (isTop && !isLeft) newDock = 'top-right';
+      else if (!isTop && isLeft) newDock = 'bottom-left';
+      else newDock = 'bottom-right';
+
+      setDockCorner(newDock);
+      saveDock(newDock);
+    }
+
+    // Smoothly reset drag offset
+    setDragOffset({ x: 0, y: 0 });
     dragStartRef.current = null;
+  };
+
+  // Determine CSS positioning based on dockCorner
+  const getDockClasses = (): string => {
+    switch (dockCorner) {
+      case 'bottom-left':
+        return 'bottom-16 sm:bottom-6 left-3.5 sm:left-6';
+      case 'top-right':
+        return 'top-20 right-3 sm:right-6';
+      case 'top-left':
+        return 'top-20 left-3.5 sm:left-6';
+      case 'bottom-right':
+      default:
+        return 'bottom-16 sm:bottom-6 right-3 sm:right-6';
+    }
   };
 
   return (
     <div
       ref={containerRef}
       style={{
-        transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
+        transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) scale(${isDragging ? 1.02 : 1})`,
         transition: (dragOffset.x === 0 && dragOffset.y === 0 && !isDragging && !isResizing)
-          ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out'
+          ? 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out'
           : isDismissing ? 'transform 0.2s ease-in, opacity 0.2s ease-in' : 'none',
         touchAction: 'none'
       }}
-      className={`fixed bottom-16 sm:bottom-6 right-3 sm:right-6 z-40 select-none ${
-        isDismissing ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'
+      className={`fixed z-40 select-none ${getDockClasses()} ${
+        isDismissing ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'
       }`}
     >
       {/* 
@@ -236,14 +310,20 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       <div className={isCollapsed ? 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none absolute' : 'w-full'}>
         <div 
           style={{ width: `${playerWidth}px` }}
-          className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-red-600 bg-black animate-in fade-in slide-in-from-bottom-4 duration-300 group ring-2 ring-red-600/30"
+          className={`relative rounded-2xl overflow-hidden shadow-2xl bg-black border-2 transition-colors duration-200 group ${
+            isPastDismissThreshold 
+              ? 'border-red-500 shadow-red-600/60 ring-4 ring-red-500/50' 
+              : 'border-red-600 ring-2 ring-red-600/30'
+          }`}
         >
-          {/* 
-            IFRAME POINTER-EVENTS TRAP GUARD:
-            During active drag or resize, an overlay ensures YouTube never steals mouse/touch events!
-          */}
-          {(isResizing || isDragging) && (
-            <div className="absolute inset-0 z-30 cursor-grabbing bg-transparent" />
+          {/* VISUAL DISMISS INDICATOR OVERLAY */}
+          {isPastDismissThreshold && (
+            <div className="absolute inset-0 z-40 bg-red-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-white pointer-events-none animate-in fade-in duration-150">
+              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center mb-1 shadow-lg animate-bounce">
+                <X size={20} className="stroke-[3]" />
+              </div>
+              <span className="text-[11px] font-black tracking-wide">हटाने के लिए छोड़ें</span>
+            </div>
           )}
 
           {/* ONE-THUMB CORNER RESIZE DRAG HANDLE (TOP-LEFT CORNER) */}
@@ -256,32 +336,33 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             aria-label="छोटा या बड़ा करें"
             className="no-drag absolute top-1.5 left-1.5 z-40 p-1.5 rounded-lg bg-black/85 hover:bg-red-600 border border-white/25 text-white/90 hover:text-white cursor-nwse-resize transition active:scale-95 shadow flex items-center justify-center pointer-events-auto touch-none"
           >
-            <Scaling size={12} className="-rotate-90" />
+            <Scaling size={11} className="-rotate-90" />
           </div>
 
-          {/* Top Controls & Drag Handle Bar */}
+          {/* TOP CONTROLS BAR (RESPONSIVE & CLEAN) */}
           <div 
-            onPointerDown={handleDragPointerDown}
-            onPointerMove={handleDragPointerMove}
-            onPointerUp={handleDragPointerUp}
-            onPointerCancel={handleDragPointerUp}
             onClick={handleCyclePresetSize}
-            className="absolute top-0 left-8 right-0 h-10 px-2 flex items-center justify-between z-20 cursor-grab active:cursor-grabbing bg-gradient-to-b from-black/80 via-black/40 to-transparent"
-            title="ड्रैग करके हटाएं (Swipe to dismiss) या डबल-टैप से साइज बदलें"
+            className={`absolute top-0 left-0 right-0 h-9 px-2 flex items-center justify-between z-30 transition-opacity duration-200 bg-gradient-to-b from-black/85 via-black/45 to-transparent pointer-events-none ${
+              showControls ? 'opacity-100' : 'opacity-0'
+            }`}
           >
-            <div className="flex items-center gap-1.5 pointer-events-none">
-              <span className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-                LIVE TV
-              </span>
-              <div className="flex items-center text-white/40 group-hover:text-white/80 transition ml-0.5">
-                <GripHorizontal size={14} />
+            {/* Live TV Badge & Drag Grip */}
+            <div className="flex items-center gap-1.5 ml-7">
+              {playerWidth >= 250 && (
+                <span className="bg-red-600 text-white text-[8.5px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                  LIVE TV
+                </span>
+              )}
+              <div className="flex items-center text-white/50">
+                <GripHorizontal size={13} />
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 pointer-events-auto no-drag">
+            {/* Action Buttons (Strictly No-Drag so clicks are 100% instantaneous) */}
+            <div className="flex items-center gap-1 pointer-events-auto no-drag">
               {/* Skip to Next Bulletin */}
-              {onNext && hasNext && (
+              {onNext && hasNext && playerWidth >= 280 && (
                 <button
                   type="button"
                   onClick={onNext}
@@ -289,19 +370,19 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   title="अगला बुलेटिन देखें"
                   className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
                 >
-                  <SkipForward size={12} />
+                  <SkipForward size={11} />
                 </button>
               )}
 
-              {/* Minimize to Audio Pill (keeps playing, frees reading space) */}
+              {/* Minimize to Audio Pill */}
               <button
                 type="button"
                 onClick={() => setIsCollapsed(true)}
                 aria-label="ऑडियो मोड (छोटा करें)"
-                title="ऑडियो मोड (छोटा करें ताकि खबर पढ़ सकें)"
+                title="ऑडियो मोड (छोटा करें)"
                 className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
               >
-                <ChevronDown size={12} />
+                <ChevronDown size={11} />
               </button>
 
               {/* Expand to Large Cinema Screen */}
@@ -312,7 +393,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 title="बड़ी स्क्रीन में देखें"
                 className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
               >
-                <Maximize2 size={12} />
+                <Maximize2 size={11} />
               </button>
 
               {/* Close Video button */}
@@ -320,46 +401,73 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 type="button"
                 onClick={onClose}
                 aria-label="वीडियो बंद करें"
-                title="वीडियो बंद करें (या किसी भी दिशा में स्वाइप करें)"
+                title="वीडियो बंद करें"
                 className="p-1 bg-black/80 hover:bg-red-600 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
               >
-                <X size={12} />
+                <X size={11} />
               </button>
             </div>
           </div>
 
-          {/* 16:9 Video Embed */}
-          <div className="relative aspect-video w-full bg-black">
+          {/* 16:9 VIDEO CONTAINER WITH ZERO BLACK VOID & FULL-SURFACE DRAG */}
+          <div className="relative aspect-video w-full bg-black overflow-hidden">
+            {/* Poster Thumbnail + Spinner (Visible until iframe is fully active) */}
+            {!isVideoLoaded && (
+              <div className="absolute inset-0 z-0 bg-slate-950 flex items-center justify-center">
+                <img
+                  src={getVideoThumbnail(video)}
+                  alt=""
+                  className="w-full h-full object-cover opacity-60 blur-xs"
+                />
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-red-500 animate-spin" />
+                </div>
+              </div>
+            )}
+
+            {/* Video Player */}
             {isDirectVideoUrl(video.youtubeUrl || video.youtubeId) ? (
               <video
                 src={video.youtubeUrl || video.youtubeId}
                 controls
                 autoPlay
                 playsInline
-                className="w-full h-full object-contain bg-black"
+                onLoadedData={() => setIsVideoLoaded(true)}
+                className="w-full h-full object-contain bg-black relative z-10"
               />
             ) : (
               <iframe
+                onLoad={() => setIsVideoLoaded(true)}
                 src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
                 title={video.title}
-                className="w-full h-full border-0"
+                className="w-full h-full border-0 relative z-10"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               ></iframe>
             )}
+
+            {/* 
+              FULL-SURFACE TOUCH & DRAG TRANSPARENT OVERLAY:
+              Intercepts touches across 100% of the video box!
+              Tap toggles controls; Drag floats/flicks the player.
+            */}
+            <div
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
+              title="खींचकर किसी भी कोने में ले जाएं या बाहर फेंककर हटाएं"
+            />
           </div>
 
-          {/* Bottom Mini Headline & Click to Scroll Up (Draggable surface + double tap) */}
+          {/* BOTTOM TITLE BAR & CLICK TO EXPAND */}
           <div 
-            onPointerDown={handleDragPointerDown}
-            onPointerMove={handleDragPointerMove}
-            onPointerUp={handleDragPointerUp}
-            onPointerCancel={handleDragPointerUp}
             onClick={handleCyclePresetSize}
-            className="p-2 bg-gradient-to-t from-black via-black/90 to-black/75 text-white cursor-grab active:cursor-grabbing hover:bg-slate-900 transition flex items-center justify-between gap-2 border-t border-white/10"
-            title="खींचकर हटाएं (Swipe) या डबल-टैप से साइज बदलें"
+            className="p-1.5 px-2 bg-gradient-to-t from-black via-black/95 to-black/80 text-white flex items-center justify-between gap-1.5 border-t border-white/10"
+            title="क्लिक करके बड़ा करें या डबल-टैप से साइज बदलें"
           >
-            <p className="text-[10.5px] font-bold truncate flex-1 leading-snug pointer-events-none">
+            <p className="text-[10px] font-bold truncate flex-1 leading-tight pointer-events-none">
               {video.title}
             </p>
             <button
@@ -368,9 +476,10 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 e.stopPropagation();
                 onExpand();
               }}
-              className="no-drag text-[9px] text-red-400 font-bold shrink-0 hover:underline cursor-pointer"
+              className="no-drag text-[8.5px] text-red-400 font-bold shrink-0 hover:underline cursor-pointer flex items-center gap-0.5"
             >
-              बड़ा करें ⛶
+              <span>बड़ा करें</span>
+              <span>⛶</span>
             </button>
           </div>
         </div>
@@ -378,26 +487,30 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
       {/* 
         ULTRA-COMPACT FLOATING AUDIO PILL (COLLAPSED MODE)
-        Can also be dragged to dismiss or tapped to restore.
+        Can also be dragged across the 4 corners or dismissed.
       */}
       {isCollapsed && (
         <div 
-          onPointerDown={handleDragPointerDown}
-          onPointerMove={handleDragPointerMove}
-          onPointerUp={handleDragPointerUp}
-          onPointerCancel={handleDragPointerUp}
-          className="flex items-center gap-2.5 px-3 py-2 bg-slate-950/95 backdrop-blur-md rounded-full border-2 border-red-600 shadow-2xl text-white w-[260px] sm:w-[290px] animate-in fade-in zoom-in-95 duration-200 cursor-grab active:cursor-grabbing"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          className={`flex items-center gap-2 px-3 py-1.5 bg-slate-950/95 backdrop-blur-md rounded-full border-2 shadow-2xl text-white w-[250px] sm:w-[280px] animate-in fade-in zoom-in-95 duration-200 cursor-grab active:cursor-grabbing transition-colors ${
+            isPastDismissThreshold 
+              ? 'border-red-500 shadow-red-600/60 ring-2 ring-red-500' 
+              : 'border-red-600'
+          }`}
           title="खींचकर हटाएं या वीडियो देखने के लिए टैप करें"
         >
           {/* Animated Equalizer Wave */}
           <div 
             onClick={() => setIsCollapsed(false)}
-            className="no-drag flex items-end gap-0.5 h-3.5 px-1 shrink-0 cursor-pointer"
+            className="no-drag flex items-end gap-0.5 h-3 px-1 shrink-0 cursor-pointer"
             title="वीडियो खोलें"
           >
-            <span className="w-1 bg-red-500 rounded-full animate-bounce [animation-delay:0ms] h-full" />
-            <span className="w-1 bg-red-500 rounded-full animate-bounce [animation-delay:150ms] h-2/3" />
-            <span className="w-1 bg-red-500 rounded-full animate-bounce [animation-delay:300ms] h-4/5" />
+            <span className="w-0.5 bg-red-500 rounded-full animate-bounce [animation-delay:0ms] h-full" />
+            <span className="w-0.5 bg-red-500 rounded-full animate-bounce [animation-delay:150ms] h-2/3" />
+            <span className="w-0.5 bg-red-500 rounded-full animate-bounce [animation-delay:300ms] h-4/5" />
           </div>
 
           {/* Title & Click to Restore */}
@@ -405,13 +518,10 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             onClick={() => setIsCollapsed(false)}
             className="flex-1 min-w-0 cursor-pointer pointer-events-none"
           >
-            <p className="text-[10px] font-bold text-white truncate leading-tight">
+            <p className="text-[9.5px] font-bold text-white truncate leading-tight">
               {video.title}
             </p>
-            <span className="text-[8.5px] text-red-400 font-semibold flex items-center gap-1">
-              <span>● लाइव ऑडियो</span>
-              <span className="text-slate-400 font-normal">टैप करके देखें</span>
-            </span>
+            <span className="text-[8px] text-red-400 font-medium">● लाइव ऑडियो चालू</span>
           </div>
 
           {/* Quick Controls */}
@@ -424,7 +534,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 title="अगला बुलेटिन"
                 className="p-1 hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
               >
-                <SkipForward size={12} />
+                <SkipForward size={11} />
               </button>
             )}
 
@@ -435,7 +545,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               title="वीडियो खोलें"
               className="p-1 hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
             >
-              <Maximize2 size={12} />
+              <Maximize2 size={11} />
             </button>
 
             <button
@@ -445,7 +555,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               title="बंद करें"
               className="p-1 hover:bg-red-600 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
             >
-              <X size={12} />
+              <X size={11} />
             </button>
           </div>
         </div>

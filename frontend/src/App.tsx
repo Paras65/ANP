@@ -1543,7 +1543,7 @@ export const App: React.FC = () => {
                   autoPlayOnMount={true}
                   playingVideo={globalPlayingVideo}
                   onSelectVideo={handleSelectGlobalVideo}
-                  isHeroInView={isHeroVideoInView}
+                  isHeroInView={true}
                   onHeroInViewChange={setIsHeroVideoInView}
                   onShareWhatsApp={(title, url) => {
                     const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
@@ -2548,7 +2548,7 @@ export const App: React.FC = () => {
         <BackToTop />
 
         {/* PERSISTENT CROSS-TAB & IN-ARTICLE FLOATING MINI-PLAYER */}
-        {globalPlayingVideo && !activeStory && !activeReelId && (!isHeroVideoInView || activeArticle !== null || (activeTab !== 'videos' && activeTab !== 'home')) && (
+        {globalPlayingVideo && !activeStory && !activeReelId && (activeArticle !== null || (activeTab !== 'videos' && (!isHeroVideoInView || activeTab !== 'home'))) && (
           <FloatingMiniPlayer
             video={globalPlayingVideo}
             onClose={() => setGlobalPlayingVideo(null)}
