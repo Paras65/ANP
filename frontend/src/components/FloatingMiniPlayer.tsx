@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { X, Maximize2, ChevronDown, SkipForward } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { X, Maximize2, ChevronDown, SkipForward, Scaling } from 'lucide-react';
 import type { VideoBulletin } from '../types';
 import { isDirectVideoUrl } from '../utils/mediaUtils';
 
@@ -23,33 +23,183 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   // Ultra-compact audio-pill mode (ideal when reading articles)
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // Dynamic Resizing State (Width clamped between 200px and 460px / screen width)
+  const getInitialWidth = () => {
+    if (typeof window === 'undefined') return 320;
+    const maxSafe = Math.min(window.innerWidth - 24, 460);
+    const saved = localStorage.getItem('anp_mini_player_width');
+    if (saved) {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= 200 && parsed <= maxSafe) {
+        return parsed;
+      }
+    }
+    return Math.min(320, maxSafe);
+  };
+
+  const [playerWidth, setPlayerWidth] = useState<number>(getInitialWidth);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+
   // Swipe-down/right to dismiss gesture state
   const [swipeOffset, setSwipeOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isDismissing, setIsDismissing] = useState(false);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [isDismissing, setIsDismissing] = useState<boolean>(false);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartRef.current = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY
+  // Touch tracking refs
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pinchStartRef = useRef<{ distance: number; initialWidth: number } | null>(null);
+  const resizeStartRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const lastTapRef = useRef<number>(0);
+
+  // Enforce screen boundary clamps on resize or phone rotation (Portrait <-> Landscape)
+  useEffect(() => {
+    const handleWindowResize = () => {
+      const maxSafe = Math.min(window.innerWidth - 24, 460);
+      setPlayerWidth(prev => Math.min(Math.max(prev, 200), maxSafe));
+    };
+
+    window.addEventListener('resize', handleWindowResize, { passive: true });
+    window.addEventListener('orientationchange', handleWindowResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', handleWindowResize);
+      window.removeEventListener('orientationchange', handleWindowResize);
+    };
+  }, []);
+
+  // Save preferred width to localStorage
+  const saveWidth = useCallback((w: number) => {
+    try {
+      localStorage.setItem('anp_mini_player_width', Math.round(w).toString());
+    } catch {}
+  }, []);
+
+  // Double-tap or double-click to cycle preset sizes: Small (240px) <-> Medium (320px) <-> Large (390px)
+  const handleCyclePresetSize = (e: React.MouseEvent | React.TouchEvent) => {
+    // Ignore double-taps on interactive buttons
+    if ((e.target as HTMLElement)?.closest('button, a, input')) return;
+
+    const now = Date.now();
+    if (now - lastTapRef.current < 320) {
+      // Double-tap recognized!
+      const maxSafe = Math.min(window.innerWidth - 24, 460);
+      let nextWidth = 320;
+
+      if (playerWidth < 280) {
+        nextWidth = Math.min(330, maxSafe);
+      } else if (playerWidth < 360 && maxSafe >= 380) {
+        nextWidth = Math.min(410, maxSafe);
+      } else {
+        nextWidth = 240;
+      }
+
+      setPlayerWidth(nextWidth);
+      saveWidth(nextWidth);
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
+  // ONE-THUMB CORNER RESIZE HANDLER (Top-Left Grip)
+  const handleCornerResizeStart = (clientX: number) => {
+    setIsResizing(true);
+    resizeStartRef.current = {
+      startX: clientX,
+      startWidth: playerWidth
     };
   };
 
+  const handlePointerDownResize = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    handleCornerResizeStart(e.clientX);
+
+    const onPointerMove = (ev: PointerEvent) => {
+      if (!resizeStartRef.current) return;
+      // Because player is docked on bottom-right, dragging LEFT increases width
+      const deltaX = resizeStartRef.current.startX - ev.clientX;
+      const maxSafe = Math.min(window.innerWidth - 24, 460);
+      const newWidth = Math.min(Math.max(resizeStartRef.current.startWidth + deltaX, 200), maxSafe);
+      setPlayerWidth(newWidth);
+    };
+
+    const onPointerUp = () => {
+      setIsResizing(false);
+      if (resizeStartRef.current) {
+        saveWidth(playerWidth);
+      }
+      resizeStartRef.current = null;
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  };
+
+  // TWO-FINGER PINCH & ONE-FINGER SWIPE TOUCH EVENTS
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Never trigger swipe/pinch when tapping buttons
+    if ((e.target as HTMLElement)?.closest('button, a, input')) {
+      touchStartRef.current = null;
+      pinchStartRef.current = null;
+      return;
+    }
+
+    if (e.touches.length === 2) {
+      // TWO-FINGER PINCH DETECTED
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+      pinchStartRef.current = {
+        distance,
+        initialWidth: playerWidth
+      };
+      setIsResizing(true);
+      touchStartRef.current = null;
+    } else if (e.touches.length === 1) {
+      // ONE-FINGER DRAG / SWIPE
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      };
+    }
+  };
+
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
+    if (pinchStartRef.current && e.touches.length === 2) {
+      // PINCH-TO-RESIZE MOVEMENT
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+      const delta = (distance - pinchStartRef.current.distance) * 1.25;
+      const maxSafe = Math.min(window.innerWidth - 24, 460);
+      const newWidth = Math.min(Math.max(pinchStartRef.current.initialWidth + delta, 200), maxSafe);
+      setPlayerWidth(newWidth);
+      return;
+    }
+
+    if (!touchStartRef.current || e.touches.length !== 1) return;
     const deltaX = e.touches[0].clientX - touchStartRef.current.x;
     const deltaY = e.touches[0].clientY - touchStartRef.current.y;
 
-    // Only allow swiping downwards or to the right for dismissal
-    const nextX = deltaX > 0 ? deltaX : 0;
-    const nextY = deltaY > 0 ? deltaY : 0;
+    // Only allow swiping downwards or to the right for dismissal (with 12px deadzone)
+    const nextX = deltaX > 12 ? deltaX - 12 : 0;
+    const nextY = deltaY > 12 ? deltaY - 12 : 0;
 
-    if (nextX > 5 || nextY > 5) {
+    if (nextX > 0 || nextY > 0) {
       setSwipeOffset({ x: nextX, y: nextY });
     }
   };
 
   const handleTouchEnd = () => {
+    if (pinchStartRef.current) {
+      setIsResizing(false);
+      saveWidth(playerWidth);
+      pinchStartRef.current = null;
+    }
+
     if (swipeOffset.y > 60 || swipeOffset.x > 80) {
       setIsDismissing(true);
       setTimeout(() => {
@@ -68,7 +218,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       onTouchEnd={handleTouchEnd}
       style={{
         transform: `translate(${swipeOffset.x}px, ${swipeOffset.y}px)`,
-        transition: swipeOffset.x === 0 && swipeOffset.y === 0 ? 'transform 0.2s ease-out' : 'none'
+        transition: (swipeOffset.x === 0 && swipeOffset.y === 0 && !isResizing) ? 'transform 0.2s ease-out, width 0.2s ease-out' : 'none'
       }}
       className={`fixed bottom-16 sm:bottom-6 right-3 sm:right-6 z-40 transition-opacity duration-200 select-none ${
         isDismissing ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
@@ -79,16 +229,41 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
         Kept mounted in both views so playback / audio NEVER pauses or reloads when collapsing/expanding.
       */}
       <div className={isCollapsed ? 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none absolute' : 'w-full'}>
-        <div className="w-[280px] sm:w-[325px] rounded-2xl overflow-hidden shadow-2xl border-2 border-red-600 bg-black animate-in fade-in slide-in-from-bottom-4 duration-300 group ring-2 ring-red-600/30">
-          {/* Top Controls Bar */}
-          <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-30 pointer-events-none">
+        <div 
+          style={{ width: `${playerWidth}px` }}
+          className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-red-600 bg-black animate-in fade-in slide-in-from-bottom-4 duration-300 group ring-2 ring-red-600/30"
+        >
+          {/* 
+            IFRAME POINTER-EVENTS TRAP GUARD:
+            During active drag or pinch-to-resize, a transparent layer prevents YouTube from stealing pointer events!
+          */}
+          {isResizing && (
+            <div className="absolute inset-0 z-30 cursor-nwse-resize bg-transparent" />
+          )}
+
+          {/* ONE-THUMB CORNER RESIZE DRAG HANDLE (TOP-LEFT CORNER) */}
+          <div
+            onPointerDown={handlePointerDownResize}
+            title="खींचकर छोटा या बड़ा करें (Resize handle)"
+            aria-label="छोटा या बड़ा करें"
+            className="absolute top-1.5 left-1.5 z-40 p-1.5 rounded-lg bg-black/80 hover:bg-red-600 border border-white/25 text-white/90 hover:text-white cursor-nwse-resize transition active:scale-95 shadow flex items-center justify-center pointer-events-auto touch-none"
+          >
+            <Scaling size={12} className="-rotate-90" />
+          </div>
+
+          {/* Top Controls Bar (Supports double-tap to cycle preset sizes) */}
+          <div 
+            onClick={handleCyclePresetSize}
+            className="absolute top-2 left-8 right-2 flex items-center justify-between z-20 pointer-events-none cursor-pointer"
+            title="डबल टैप करके साइज बदलें (Small/Medium/Wide)"
+          >
             <div className="flex items-center gap-1.5">
               <span className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
                 LIVE TV
               </span>
               {video.category && (
-                <span className="bg-black/75 backdrop-blur-sm text-slate-200 text-[8px] font-medium px-1.5 py-0.5 rounded-full border border-white/20">
+                <span className="hidden sm:inline-block bg-black/75 backdrop-blur-sm text-slate-200 text-[8px] font-medium px-1.5 py-0.5 rounded-full border border-white/20">
                   {video.category}
                 </span>
               )}
@@ -164,18 +339,25 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             )}
           </div>
 
-          {/* Bottom Mini Headline & Click to Scroll Up */}
+          {/* Bottom Mini Headline & Click to Scroll Up (Supports double-tap to cycle preset sizes) */}
           <div 
-            onClick={onExpand}
+            onClick={handleCyclePresetSize}
             className="p-2 bg-gradient-to-t from-black via-black/90 to-black/75 text-white cursor-pointer hover:bg-slate-900 transition flex items-center justify-between gap-2 border-t border-white/10"
-            title="क्लिक करके बड़ी स्क्रीन पर जाएं"
+            title="क्लिक करके बड़ा करें या डबल-टैप से साइज बदलें"
           >
             <p className="text-[10.5px] font-bold truncate flex-1 leading-snug">
               {video.title}
             </p>
-            <span className="text-[9px] text-red-400 font-bold shrink-0 hover:underline">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpand();
+              }}
+              className="text-[9px] text-red-400 font-bold shrink-0 hover:underline cursor-pointer"
+            >
               बड़ा करें ⛶
-            </span>
+            </button>
           </div>
         </div>
       </div>

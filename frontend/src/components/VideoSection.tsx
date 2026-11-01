@@ -108,7 +108,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 
   const featuredVideo = displayList[0] || null;
   const currentHeroVideo = activePlayingVideo || featuredVideo;
-  const remainingBulletins = displayList.slice(1);
+  const remainingBulletins = useMemo(() => {
+    if (!currentHeroVideo) return displayList;
+    return displayList.filter(b => b.id !== currentHeroVideo.id && b.youtubeId !== currentHeroVideo.youtubeId);
+  }, [displayList, currentHeroVideo]);
   const visibleRemaining = remainingBulletins.slice(0, visibleVideoCount);
   const hasMoreVideos = visibleVideoCount < remainingBulletins.length;
 

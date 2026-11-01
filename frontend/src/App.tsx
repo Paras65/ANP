@@ -101,6 +101,14 @@ export const App: React.FC = () => {
   const [globalPlayingVideo, setGlobalPlayingVideo] = useState<VideoBulletin | null>(null);
   const [isHeroVideoInView, setIsHeroVideoInView] = useState<boolean>(false);
 
+  // Exclusive lock: Playing global video shuts down sidebar mini video
+  const handleSelectGlobalVideo = useCallback((v: VideoBulletin | null) => {
+    setGlobalPlayingVideo(v);
+    if (v) {
+      setIsSidebarVideoPlaying(false);
+    }
+  }, []);
+
   const handleExpandGlobalVideo = () => {
     setActiveArticle(null);
     setActiveTab('videos');
@@ -1534,7 +1542,7 @@ export const App: React.FC = () => {
                   youtubeSubs={youtubeSubs}
                   autoPlayOnMount={true}
                   playingVideo={globalPlayingVideo}
-                  onSelectVideo={setGlobalPlayingVideo}
+                  onSelectVideo={handleSelectGlobalVideo}
                   isHeroInView={isHeroVideoInView}
                   onHeroInViewChange={setIsHeroVideoInView}
                   onShareWhatsApp={(title, url) => {
@@ -2274,6 +2282,7 @@ export const App: React.FC = () => {
                         className="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-red-950/90 border border-red-900/40 cursor-pointer group shadow-md"
                         onClick={() => {
                           if (videoBulletins[0]) {
+                            setGlobalPlayingVideo(null);
                             setIsSidebarVideoPlaying(true);
                           }
                         }}
@@ -2281,7 +2290,10 @@ export const App: React.FC = () => {
                         tabIndex={0}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
-                            if (videoBulletins[0]) setIsSidebarVideoPlaying(true);
+                            if (videoBulletins[0]) {
+                              setGlobalPlayingVideo(null);
+                              setIsSidebarVideoPlaying(true);
+                            }
                           }
                         }}
                         aria-label="यहीं वीडियो चलाएं"
@@ -2484,7 +2496,7 @@ export const App: React.FC = () => {
                 isDark={isDark} 
                 youtubeSubs={youtubeSubs}
                 playingVideo={globalPlayingVideo}
-                onSelectVideo={setGlobalPlayingVideo}
+                onSelectVideo={handleSelectGlobalVideo}
                 isHeroInView={isHeroVideoInView}
                 onHeroInViewChange={setIsHeroVideoInView}
                 onShareWhatsApp={(title, url) => {
@@ -2536,7 +2548,7 @@ export const App: React.FC = () => {
         <BackToTop />
 
         {/* PERSISTENT CROSS-TAB & IN-ARTICLE FLOATING MINI-PLAYER */}
-        {globalPlayingVideo && (!isHeroVideoInView || activeArticle !== null || (activeTab !== 'videos' && activeTab !== 'home')) && (
+        {globalPlayingVideo && !activeStory && !activeReelId && (!isHeroVideoInView || activeArticle !== null || (activeTab !== 'videos' && activeTab !== 'home')) && (
           <FloatingMiniPlayer
             video={globalPlayingVideo}
             onClose={() => setGlobalPlayingVideo(null)}
