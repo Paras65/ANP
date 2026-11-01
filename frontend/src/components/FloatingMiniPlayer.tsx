@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Maximize2, Minimize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2 } from 'lucide-react';
+import { X, Maximize2, Minimize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2, RotateCw } from 'lucide-react';
 import type { VideoBulletin } from '../types';
 import { isDirectVideoUrl, getVideoThumbnail } from '../utils/mediaUtils';
-
-type DockCorner = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 interface FloatingMiniPlayerProps {
   video: VideoBulletin;
@@ -35,22 +33,12 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
   // Full Cinema Theater Mode (smoothly expands without iframe reload)
   const [isCinemaMode, setIsCinemaMode] = useState<boolean>(false);
-  // Top header dismiss drop-zone detection
-  const [isOverTopDismissZone, setIsOverTopDismissZone] = useState<boolean>(false);
+  // Fullscreen Landscape Rotate Mode
+  const [isLandscapeRotated, setIsLandscapeRotated] = useState<boolean>(false);
+  // Bottom dismiss drop-zone detection (users swipe down to dismiss)
+  const [isOverBottomDismissZone, setIsOverBottomDismissZone] = useState<boolean>(false);
 
-  // Dynamic 4-Corner Dock Position
-  const getInitialDock = (): DockCorner => {
-    if (typeof window === 'undefined') return 'bottom-right';
-    const saved = localStorage.getItem('anp_mini_player_dock') as DockCorner;
-    if (saved && ['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(saved)) {
-      return saved;
-    }
-    return 'bottom-right';
-  };
-
-  const [dockCorner, setDockCorner] = useState<DockCorner>(getInitialDock);
-
-  // Dynamic Resizing State (Width clamped between 200px and 460px / screen width)
+  // Dynamic Resizing State (Width clamped between 200px and 440px / screen width)
   const getInitialWidth = () => {
     if (typeof window === 'undefined') return 310;
     const maxSafe = Math.min(window.innerWidth - 24, 440);
@@ -65,6 +53,29 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   };
 
   const [playerWidth, setPlayerWidth] = useState<number>(getInitialWidth);
+
+  // Persistent Free-Floating Position (Stays exactly where dropped, clamped safely within screen bounds)
+  const getInitialPosition = (): { x: number; y: number } => {
+    if (typeof window === 'undefined') return { x: 16, y: 100 };
+    const width = 310;
+    const height = Math.round(width * 0.5625) + 32;
+    const defaultX = Math.max(12, window.innerWidth - width - 16);
+    const defaultY = Math.max(76, window.innerHeight - height - 84);
+    const saved = localStorage.getItem('anp_mini_player_pos');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          const clampedX = Math.min(Math.max(parsed.x, 8), Math.max(8, window.innerWidth - width - 8));
+          const clampedY = Math.min(Math.max(parsed.y, 68), Math.max(68, window.innerHeight - height - 76));
+          return { x: clampedX, y: clampedY };
+        }
+      } catch {}
+    }
+    return { x: defaultX, y: defaultY };
+  };
+
+  const [position, setPosition] = useState<{ x: number; y: number }>(getInitialPosition);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState<boolean>(false);
@@ -76,8 +87,15 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   const [isPastDismissThreshold, setIsPastDismissThreshold] = useState<boolean>(false);
 
   // Tracking refs
-  const dragStartRef = useRef<{ x: number; y: number; time: number; hasMoved: boolean } | null>(null);
-  const resizeStartRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const dragStartRef = useRef<{ 
+    startPointerX: number; 
+    startPointerY: number; 
+    startPosX: number; 
+    startPosY: number; 
+    time: number; 
+    hasMoved: boolean 
+  } | null>(null);
+  const resizeStartRef = useRef<{ startX: number; startWidth: number; startPosX: number } | null>(null);
   const lastTapRef = useRef<number>(0);
 
   // 1. HARD PREVENT BROWSER WHOLE-PAGE PINCH ZOOM ON MINI PLAYER
@@ -105,6 +123,19 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     const handleWindowResize = () => {
       const maxSafe = Math.min(window.innerWidth - 24, 440);
       setPlayerWidth(prev => Math.min(Math.max(prev, 200), maxSafe));
+
+      setPosition(prev => {
+        const currentWidth = isCollapsed ? 260 : playerWidth;
+        const playerHeight = isCollapsed ? 44 : Math.round(playerWidth * 0.5625) + 32;
+        const minX = 8;
+        const maxX = Math.max(8, window.innerWidth - currentWidth - 8);
+        const minY = 68;
+        const maxY = Math.max(68, window.innerHeight - playerHeight - 76);
+        return {
+          x: Math.min(Math.max(prev.x, minX), maxX),
+          y: Math.min(Math.max(prev.y, minY), maxY)
+        };
+      });
     };
 
     window.addEventListener('resize', handleWindowResize, { passive: true });
@@ -112,6 +143,21 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     return () => {
       window.removeEventListener('resize', handleWindowResize);
       window.removeEventListener('orientationchange', handleWindowResize);
+    };
+  }, [playerWidth, isCollapsed]);
+
+  // FULLSCREEN CHANGE LISTENER FOR ROTATE MODE
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+        setIsLandscapeRotated(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
     };
   }, []);
 
@@ -177,10 +223,10 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     } catch {}
   }, []);
 
-  // Save dock position
-  const saveDock = useCallback((dock: DockCorner) => {
+  // Save position to localStorage
+  const savePosition = useCallback((pos: { x: number; y: number }) => {
     try {
-      localStorage.setItem('anp_mini_player_dock', dock);
+      localStorage.setItem('anp_mini_player_pos', JSON.stringify(pos));
     } catch {}
   }, []);
 
@@ -217,20 +263,25 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     setIsResizing(true);
     resizeStartRef.current = {
       startX: e.clientX,
-      startWidth: playerWidth
+      startWidth: playerWidth,
+      startPosX: position.x
     };
   };
 
   const handleResizePointerMove = (e: React.PointerEvent) => {
     if (!isResizing || !resizeStartRef.current) return;
-    const isDockedLeft = dockCorner.includes('left');
-    // If docked on left, dragging right increases width; if docked right, dragging left increases width
-    const deltaX = isDockedLeft 
-      ? e.clientX - resizeStartRef.current.startX
-      : resizeStartRef.current.startX - e.clientX;
+    const isRightSide = position.x > (window.innerWidth - playerWidth) / 2;
+    const deltaX = isRightSide 
+      ? resizeStartRef.current.startX - e.clientX
+      : e.clientX - resizeStartRef.current.startX;
     const maxSafe = Math.min(window.innerWidth - 24, 440);
     const newWidth = Math.min(Math.max(resizeStartRef.current.startWidth + deltaX, 200), maxSafe);
     setPlayerWidth(newWidth);
+
+    if (isRightSide) {
+      const newX = Math.max(8, resizeStartRef.current.startPosX - (newWidth - resizeStartRef.current.startWidth));
+      setPosition(prev => ({ ...prev, x: newX }));
+    }
   };
 
   const handleResizePointerUp = (e: React.PointerEvent) => {
@@ -240,10 +291,11 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {}
     saveWidth(playerWidth);
+    savePosition(position);
     resizeStartRef.current = null;
   };
 
-  // 4. UNIFIED FULL-SURFACE DRAG, DOCKING & DISMISS SYSTEM
+  // 4. UNIFIED FULL-SURFACE DRAG, FREE-PLACEMENT & BOTTOM DISMISS SYSTEM
   const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('button, a, input, .no-drag')) return;
 
@@ -252,19 +304,21 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     } catch {}
 
     dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
+      startPointerX: e.clientX,
+      startPointerY: e.clientY,
+      startPosX: position.x,
+      startPosY: position.y,
       time: Date.now(),
       hasMoved: false
     };
     setIsDragging(true);
-    setIsOverTopDismissZone(false);
+    setIsOverBottomDismissZone(false);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging || !dragStartRef.current) return;
-    const deltaX = e.clientX - dragStartRef.current.x;
-    const deltaY = e.clientY - dragStartRef.current.y;
+    const deltaX = e.clientX - dragStartRef.current.startPointerX;
+    const deltaY = e.clientY - dragStartRef.current.startPointerY;
     const dist = Math.hypot(deltaX, deltaY);
 
     if (dist > 8) {
@@ -273,10 +327,10 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
     setDragOffset({ x: deltaX, y: deltaY });
 
-    // Dismiss check: Top header dismiss area (pointer near top: e.clientY < 110)
-    const inTopZone = e.clientY < 110;
-    setIsOverTopDismissZone(inTopZone);
-    setIsPastDismissThreshold(inTopZone);
+    // Dismiss check: pointer near bottom of screen OR dragged far down
+    const inBottomZone = e.clientY > window.innerHeight - 110 || deltaY > 160;
+    setIsOverBottomDismissZone(inBottomZone);
+    setIsPastDismissThreshold(inBottomZone);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -288,8 +342,8 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {}
 
-    const deltaX = e.clientX - dragStartRef.current.x;
-    const deltaY = e.clientY - dragStartRef.current.y;
+    const deltaX = e.clientX - dragStartRef.current.startPointerX;
+    const deltaY = e.clientY - dragStartRef.current.startPointerY;
     const deltaTime = Date.now() - dragStartRef.current.time;
     const distance = Math.hypot(deltaX, deltaY);
     const speed = distance / Math.max(deltaTime, 1);
@@ -298,65 +352,47 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     if (!dragStartRef.current.hasMoved && deltaTime < 300) {
       setShowControls(prev => !prev);
       dragStartRef.current = null;
-      setIsOverTopDismissZone(false);
+      setIsOverBottomDismissZone(false);
       return;
     }
 
-    // CASE B: DISMISS ONLY IF DROPPED IN TOP HEADER DISMISS ZONE OR FLICKED HARD UPWARDS
-    const isTopDrop = isOverTopDismissZone || e.clientY < 110;
-    const isUpwardFlick = deltaY < -130 && speed > 0.6;
-    if (isTopDrop || isUpwardFlick) {
+    // CASE B: DISMISS ONLY IF DROPPED IN BOTTOM DISMISS ZONE OR FLICKED DOWNWARDS
+    const isBottomDrop = isOverBottomDismissZone || e.clientY > window.innerHeight - 110;
+    const isDownwardFlick = deltaY > 90 && speed > 0.45;
+    if (isBottomDrop || isDownwardFlick) {
       setIsDismissing(true);
       setDragOffset({
         x: deltaX,
-        y: -window.innerHeight
+        y: deltaY + window.innerHeight
       });
       setTimeout(() => {
         onClose();
       }, 200);
       dragStartRef.current = null;
-      setIsOverTopDismissZone(false);
+      setIsOverBottomDismissZone(false);
       return;
     }
 
-    // CASE C: 4-CORNER DOCKING (Any other normal drag snaps to nearest corner without closing!)
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+    // CASE C: FREE POSITIONING (Stay exactly where released, clamped safely within screen bounds)
+    const currentWidth = isCollapsed ? 260 : playerWidth;
+    const playerHeight = isCollapsed ? 44 : Math.round(playerWidth * 0.5625) + 32;
+    const minX = 8;
+    const maxX = Math.max(8, window.innerWidth - currentWidth - 8);
+    const minY = 68;
+    const maxY = Math.max(68, window.innerHeight - playerHeight - 76);
 
-      const isLeft = centerX < window.innerWidth / 2;
-      const isTop = centerY < window.innerHeight / 2;
+    const targetX = dragStartRef.current.startPosX + deltaX;
+    const targetY = dragStartRef.current.startPosY + deltaY;
 
-      let newDock: DockCorner = 'bottom-right';
-      if (isTop && isLeft) newDock = 'top-left';
-      else if (isTop && !isLeft) newDock = 'top-right';
-      else if (!isTop && isLeft) newDock = 'bottom-left';
-      else newDock = 'bottom-right';
+    const finalX = Math.min(Math.max(targetX, minX), maxX);
+    const finalY = Math.min(Math.max(targetY, minY), maxY);
 
-      setDockCorner(newDock);
-      saveDock(newDock);
-    }
+    setPosition({ x: finalX, y: finalY });
+    savePosition({ x: finalX, y: finalY });
 
-    // Smoothly reset drag offset
     setDragOffset({ x: 0, y: 0 });
     dragStartRef.current = null;
-    setIsOverTopDismissZone(false);
-  };
-
-  // Determine CSS positioning based on dockCorner
-  const getDockClasses = (): string => {
-    switch (dockCorner) {
-      case 'bottom-left':
-        return 'bottom-20 sm:bottom-6 left-3.5 sm:left-6';
-      case 'top-right':
-        return 'top-24 sm:top-24 right-3 sm:right-6';
-      case 'top-left':
-        return 'top-24 sm:top-24 left-3.5 sm:left-6';
-      case 'bottom-right':
-      default:
-        return 'bottom-20 sm:bottom-6 right-3 sm:right-6';
-    }
+    setIsOverBottomDismissZone(false);
   };
 
   const handleToggleCinema = (e?: React.MouseEvent) => {
@@ -366,71 +402,128 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       hasManuallyMinimizedRef.current = !next;
       return next;
     });
+    setIsLandscapeRotated(false);
     onExpand?.();
+  };
+
+  const handleToggleRotate = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (isLandscapeRotated) {
+      if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
+        try {
+          if (document.exitFullscreen) await document.exitFullscreen();
+          else if ((document as any).webkitExitFullscreen) await (document as any).webkitExitFullscreen();
+        } catch {}
+      }
+      try {
+        await (screen.orientation as any)?.unlock?.();
+      } catch {}
+      setIsLandscapeRotated(false);
+      return;
+    }
+
+    try {
+      const target = containerRef.current || document.documentElement;
+      if (target.requestFullscreen) {
+        await target.requestFullscreen();
+      } else if ((target as any).webkitRequestFullscreen) {
+        await (target as any).webkitRequestFullscreen();
+      }
+      try {
+        await (screen.orientation as any)?.lock?.('landscape');
+      } catch {}
+    } catch {}
+
+    setIsLandscapeRotated(true);
+    setIsCinemaMode(false);
+    setIsCollapsed(false);
   };
 
   return (
     <>
       {/* 
-        TOP HEADER DISMISS DROP ZONE (TRIGGERED ON DRAG)
+        BOTTOM DISMISS DROP ZONE (TRIGGERED ON DRAG DOWN)
         Shows a bright red circle with white cross icon and clear dismiss guide
       */}
-      {isDragging && (
+      {isDragging && !isCinemaMode && !isLandscapeRotated && (
         <div 
-          className={`fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 flex items-center gap-2.5 px-4 py-2 rounded-full shadow-2xl backdrop-blur-md border ${
-            isOverTopDismissZone
+          className={`fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 flex items-center gap-2.5 px-5 py-2.5 rounded-full shadow-2xl backdrop-blur-md border ${
+            isOverBottomDismissZone
               ? 'bg-red-600 border-white text-white scale-110 shadow-red-600/70 ring-4 ring-red-500/50 animate-pulse'
-              : 'bg-slate-950/92 border-red-500/60 text-white shadow-black/80'
+              : 'bg-slate-950/95 border-red-500/60 text-white shadow-black/80'
           }`}
         >
           <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-            isOverTopDismissZone ? 'bg-white text-red-600' : 'bg-red-600 text-white shadow-md'
+            isOverBottomDismissZone ? 'bg-white text-red-600' : 'bg-red-600 text-white shadow-md'
           }`}>
             <X size={16} className="stroke-[3]" />
           </div>
           <span className="text-xs font-black tracking-wide">
-            {isOverTopDismissZone ? 'छोड़ते ही बंद होगा!' : 'बंद करने के लिए यहाँ छोड़ें'}
+            {isOverBottomDismissZone ? 'छोड़ते ही बंद होगा!' : 'बंद करने के लिए नीचे छोड़ें'}
           </span>
         </div>
       )}
 
-      {/* BACKDROP FOR CINEMA MODE */}
-      {isCinemaMode && !isCollapsed && (
+      {/* BACKDROP FOR CINEMA OR ROTATE MODE */}
+      {(isCinemaMode || isLandscapeRotated) && !isCollapsed && (
         <div 
-          onClick={() => setIsCinemaMode(false)}
+          onClick={() => {
+            setIsCinemaMode(false);
+            if (isLandscapeRotated) handleToggleRotate();
+          }}
           className="fixed inset-0 z-45 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
         />
       )}
 
       <div
         ref={containerRef}
-        style={{
-          transform: isCinemaMode 
-            ? 'none' 
-            : `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) scale(${isDragging ? 1.02 : 1})`,
-          transition: (dragOffset.x === 0 && dragOffset.y === 0 && !isDragging && !isResizing)
-            ? 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out'
-            : isDismissing ? 'transform 0.2s ease-in, opacity 0.2s ease-in' : 'none',
-          touchAction: isCinemaMode ? 'auto' : 'none'
-        }}
+        style={
+          isLandscapeRotated
+            ? { transform: 'none', touchAction: 'auto' }
+            : isCinemaMode
+              ? { transform: 'none', touchAction: 'auto' }
+              : {
+                  left: `${position.x}px`,
+                  top: `${position.y}px`,
+                  transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) scale(${isDragging ? 1.02 : 1})`,
+                  transition: (dragOffset.x === 0 && dragOffset.y === 0 && !isDragging && !isResizing)
+                    ? 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out'
+                    : isDismissing ? 'transform 0.2s ease-in, opacity 0.2s ease-in' : 'none',
+                  touchAction: 'none'
+                }
+        }
         className={isPausedByModal
           ? 'opacity-0 pointer-events-none absolute -z-50'
-          : isCinemaMode
-            ? 'fixed inset-x-3 sm:inset-x-6 top-16 sm:top-20 z-50 max-w-4xl mx-auto select-none animate-in zoom-in-95 duration-200'
-            : `fixed z-40 select-none ${getDockClasses()} ${
-                isDismissing ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'
-              }`
+          : isLandscapeRotated
+            ? 'fixed inset-0 z-50 bg-black flex items-center justify-center select-none overflow-hidden'
+            : isCinemaMode
+              ? 'fixed inset-x-3 sm:inset-x-6 top-16 sm:top-20 z-50 max-w-4xl mx-auto select-none animate-in zoom-in-95 duration-200'
+              : `fixed z-40 select-none ${
+                  isDismissing ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100'
+                }`
         }
       >
         {/* 
           PERSISTENT VIDEO / AUDIO EMBED CONTAINER
           Kept mounted in both views so playback / audio NEVER pauses or reloads when collapsing/expanding.
         */}
-        <div className={isCollapsed ? 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none absolute' : 'w-full'}>
+        <div 
+          style={
+            isLandscapeRotated && (typeof window !== 'undefined' && window.innerWidth < window.innerHeight)
+              ? {
+                  width: `${window.innerHeight}px`,
+                  height: `${window.innerWidth}px`,
+                  transform: 'rotate(90deg)',
+                  transformOrigin: 'center center'
+                }
+              : undefined
+          }
+          className={isCollapsed ? 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none absolute' : 'w-full h-full flex flex-col justify-center'}
+        >
           <div 
-            style={{ width: isCinemaMode ? '100%' : `${playerWidth}px` }}
+            style={{ width: (isCinemaMode || isLandscapeRotated) ? '100%' : `${playerWidth}px` }}
             className={`relative rounded-2xl overflow-hidden shadow-2xl bg-black border-2 transition-colors duration-200 group ${
-              isCinemaMode
+              isCinemaMode || isLandscapeRotated
                 ? 'border-red-600 shadow-red-600/40 ring-2 ring-red-600/30'
                 : isPastDismissThreshold 
                   ? 'border-red-500 shadow-red-600/60 ring-4 ring-red-500/50' 
@@ -438,7 +531,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             }`}
           >
             {/* ONE-THUMB CORNER RESIZE DRAG HANDLE (TOP-LEFT CORNER) */}
-            {!isCinemaMode && (
+            {!isCinemaMode && !isLandscapeRotated && (
               <div
                 onPointerDown={handleResizePointerDown}
                 onPointerMove={handleResizePointerMove}
@@ -456,18 +549,18 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             <div 
               onClick={handleCyclePresetSize}
               className={`absolute top-0 left-0 right-0 h-9 px-2 flex items-center justify-between z-30 transition-opacity duration-200 bg-gradient-to-b from-black/85 via-black/45 to-transparent pointer-events-none ${
-                showControls || isCinemaMode ? 'opacity-100' : 'opacity-0'
+                showControls || isCinemaMode || isLandscapeRotated ? 'opacity-100' : 'opacity-0'
               }`}
             >
               {/* Live TV Badge & Drag Grip */}
               <div className="flex items-center gap-1.5 ml-7">
-                {(playerWidth >= 250 || isCinemaMode) && (
+                {(playerWidth >= 250 || isCinemaMode || isLandscapeRotated) && (
                   <span className="bg-red-600 text-white text-[8.5px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
                     <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
                     LIVE TV
                   </span>
                 )}
-                {!isCinemaMode && (
+                {!isCinemaMode && !isLandscapeRotated && (
                   <div className="flex items-center text-white/50">
                     <GripHorizontal size={13} />
                   </div>
@@ -477,7 +570,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               {/* Action Buttons (Strictly No-Drag so clicks are 100% instantaneous) */}
               <div className="flex items-center gap-1 pointer-events-auto no-drag">
                 {/* Skip to Next Bulletin */}
-                {onNext && hasNext && (playerWidth >= 280 || isCinemaMode) && (
+                {onNext && hasNext && (playerWidth >= 280 || isCinemaMode || isLandscapeRotated) && (
                   <button
                     type="button"
                     onClick={onNext}
@@ -494,6 +587,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   type="button"
                   onClick={() => {
                     setIsCinemaMode(false);
+                    setIsLandscapeRotated(false);
                     setIsCollapsed(true);
                   }}
                   aria-label="ऑडियो मोड (छोटा करें)"
@@ -501,6 +595,21 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   className="p-1 bg-black/80 hover:bg-slate-700 text-white rounded-full border border-white/20 transition active:scale-95 cursor-pointer shadow"
                 >
                   <ChevronDown size={11} />
+                </button>
+
+                {/* Rotate to Landscape Fullscreen Button */}
+                <button
+                  type="button"
+                  onClick={handleToggleRotate}
+                  aria-label={isLandscapeRotated ? "सीधा करें (Exit Rotate)" : "रोटेट मोड (Landscape Fullscreen)"}
+                  title={isLandscapeRotated ? "सीधा करें (Exit Rotate)" : "रोटेट मोड (Landscape Fullscreen)"}
+                  className={`p-1 rounded-full border transition active:scale-95 cursor-pointer shadow ${
+                    isLandscapeRotated 
+                      ? 'bg-red-600 text-white border-white animate-pulse' 
+                      : 'bg-black/80 hover:bg-slate-700 text-white border-white/20'
+                  }`}
+                >
+                  <RotateCw size={11} className={isLandscapeRotated ? "rotate-90 transition-transform" : ""} />
                 </button>
 
                 {/* Cinema Mode Toggle (Expand / Shrink) */}
@@ -528,7 +637,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             </div>
 
             {/* 16:9 VIDEO CONTAINER WITH ZERO BLACK VOID & FULL-SURFACE DRAG */}
-            <div className="relative aspect-video w-full bg-black overflow-hidden">
+            <div className={`relative ${isLandscapeRotated ? 'w-full h-full flex items-center justify-center' : 'aspect-video w-full'} bg-black overflow-hidden`}>
               {/* Poster Thumbnail + Spinner (Visible until iframe is fully active) */}
               {!isVideoLoaded && (
                 <div className="absolute inset-0 z-0 bg-slate-950 flex items-center justify-center">
@@ -570,16 +679,16 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 FULL-SURFACE TOUCH & DRAG TRANSPARENT OVERLAY:
                 Intercepts touches across 100% of the video box!
                 Tap toggles controls; Drag floats/flicks the player.
-                Only active when in floating PiP mode (not in Cinema mode).
+                Only active when in floating PiP mode (not in Cinema mode or Rotated mode).
               */}
-              {!isCinemaMode && (
+              {!isCinemaMode && !isLandscapeRotated && (
                 <div
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={handlePointerUp}
                   className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
-                  title="खींचकर किसी भी कोने में ले जाएं या ऊपर ले जाकर बंद करें"
+                  title="खींचकर कहीं भी रखें या नीचे ले जाकर बंद करें"
                 />
               )}
             </div>
@@ -593,14 +702,25 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               <p className="text-[10px] font-bold truncate flex-1 leading-tight pointer-events-none">
                 {video.title}
               </p>
-              <button
-                type="button"
-                onClick={handleToggleCinema}
-                className="no-drag text-[8.5px] text-red-400 font-bold shrink-0 hover:underline cursor-pointer flex items-center gap-0.5"
-              >
-                <span>{isCinemaMode ? 'छोटा करें' : 'बड़ा करें'}</span>
-                <span>{isCinemaMode ? '↙' : '⛶'}</span>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleToggleRotate}
+                  className="no-drag text-[8.5px] text-amber-300 hover:text-amber-200 font-bold shrink-0 cursor-pointer flex items-center gap-0.5"
+                  title="रोटेट मोड (Landscape)"
+                >
+                  <RotateCw size={9} />
+                  <span>रोटेट</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggleCinema}
+                  className="no-drag text-[8.5px] text-red-400 font-bold shrink-0 hover:underline cursor-pointer flex items-center gap-0.5"
+                >
+                  <span>{isCinemaMode ? 'छोटा करें' : 'बड़ा करें'}</span>
+                  <span>{isCinemaMode ? '↙' : '⛶'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
