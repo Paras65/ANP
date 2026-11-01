@@ -21,6 +21,7 @@ import { formatRelativeHindiTime, estimateReadingTime, formatHindiViews } from '
 
 import { Header } from './components/Header';
 import { BackToTop } from './components/BackToTop';
+import { FloatingMiniPlayer } from './components/FloatingMiniPlayer';
 import { BreakingTicker } from './components/BreakingTicker';
 import { MandiWidget } from './components/MandiWidget';
 const VideoSection = React.lazy(() => import('./components/VideoSection').then(m => ({ default: m.VideoSection })));
@@ -97,6 +98,16 @@ export const App: React.FC = () => {
   const [activeStory, setActiveStory] = useState<StoryItem | null>(null);
   const [activeReelId, setActiveReelId] = useState<string | null>(null);
   const [isSidebarVideoPlaying, setIsSidebarVideoPlaying] = useState<boolean>(false);
+  const [globalPlayingVideo, setGlobalPlayingVideo] = useState<VideoBulletin | null>(null);
+  const [isHeroVideoInView, setIsHeroVideoInView] = useState<boolean>(false);
+
+  const handleExpandGlobalVideo = () => {
+    setActiveArticle(null);
+    setActiveTab('videos');
+    setTimeout(() => {
+      document.getElementById('video-bulletins-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [savedArticles, setSavedArticles] = useState<Article[]>(() => {
     try {
@@ -1508,6 +1519,10 @@ export const App: React.FC = () => {
                   isDark={isDark} 
                   youtubeSubs={youtubeSubs}
                   autoPlayOnMount={true}
+                  playingVideo={globalPlayingVideo}
+                  onSelectVideo={setGlobalPlayingVideo}
+                  isHeroInView={isHeroVideoInView}
+                  onHeroInViewChange={setIsHeroVideoInView}
                   onShareWhatsApp={(title, url) => {
                     const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2454,6 +2469,10 @@ export const App: React.FC = () => {
                 bulletins={videoBulletins} 
                 isDark={isDark} 
                 youtubeSubs={youtubeSubs}
+                playingVideo={globalPlayingVideo}
+                onSelectVideo={setGlobalPlayingVideo}
+                isHeroInView={isHeroVideoInView}
+                onHeroInViewChange={setIsHeroVideoInView}
                 onShareWhatsApp={(title, url) => {
                   const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2501,6 +2520,15 @@ export const App: React.FC = () => {
 
         {/* FLOATING BACK TO TOP BUTTON WITH CIRCULAR READING PROGRESS RING */}
         <BackToTop />
+
+        {/* PERSISTENT CROSS-TAB & IN-ARTICLE FLOATING MINI-PLAYER */}
+        {globalPlayingVideo && (!isHeroVideoInView || activeArticle !== null || (activeTab !== 'videos' && activeTab !== 'home')) && (
+          <FloatingMiniPlayer
+            video={globalPlayingVideo}
+            onClose={() => setGlobalPlayingVideo(null)}
+            onExpand={handleExpandGlobalVideo}
+          />
+        )}
 
         {/* PWA INSTALL PROMPT (ON-DEMAND LAZY LOADED) */}
         <React.Suspense fallback={null}>
