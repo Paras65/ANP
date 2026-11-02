@@ -2539,6 +2539,7 @@ export const App: React.FC = () => {
             hasPrev={hasPrevGlobalVideo}
             activeTab={activeTab}
             isPausedByModal={Boolean(activeStory || activeReelId)}
+            isDark={isDark}
           />
         )}
 

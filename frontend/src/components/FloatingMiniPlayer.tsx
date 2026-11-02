@@ -21,6 +21,7 @@ interface FloatingMiniPlayerProps {
   hasPrev?: boolean;
   activeTab?: string;
   isPausedByModal?: boolean;
+  isDark?: boolean;
 }
 
 export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
@@ -32,7 +33,8 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   hasNext = false,
   hasPrev = false,
   activeTab = 'home',
-  isPausedByModal = false
+  isPausedByModal = false,
+  isDark = true
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -835,7 +837,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
           className={`fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 flex items-center gap-2.5 px-5 py-2.5 rounded-full shadow-2xl backdrop-blur-md border ${
             isOverBottomDismissZone
               ? 'bg-red-600 border-white text-white scale-110 shadow-red-600/70 ring-4 ring-red-500/50 animate-pulse'
-              : 'bg-slate-950/95 border-red-500/60 text-white shadow-black/80'
+              : isDark
+                ? 'bg-slate-950/95 border-red-500/60 text-white shadow-black/80'
+                : 'bg-white/95 border-red-500/60 text-slate-900 shadow-xl shadow-slate-900/20'
           }`}
         >
           <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
@@ -909,12 +913,16 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
         >
           <div 
             style={{ width: (isCinemaMode || isLandscapeRotated) ? '100%' : `${playerWidth}px` }}
-            className={`relative rounded-2xl overflow-hidden shadow-2xl bg-black border-2 transition-colors duration-200 group ${
+            className={`relative rounded-2xl overflow-hidden shadow-2xl border-2 transition-colors duration-200 group ${
+              isDark ? 'bg-black' : 'bg-white'
+            } ${
               isCinemaMode || isLandscapeRotated
                 ? 'border-red-600 shadow-red-600/40 ring-2 ring-red-600/30'
                 : isPastDismissThreshold 
                   ? 'border-red-500 shadow-red-600/60 ring-4 ring-red-500/50' 
-                  : 'border-red-600 ring-2 ring-red-600/30'
+                  : isDark
+                    ? 'border-red-600 ring-2 ring-red-600/30'
+                    : 'border-red-600 shadow-slate-900/15 ring-2 ring-red-500/20'
             }`}
           >
             {/* ONE-THUMB CORNER RESIZE DRAG HANDLE (TOP-LEFT CORNER) */}
@@ -1199,7 +1207,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             {/* INTERACTIVE PROGRESS SCRUBBER BAR */}
             <div 
               onClick={handleScrubberClick}
-              className="w-full h-1.5 hover:h-2.5 bg-white/20 hover:bg-white/30 cursor-pointer transition-all relative z-30 group no-drag"
+              className={`w-full h-1.5 hover:h-2.5 cursor-pointer transition-all relative z-30 group no-drag ${
+                isDark ? 'bg-white/20 hover:bg-white/30' : 'bg-slate-200 hover:bg-slate-300'
+              }`}
               title={duration > 0 ? `${formatTime(currentTime)} / ${formatTime(duration)} (क्लिक करके आगे/पीछे करें)` : 'प्रोग्रेस बार'}
             >
               <div 
@@ -1212,14 +1222,22 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
             {/* BOTTOM TITLE BAR WITH DIRECT 1-TAP CONTROLS */}
             <div 
-              className="p-1 px-2 bg-gradient-to-t from-black via-black/95 to-black/80 text-white flex items-center justify-between gap-1.5 border-t border-white/10 z-30 relative"
+              className={`p-1 px-2.5 flex items-center justify-between gap-1.5 border-t z-30 relative transition-colors ${
+                isDark 
+                  ? 'bg-gradient-to-t from-black via-black/95 to-black/80 text-white border-white/10' 
+                  : 'bg-white/95 backdrop-blur-md text-slate-900 border-slate-200/90 shadow-2xs'
+              }`}
             >
               <div className="flex-1 min-w-0 pr-1 select-none">
-                <p className="text-[10px] font-bold truncate leading-tight">
+                <p className={`text-[10px] font-bold truncate leading-tight select-none ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>
                   {video.title}
                 </p>
                 {duration > 0 && (
-                  <p className="text-[8.5px] text-white/50 font-mono leading-none mt-0.5">
+                  <p className={`text-[8.5px] font-mono leading-none mt-0.5 ${
+                    isDark ? 'text-white/50' : 'text-slate-500'
+                  }`}>
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </p>
                 )}
@@ -1229,7 +1247,11 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 <button
                   type="button"
                   onClick={handleTogglePlayPause}
-                  className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border border-white/15"
+                  className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border ${
+                    isDark 
+                      ? 'bg-white/10 hover:bg-white/20 text-white border-white/15' 
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
+                  }`}
                   title={isPlaying ? "रोकें (Pause)" : "चलाएं (Play)"}
                 >
                   {isPlaying ? <Pause size={9} /> : <Play size={9} />}
@@ -1246,8 +1268,12 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                     }}
                     className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border ${
                       playbackSpeed !== 1.0
-                        ? 'bg-amber-500/25 text-amber-300 border-amber-400/40 hover:bg-amber-500/35'
-                        : 'bg-white/10 hover:bg-white/20 text-white border-white/15'
+                        ? isDark 
+                          ? 'bg-amber-500/25 text-amber-300 border-amber-400/40 hover:bg-amber-500/35'
+                          : 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200'
+                        : isDark
+                          ? 'bg-white/10 hover:bg-white/20 text-white border-white/15'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                     }`}
                     title="प्लेबैक स्पीड बदलें (0.75x - 2x)"
                     aria-label="स्पीड कंट्रोल"
@@ -1259,12 +1285,20 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   {/* Speed Menu Popup */}
                   {showSpeedMenu && (
                     <div 
-                      className="absolute bottom-full right-0 mb-1.5 w-32 max-h-36 overflow-y-auto bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100 flex flex-col no-drag"
+                      className={`absolute bottom-full right-0 mb-1.5 w-32 max-h-36 overflow-y-auto backdrop-blur-md rounded-xl border shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100 flex flex-col no-drag ${
+                        isDark 
+                          ? 'bg-slate-900/95 text-white border-white/20' 
+                          : 'bg-white/95 text-slate-900 border-slate-200'
+                      }`}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-white/10 flex items-center justify-between sticky top-0 bg-slate-900">
+                      <div className={`px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider border-b flex items-center justify-between sticky top-0 ${
+                        isDark 
+                          ? 'text-slate-400 border-white/10 bg-slate-900' 
+                          : 'text-slate-500 border-slate-100 bg-white'
+                      }`}>
                         <span>प्लेबैक स्पीड</span>
-                        <Gauge size={10} className="text-slate-400" />
+                        <Gauge size={10} className={isDark ? 'text-slate-400' : 'text-slate-500'} />
                       </div>
                       {SPEED_OPTIONS.map(opt => (
                         <button
@@ -1273,12 +1307,16 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                           onClick={(e) => handleSelectSpeed(opt.speed, e)}
                           className={`w-full px-2.5 py-1 text-left text-[10px] font-semibold flex items-center justify-between cursor-pointer transition ${
                             playbackSpeed === opt.speed
-                              ? 'bg-red-600/30 text-red-300 font-bold'
-                              : 'text-slate-200 hover:bg-white/10'
+                              ? isDark 
+                                ? 'bg-red-600/30 text-red-300 font-bold' 
+                                : 'bg-red-50 text-red-700 font-bold'
+                              : isDark 
+                                ? 'text-slate-200 hover:bg-white/10' 
+                                : 'text-slate-700 hover:bg-slate-100'
                           }`}
                         >
                           <span>{opt.label}</span>
-                          {playbackSpeed === opt.speed && <Check size={11} className="text-red-400" />}
+                          {playbackSpeed === opt.speed && <Check size={11} className={isDark ? "text-red-400" : "text-red-600"} />}
                         </button>
                       ))}
                     </div>
@@ -1289,7 +1327,11 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 <button
                   type="button"
                   onClick={handleToggleRotate}
-                  className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-amber-300 hover:text-amber-200 text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border border-white/15"
+                  className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border ${
+                    isDark 
+                      ? 'bg-white/10 hover:bg-white/20 text-amber-300 hover:text-amber-200 border-white/15' 
+                      : 'bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border-amber-200'
+                  }`}
                   title="रोटेट मोड (Landscape)"
                 >
                   <RotateCw size={9} />
@@ -1300,7 +1342,11 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 <button
                   type="button"
                   onClick={handleToggleCinema}
-                  className="px-1.5 py-0.5 rounded bg-red-600/30 hover:bg-red-600/50 text-red-300 hover:text-white text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border border-red-500/30"
+                  className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border ${
+                    isDark 
+                      ? 'bg-red-600/30 hover:bg-red-600/50 text-red-300 hover:text-white border-red-500/30' 
+                      : 'bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 border-red-200'
+                  }`}
                   title={isCinemaMode ? "छोटा करें" : "बड़ा करें"}
                 >
                   <span>{isCinemaMode ? '↙ छोटा' : '⛶ बड़ा'}</span>
@@ -1310,15 +1356,19 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
             {/* DESKTOP KEYBOARD SHORTCUT HINTS (SHOWN IN CINEMA MODE) */}
             {isCinemaMode && (
-              <div className="hidden md:flex items-center justify-between px-3.5 py-1.5 bg-black/85 backdrop-blur-md text-[10px] text-white/60 border-t border-white/10">
-                <span className="font-bold text-white/80">कीबोर्ड शॉर्टकट्स:</span>
+              <div className={`hidden md:flex items-center justify-between px-3.5 py-1.5 backdrop-blur-md text-[10px] border-t ${
+                isDark 
+                  ? 'bg-black/85 text-white/60 border-white/10' 
+                  : 'bg-slate-50/95 text-slate-600 border-slate-200'
+              }`}>
+                <span className={`font-bold ${isDark ? 'text-white/80' : 'text-slate-800'}`}>कीबोर्ड शॉर्टकट्स:</span>
                 <div className="flex items-center gap-3">
-                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">Space</kbd> प्ले / रोकें</span>
-                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">← / →</kbd> 10s सीक</span>
-                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">&gt; / &lt;</kbd> स्पीड</span>
-                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">M</kbd> म्यूट</span>
-                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">F</kbd> सिनेमा</span>
-                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">Esc</kbd> छोटा करें</span>
+                  <span><kbd className={`px-1.5 py-0.5 rounded font-mono ${isDark ? 'bg-white/15 text-white' : 'bg-white border border-slate-300 text-slate-800 shadow-2xs'}`}>Space</kbd> प्ले / रोकें</span>
+                  <span><kbd className={`px-1.5 py-0.5 rounded font-mono ${isDark ? 'bg-white/15 text-white' : 'bg-white border border-slate-300 text-slate-800 shadow-2xs'}`}>← / →</kbd> 10s सीक</span>
+                  <span><kbd className={`px-1.5 py-0.5 rounded font-mono ${isDark ? 'bg-white/15 text-white' : 'bg-white border border-slate-300 text-slate-800 shadow-2xs'}`}>&gt; / &lt;</kbd> स्पीड</span>
+                  <span><kbd className={`px-1.5 py-0.5 rounded font-mono ${isDark ? 'bg-white/15 text-white' : 'bg-white border border-slate-300 text-slate-800 shadow-2xs'}`}>M</kbd> म्यूट</span>
+                  <span><kbd className={`px-1.5 py-0.5 rounded font-mono ${isDark ? 'bg-white/15 text-white' : 'bg-white border border-slate-300 text-slate-800 shadow-2xs'}`}>F</kbd> सिनेमा</span>
+                  <span><kbd className={`px-1.5 py-0.5 rounded font-mono ${isDark ? 'bg-white/15 text-white' : 'bg-white border border-slate-300 text-slate-800 shadow-2xs'}`}>Esc</kbd> छोटा करें</span>
                 </div>
               </div>
             )}
@@ -1334,11 +1384,15 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-slate-950/95 backdrop-blur-md rounded-full border-2 shadow-2xl text-white w-[285px] sm:w-[325px] animate-in fade-in zoom-in-95 duration-200 cursor-grab active:cursor-grabbing transition-colors ${
+          className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 backdrop-blur-md rounded-full border-2 shadow-2xl transition-all duration-200 cursor-grab active:cursor-grabbing ${
+            isDark 
+              ? 'bg-slate-950/95 text-white border-red-600 shadow-black/80' 
+              : 'bg-white/95 text-slate-900 border-red-600 shadow-xl shadow-slate-900/15'
+          } ${
             isPastDismissThreshold 
               ? 'border-red-500 shadow-red-600/60 ring-2 ring-red-500' 
-              : 'border-red-600'
-          }`}
+              : ''
+          } w-[285px] sm:w-[325px] animate-in fade-in zoom-in-95 duration-200`}
           title="खींचकर हटाएं या वीडियो देखने के लिए टैप करें"
         >
           {/* Animated Equalizer Wave / Play Pause */}
@@ -1357,10 +1411,14 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             onClick={() => setIsCollapsed(false)}
             className="flex-1 min-w-0 cursor-pointer pointer-events-none"
           >
-            <p className="text-[9.5px] font-bold text-white truncate leading-tight">
+            <p className={`text-[9.5px] font-bold truncate leading-tight ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
               {video.title}
             </p>
-            <span className="text-[8px] text-red-400 font-medium truncate block">
+            <span className={`text-[8px] font-medium truncate block ${
+              isDark ? 'text-red-400' : 'text-red-600 font-semibold'
+            }`}>
               {isPlaying ? '● लाइव ऑडियो चालू' : '❚❚ ऑडियो रुका हुआ'}
               {duration > 0 && ` (${formatTime(currentTime)})`}
             </span>
@@ -1376,8 +1434,12 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               title={`स्पीड बदलें (${playbackSpeed}x)`}
               className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-black flex items-center gap-0.5 transition active:scale-95 cursor-pointer border ${
                 playbackSpeed !== 1.0
-                  ? 'bg-amber-500/30 text-amber-300 border-amber-400/40 hover:bg-amber-500/40'
-                  : 'bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white border-white/15'
+                  ? isDark 
+                    ? 'bg-amber-500/30 text-amber-300 border-amber-400/40 hover:bg-amber-500/40'
+                    : 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200'
+                  : isDark 
+                    ? 'bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white border-white/15'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-200'
               }`}
             >
               <Gauge size={8} />
@@ -1391,7 +1453,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 onClick={onPrev}
                 aria-label="पिछला बुलेटिन"
                 title="पिछला बुलेटिन"
-                className="hidden sm:flex w-7 h-7 items-center justify-center hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
+                className={`hidden sm:flex w-7 h-7 items-center justify-center rounded-full transition active:scale-95 cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800 text-slate-200 hover:text-white' : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
+                }`}
               >
                 <SkipBack size={12} />
               </button>
@@ -1403,7 +1467,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               onClick={handleTogglePlayPause}
               aria-label={isPlaying ? "रोकें" : "चलाएं"}
               title={isPlaying ? "रोकें" : "चलाएं"}
-              className="w-7 h-7 flex items-center justify-center hover:bg-slate-800 text-white rounded-full transition active:scale-95 cursor-pointer"
+              className={`w-7 h-7 flex items-center justify-center rounded-full transition active:scale-95 cursor-pointer ${
+                isDark ? 'hover:bg-slate-800 text-white' : 'hover:bg-slate-100 text-slate-900'
+              }`}
             >
               {isPlaying ? <Pause size={12} /> : <Play size={12} className="ml-0.5" />}
             </button>
@@ -1415,7 +1481,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 onClick={onNext}
                 aria-label="अगला बुलेटिन"
                 title="अगला बुलेटिन"
-                className="w-7 h-7 flex items-center justify-center hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
+                className={`w-7 h-7 flex items-center justify-center rounded-full transition active:scale-95 cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800 text-slate-200 hover:text-white' : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
+                }`}
               >
                 <SkipForward size={12} />
               </button>
@@ -1426,7 +1494,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               onClick={() => setIsCollapsed(false)}
               aria-label="वीडियो खोलें"
               title="वीडियो खोलें"
-              className="w-7 h-7 flex items-center justify-center hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
+              className={`w-7 h-7 flex items-center justify-center rounded-full transition active:scale-95 cursor-pointer ${
+                isDark ? 'hover:bg-slate-800 text-slate-200 hover:text-white' : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
+              }`}
             >
               <Maximize2 size={12} />
             </button>
@@ -1436,7 +1506,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               onClick={onClose}
               aria-label="बंद करें"
               title="बंद करें"
-              className="w-7 h-7 flex items-center justify-center hover:bg-red-600 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
+              className={`w-7 h-7 flex items-center justify-center hover:bg-red-600 rounded-full transition active:scale-95 cursor-pointer ${
+                isDark ? 'text-slate-200 hover:text-white' : 'text-slate-500 hover:text-white'
+              }`}
             >
               <X size={13} />
             </button>
