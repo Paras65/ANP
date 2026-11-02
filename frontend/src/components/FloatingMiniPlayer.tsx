@@ -177,6 +177,38 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Smart Hybrid Domain Switcher: Default to www.youtube.com for max revenue/recommendations,
+  // auto-fallback to www.youtube-nocookie.com if blocked by Brave Shields or ad-blockers.
+  const [useNoCookie, setUseNoCookie] = useState<boolean>(false);
+  const hasFallenBackRef = useRef<boolean>(false);
+  const fallbackWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hasPlaybackError, setHasPlaybackError] = useState<boolean>(false);
+
+  // Trigger graceful fallback to youtube-nocookie
+  const triggerDomainFallback = useCallback(() => {
+    if (hasFallenBackRef.current) return;
+    hasFallenBackRef.current = true;
+    setUseNoCookie(true);
+  }, []);
+
+  // Watchdog timer: If after 3.8 seconds YouTube iframe has not loaded,
+  // automatically trigger fallback to youtube-nocookie so the user never sees a black screen.
+  useEffect(() => {
+    if (isDirectVideoUrl(video.youtubeUrl || video.youtubeId)) return;
+    if (isVideoLoaded || useNoCookie) return;
+
+    if (fallbackWatchdogRef.current) clearTimeout(fallbackWatchdogRef.current);
+    fallbackWatchdogRef.current = setTimeout(() => {
+      if (!isVideoLoaded && !hasFallenBackRef.current) {
+        triggerDomainFallback();
+      }
+    }, 3800);
+
+    return () => {
+      if (fallbackWatchdogRef.current) clearTimeout(fallbackWatchdogRef.current);
+    };
+  }, [cleanYtId, isVideoLoaded, useNoCookie, video.youtubeUrl, video.youtubeId, triggerDomainFallback]);
+
   const triggerSeekToast = useCallback((msg: string) => {
     if (seekToastTimeoutRef.current) clearTimeout(seekToastTimeoutRef.current);
     setSeekToast(msg);
@@ -197,6 +229,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
       if (speedToastTimeoutRef.current) clearTimeout(speedToastTimeoutRef.current);
       if (seekToastTimeoutRef.current) clearTimeout(seekToastTimeoutRef.current);
+      if (fallbackWatchdogRef.current) clearTimeout(fallbackWatchdogRef.current);
     };
   }, []);
 
@@ -378,6 +411,15 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             if (onNextRef.current) {
               onNextRef.current();
             }
+          }
+        }
+
+        // Catch YouTube player errors (e.g. 150 = embedding disabled, 101 = blocked)
+        if (data.event === 'onError' || (data.info && typeof data.info === 'number' && [2, 5, 100, 101, 150].includes(data.info))) {
+          if (!hasFallenBackRef.current) {
+            triggerDomainFallback();
+          } else {
+            setHasPlaybackError(true);
           }
         }
       } catch {}
@@ -597,9 +639,14 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   useEffect(() => {
     setIsVideoLoaded(false);
     setIsPlaying(true);
+    setCurrentTime(0);
+    setDuration(0);
     setShowControls(true);
+    setUseNoCookie(false);
+    hasFallenBackRef.current = false;
+    setHasPlaybackError(false);
     resetControlsTimer();
-  }, [video.id, video.youtubeId, video.youtubeUrl, resetControlsTimer]);
+  }, [cleanYtId, video.id, resetControlsTimer]);
 
   // Save preferred width to localStorage
   const saveWidth = useCallback((w: number) => {
@@ -1111,13 +1158,30 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               ) : (
                 <iframe
                   ref={iframeRef}
+                  key={`${cleanYtId}_${useNoCookie ? 'nocookie' : 'standard'}`}
                   onLoad={handleIframeLoad}
-                  src={`https://www.youtube-nocookie.com/embed/${cleanYtId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1${typeof window !== 'undefined' && window.location.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}`}
+                  onError={triggerDomainFallback}
+                  src={`${useNoCookie ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com'}/embed/${cleanYtId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1${typeof window !== 'undefined' && window.location.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}${currentTime > 2 ? `&start=${Math.floor(currentTime)}` : ''}`}
                   title={video.title}
                   className="w-full h-full border-0 relative z-10"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 ></iframe>
+              )}
+
+              {/* Fallback Overlay if Video Embedding is completely restricted by owner */}
+              {hasPlaybackError && (
+                <div className="absolute inset-0 z-25 bg-slate-950/95 flex flex-col items-center justify-center p-4 text-center select-none">
+                  <p className="text-white text-xs font-bold mb-2">यह वीडियो यूट्यूब पर देखने के लिए उपलब्ध है</p>
+                  <a
+                    href={`https://www.youtube.com/watch?v=${cleanYtId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-md no-drag cursor-pointer active:scale-95"
+                  >
+                    <span>यूट्यूब पर देखें (Watch on YouTube)</span>
+                  </a>
+                </div>
               )}
 
               {/* 
@@ -1210,11 +1274,11 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               className={`w-full h-1.5 hover:h-2.5 cursor-pointer transition-all relative z-30 group no-drag ${
                 isDark ? 'bg-white/20 hover:bg-white/30' : 'bg-slate-200 hover:bg-slate-300'
               }`}
-              title={duration > 0 ? `${formatTime(currentTime)} / ${formatTime(duration)} (क्लिक करके आगे/पीछे करें)` : 'प्रोग्रेस बार'}
+              title={duration > 0 && isFinite(duration) ? `${formatTime(currentTime)} / ${formatTime(duration)} (क्लिक करके आगे/पीछे करें)` : 'लाइव बुलेटिन'}
             >
               <div 
                 className="h-full bg-red-600 group-hover:bg-red-500 relative transition-all duration-100 ease-linear"
-                style={{ width: `${duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0}%` }}
+                style={{ width: `${duration > 0 && isFinite(duration) ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 100}%` }}
               >
                 <span className="opacity-0 group-hover:opacity-100 absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md transition-opacity -mr-1.5"></span>
               </div>
@@ -1234,12 +1298,23 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 }`}>
                   {video.title}
                 </p>
-                {duration > 0 && (
+                {duration > 0 && isFinite(duration) ? (
                   <p className={`text-[8.5px] font-mono leading-none mt-0.5 ${
                     isDark ? 'text-white/50' : 'text-slate-500'
                   }`}>
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </p>
+                ) : duration === 0 ? (
+                  <p className={`text-[8.5px] font-mono leading-none mt-0.5 ${
+                    isDark ? 'text-white/50' : 'text-slate-500'
+                  }`}>
+                    {formatTime(currentTime)}
+                  </p>
+                ) : (
+                  <span className="text-[8px] font-black text-red-500 uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                    LIVE
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-1 shrink-0 no-drag">
