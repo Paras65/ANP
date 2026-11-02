@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Maximize2, Minimize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2, RotateCw, Play, Pause, Gauge, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { X, Maximize2, Minimize2, ChevronDown, SkipForward, SkipBack, Scaling, GripHorizontal, Loader2, RotateCw, RotateCcw, Play, Pause, Gauge, Check, Volume2, VolumeX } from 'lucide-react';
 import type { VideoBulletin } from '../types';
-import { isDirectVideoUrl, getVideoThumbnail } from '../utils/mediaUtils';
+import { isDirectVideoUrl, getVideoThumbnail, parseYouTubeUrl } from '../utils/mediaUtils';
 
 const SPEED_OPTIONS = [
   { speed: 0.75, label: '0.75x' },
@@ -28,7 +28,9 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   onClose,
   onExpand,
   onNext,
+  onPrev,
   hasNext = false,
+  hasPrev = false,
   activeTab = 'home',
   isPausedByModal = false
 }) => {
@@ -148,10 +150,51 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     });
   }, [resetControlsTimer]);
 
+  // Robust YouTube ID extraction (sanitizes full URLs and raw IDs)
+  const cleanYtId = useMemo(() => {
+    const raw = video.youtubeUrl || video.youtubeId || '';
+    const parsed = parseYouTubeUrl(raw);
+    return parsed?.id || video.youtubeId || '';
+  }, [video.youtubeId, video.youtubeUrl]);
+
+  // Keep latest onNext & onPrev in refs to prevent stale closure in event listeners
+  const onNextRef = useRef(onNext);
+  useEffect(() => {
+    onNextRef.current = onNext;
+  }, [onNext]);
+
+  const onPrevRef = useRef(onPrev);
+  useEffect(() => {
+    onPrevRef.current = onPrev;
+  }, [onPrev]);
+
+  // Time & Duration Tracking for Scrubber and Seek
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [seekToast, setSeekToast] = useState<string | null>(null);
+  const seekToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerSeekToast = useCallback((msg: string) => {
+    if (seekToastTimeoutRef.current) clearTimeout(seekToastTimeoutRef.current);
+    setSeekToast(msg);
+    seekToastTimeoutRef.current = setTimeout(() => {
+      setSeekToast(null);
+    }, 1200);
+  }, []);
+
+  const formatTime = (secs: number) => {
+    if (!secs || isNaN(secs) || secs < 0) return '00:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     return () => {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
       if (speedToastTimeoutRef.current) clearTimeout(speedToastTimeoutRef.current);
+      if (seekToastTimeoutRef.current) clearTimeout(seekToastTimeoutRef.current);
     };
   }, []);
 
@@ -241,6 +284,134 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     };
   }, [showSpeedMenu]);
 
+  // Universal Mute / Unmute Controller (HTML5 + YouTube API)
+  const handleToggleMute = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setIsMuted(prev => {
+      const next = !prev;
+      if (videoElementRef.current) {
+        videoElementRef.current.muted = next;
+      }
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: next ? 'mute' : 'unMute', args: '' }),
+          '*'
+        );
+      }
+      return next;
+    });
+  }, []);
+
+  // Universal Seek Controller (HTML5 + YouTube API)
+  const handleSeek = useCallback((newTime: number) => {
+    const clamped = Math.max(0, Math.min(newTime, duration || 9999));
+    setCurrentTime(clamped);
+    if (videoElementRef.current) {
+      videoElementRef.current.currentTime = clamped;
+    }
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func: 'seekTo', args: [clamped, true] }),
+        '*'
+      );
+    }
+  }, [duration]);
+
+  // Quick 10s Skip Forward / Backward
+  const handleSkipSeconds = useCallback((delta: number) => {
+    setCurrentTime(prev => {
+      const next = Math.max(0, Math.min(prev + delta, duration || 9999));
+      handleSeek(next);
+      triggerSeekToast(delta > 0 ? `+${delta}s ⏩` : `${delta}s ⏪`);
+      return next;
+    });
+  }, [duration, handleSeek, triggerSeekToast]);
+
+  // Scrubber click handler
+  const handleScrubberClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (!duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(clickX / rect.width, 1));
+    handleSeek(percentage * duration);
+  };
+
+  // YouTube IFrame API Bidirectional Message Listener (Auto-next on ENDED & Play/Pause Sync)
+  useEffect(() => {
+    const handleYouTubeMessage = (event: MessageEvent) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (!data) return;
+
+        // YouTube infoDelivery events (dispatched regularly by YouTube IFrame API)
+        if (data.event === 'infoDelivery' && data.info) {
+          if (typeof data.info.playerState === 'number') {
+            // 0: ENDED, 1: PLAYING, 2: PAUSED, 3: BUFFERING
+            if (data.info.playerState === 1) {
+              setIsPlaying(true);
+            } else if (data.info.playerState === 2) {
+              setIsPlaying(false);
+            } else if (data.info.playerState === 0) {
+              setIsPlaying(false);
+              if (onNextRef.current) {
+                onNextRef.current();
+              }
+            }
+          }
+          if (typeof data.info.currentTime === 'number') {
+            setCurrentTime(data.info.currentTime);
+          }
+          if (typeof data.info.duration === 'number' && data.info.duration > 0) {
+            setDuration(data.info.duration);
+          }
+          if (typeof data.info.muted === 'boolean') {
+            setIsMuted(data.info.muted);
+          }
+        } else if (data.event === 'onStateChange') {
+          if (data.info === 1) setIsPlaying(true);
+          else if (data.info === 2) setIsPlaying(false);
+          else if (data.info === 0) {
+            setIsPlaying(false);
+            if (onNextRef.current) {
+              onNextRef.current();
+            }
+          }
+        }
+      } catch {}
+    };
+
+    window.addEventListener('message', handleYouTubeMessage);
+    return () => window.removeEventListener('message', handleYouTubeMessage);
+  }, []);
+
+  // YouTube IFrame OnLoad Initializer
+  const handleIframeLoad = useCallback(() => {
+    setIsVideoLoaded(true);
+    if (iframeRef.current?.contentWindow) {
+      // Connect to YouTube JS API
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({ event: 'listening', id: cleanYtId }),
+        '*'
+      );
+    }
+    applyPlaybackSpeed(playbackSpeed);
+  }, [cleanYtId, applyPlaybackSpeed, playbackSpeed]);
+
+  // Periodic YouTube current time poll (fallback when playing YouTube video)
+  useEffect(() => {
+    if (!isPlaying || isDirectVideoUrl(video.youtubeUrl || video.youtubeId)) return;
+    const timer = setInterval(() => {
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'getCurrentTime', args: '' }),
+          '*'
+        );
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isPlaying, video.youtubeUrl, video.youtubeId]);
+
   // Drag offset for real-time free-floating movement
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDismissing, setIsDismissing] = useState<boolean>(false);
@@ -304,15 +475,22 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     };
   }, [playerWidth, isCollapsed, getDeviceBoundaries]);
 
-  // DESKTOP KEYBOARD SHORTCUTS (Space = Play/Pause, F = Cinema, Esc = Minimize, M = Mute)
+  // DESKTOP KEYBOARD SHORTCUTS (Space = Play/Pause, Arrows = Seek, F = Cinema, Esc = Minimize, M = Mute)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+      if (
+        target?.tagName === 'INPUT' || 
+        target?.tagName === 'TEXTAREA' || 
+        target?.isContentEditable ||
+        (target?.closest('[role="dialog"]') && !target?.closest('.anp-mini-player'))
+      ) {
         return;
       }
 
       if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+        // If in audio pill mode and browsing/reading, allow normal page scrolling
+        if (isCollapsed) return;
         e.preventDefault();
         handleTogglePlayPause();
       } else if (e.key === 'f' || e.key === 'F') {
@@ -327,9 +505,14 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
           setIsCollapsed(true);
         }
       } else if (e.key === 'm' || e.key === 'M') {
-        if (videoElementRef.current) {
-          videoElementRef.current.muted = !videoElementRef.current.muted;
-        }
+        e.preventDefault();
+        handleToggleMute();
+      } else if (e.key === 'ArrowRight' || e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        handleSkipSeconds(10);
+      } else if (e.key === 'ArrowLeft' || e.key === 'j' || e.key === 'J') {
+        e.preventDefault();
+        handleSkipSeconds(-10);
       } else if (e.key === '>' || (e.shiftKey && e.key === '.')) {
         e.preventDefault();
         const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
@@ -349,7 +532,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTogglePlayPause, isCinemaMode, isLandscapeRotated, isCollapsed, playbackSpeed, handleSelectSpeed]);
+  }, [handleTogglePlayPause, handleToggleMute, handleSkipSeconds, isCinemaMode, isLandscapeRotated, isCollapsed, playbackSpeed, handleSelectSpeed]);
 
   // FULLSCREEN CHANGE LISTENER FOR ROTATE MODE
   useEffect(() => {
@@ -366,36 +549,26 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     };
   }, []);
 
-  // 3. AUTO-CINEMA SCROLL FLOW ON VIDEOS TAB (Top = Cinema, Scrolled = Floating)
+  // 3. AUTO-CINEMA ON VIDEOS TAB INITIAL VIEW
   useEffect(() => {
-    hasManuallyMinimizedRef.current = false;
-    if (activeTab === 'videos' && window.scrollY < 180 && !isCollapsed) {
+    if (activeTab === 'videos' && window.scrollY < 120 && !isCollapsed && !hasManuallyMinimizedRef.current) {
       setIsCinemaMode(true);
     } else if (activeTab !== 'videos') {
       setIsCinemaMode(false);
     }
-  }, [activeTab, video.id, video.youtubeId, isCollapsed]);
+  }, [activeTab, video.id, cleanYtId, isCollapsed]);
 
-  // 4. SCROLL LISTENER: COLLAPSE TO FLOATING ON SCROLL DOWN, EXPAND BACK ON SCROLL TOP
+  // 4. SCROLL LISTENER: COLLAPSE TO FLOATING ON SCROLL DOWN (DOES NOT RE-HIJACK ON SCROLL UP)
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = Math.max(0, window.scrollY);
       if (isCinemaMode && scrollY > 260) {
-        setIsCinemaMode(false); // smoothly shrink down to corner
-      } else if (
-        !isCinemaMode && 
-        activeTab === 'videos' && 
-        scrollY < 120 && 
-        !isCollapsed && 
-        !isDragging && 
-        !hasManuallyMinimizedRef.current
-      ) {
-        setIsCinemaMode(true); // smoothly expand back to cinema view at top
+        setIsCinemaMode(false);
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isCinemaMode, activeTab, isCollapsed, isDragging]);
+  }, [isCinemaMode]);
 
   // 5. SMART PAUSE/RESUME ON REEL / STORY MODAL (WITHOUT UNMOUNTING IFRAME)
   useEffect(() => {
@@ -732,7 +905,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 }
               : undefined
           }
-          className={isCollapsed ? 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none absolute' : 'w-full h-full flex flex-col justify-center'}
+          className={isCollapsed ? 'w-[1px] h-[1px] overflow-hidden opacity-0 pointer-events-none absolute -left-[9999px]' : 'w-full h-full flex flex-col justify-center'}
         >
           <div 
             style={{ width: (isCinemaMode || isLandscapeRotated) ? '100%' : `${playerWidth}px` }}
@@ -782,8 +955,21 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
               {/* Action Buttons (Strictly No-Drag so clicks are 100% instantaneous) */}
               <div className="flex items-center gap-1 pointer-events-auto no-drag">
+                {/* Previous Bulletin */}
+                {onPrev && hasPrev && (playerWidth >= 330 || isCinemaMode || isLandscapeRotated) && (
+                  <button
+                    type="button"
+                    onClick={onPrev}
+                    aria-label="पिछला बुलेटिन देखें"
+                    title="पिछला बुलेटिन देखें"
+                    className="w-7 h-7 rounded-full bg-black/85 hover:bg-slate-700 text-white border border-white/20 transition active:scale-90 cursor-pointer shadow flex items-center justify-center"
+                  >
+                    <SkipBack size={12} />
+                  </button>
+                )}
+
                 {/* Skip to Next Bulletin */}
-                {onNext && hasNext && (playerWidth >= 290 || isCinemaMode || isLandscapeRotated) && (
+                {onNext && hasNext && (playerWidth >= 280 || isCinemaMode || isLandscapeRotated) && (
                   <button
                     type="button"
                     onClick={onNext}
@@ -794,6 +980,21 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                     <SkipForward size={12} />
                   </button>
                 )}
+
+                {/* Mute / Unmute Button */}
+                <button
+                  type="button"
+                  onClick={handleToggleMute}
+                  aria-label={isMuted ? "आवाज़ चालू करें (Unmute)" : "आवाज़ बंद करें (Mute)"}
+                  title={isMuted ? "आवाज़ चालू करें (Unmute)" : "आवाज़ बंद करें (Mute)"}
+                  className={`w-7 h-7 rounded-full border transition active:scale-90 cursor-pointer shadow flex items-center justify-center ${
+                    isMuted 
+                      ? 'bg-red-600 text-white border-white animate-pulse' 
+                      : 'bg-black/85 hover:bg-slate-700 text-white border-white/20'
+                  }`}
+                >
+                  {isMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                </button>
 
                 {/* Minimize to Audio Pill */}
                 <button
@@ -811,7 +1012,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 </button>
 
                 {/* Rotate to Landscape Fullscreen Button */}
-                {(playerWidth >= 280 || isCinemaMode || isLandscapeRotated) && (
+                {(playerWidth >= 260 || isCinemaMode || isLandscapeRotated) && (
                   <button
                     type="button"
                     onClick={handleToggleRotate}
@@ -878,13 +1079,32 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                   onLoadedData={() => setIsVideoLoaded(true)}
+                  onLoadedMetadata={(e) => {
+                    const v = e.currentTarget;
+                    if (v.duration && !isNaN(v.duration)) {
+                      setDuration(v.duration);
+                    }
+                  }}
+                  onTimeUpdate={(e) => {
+                    const v = e.currentTarget;
+                    setCurrentTime(v.currentTime);
+                    if (v.duration && !isNaN(v.duration)) {
+                      setDuration(v.duration);
+                    }
+                  }}
+                  onEnded={() => {
+                    setIsPlaying(false);
+                    if (onNextRef.current) {
+                      onNextRef.current();
+                    }
+                  }}
                   className="w-full h-full object-contain bg-black relative z-10"
                 />
               ) : (
                 <iframe
                   ref={iframeRef}
-                  onLoad={() => setIsVideoLoaded(true)}
-                  src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
+                  onLoad={handleIframeLoad}
+                  src={`https://www.youtube-nocookie.com/embed/${cleanYtId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1${typeof window !== 'undefined' && window.location.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}`}
                   title={video.title}
                   className="w-full h-full border-0 relative z-10"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -909,11 +1129,22 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               )}
 
               {/* 
-                BIG CENTER PLAY / PAUSE BUTTON (PROPORTIONAL & RESPONSIVE)
-                Sits at z-30 with pointer-events-auto, instantly clickable!
+                CENTER PLAY / PAUSE & 10s SKIP CONTROLS
               */}
               {(showControls || !isPlaying) && !isCollapsed && (
-                <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none bg-black/35 backdrop-blur-[1px] transition-opacity duration-200">
+                <div className="absolute inset-0 z-30 flex items-center justify-center gap-3 sm:gap-6 pointer-events-none bg-black/40 backdrop-blur-[1px] transition-opacity duration-200">
+                  {/* -10s Back */}
+                  <button
+                    type="button"
+                    onClick={() => handleSkipSeconds(-10)}
+                    aria-label="10 सेकंड पीछे (Skip back 10s)"
+                    title="10 सेकंड पीछे (Skip back 10s)"
+                    className="no-drag pointer-events-auto rounded-full bg-black/75 hover:bg-black/90 text-white shadow-xl flex items-center justify-center transition-transform active:scale-90 border border-white/30 cursor-pointer w-8 h-8 sm:w-10 sm:h-10"
+                  >
+                    <RotateCcw size={isCinemaMode || isLandscapeRotated ? 18 : 14} />
+                  </button>
+
+                  {/* Big Play / Pause Button */}
                   <button
                     type="button"
                     onClick={handleTogglePlayPause}
@@ -931,11 +1162,31 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                       <Play size={isCinemaMode || isLandscapeRotated ? 24 : 18} className="fill-current text-white ml-0.5" />
                     )}
                   </button>
+
+                  {/* +10s Forward */}
+                  <button
+                    type="button"
+                    onClick={() => handleSkipSeconds(10)}
+                    aria-label="10 सेकंड आगे (Skip forward 10s)"
+                    title="10 सेकंड आगे (Skip forward 10s)"
+                    className="no-drag pointer-events-auto rounded-full bg-black/75 hover:bg-black/90 text-white shadow-xl flex items-center justify-center transition-transform active:scale-90 border border-white/30 cursor-pointer w-8 h-8 sm:w-10 sm:h-10"
+                  >
+                    <RotateCw size={isCinemaMode || isLandscapeRotated ? 18 : 14} />
+                  </button>
+                </div>
+              )}
+
+              {/* Visual Seek Toast HUD */}
+              {seekToast && (
+                <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+                  <div className="px-3 py-1.5 rounded-lg bg-black/85 backdrop-blur-md border border-white/20 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-2xl animate-in zoom-in-75 duration-150">
+                    <span>{seekToast}</span>
+                  </div>
                 </div>
               )}
 
               {/* Visual Speed Toast HUD */}
-              {speedToast && (
+              {speedToast && !seekToast && (
                 <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
                   <div className="px-3 py-1.5 rounded-lg bg-black/85 backdrop-blur-md border border-white/20 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-2xl animate-in zoom-in-75 duration-150">
                     <Gauge size={14} className="text-amber-400" />
@@ -945,13 +1196,34 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               )}
             </div>
 
+            {/* INTERACTIVE PROGRESS SCRUBBER BAR */}
+            <div 
+              onClick={handleScrubberClick}
+              className="w-full h-1.5 hover:h-2.5 bg-white/20 hover:bg-white/30 cursor-pointer transition-all relative z-30 group no-drag"
+              title={duration > 0 ? `${formatTime(currentTime)} / ${formatTime(duration)} (क्लिक करके आगे/पीछे करें)` : 'प्रोग्रेस बार'}
+            >
+              <div 
+                className="h-full bg-red-600 group-hover:bg-red-500 relative transition-all duration-100 ease-linear"
+                style={{ width: `${duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0}%` }}
+              >
+                <span className="opacity-0 group-hover:opacity-100 absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md transition-opacity -mr-1.5"></span>
+              </div>
+            </div>
+
             {/* BOTTOM TITLE BAR WITH DIRECT 1-TAP CONTROLS */}
             <div 
               className="p-1 px-2 bg-gradient-to-t from-black via-black/95 to-black/80 text-white flex items-center justify-between gap-1.5 border-t border-white/10 z-30 relative"
             >
-              <p className="text-[10px] font-bold truncate flex-1 leading-tight select-none">
-                {video.title}
-              </p>
+              <div className="flex-1 min-w-0 pr-1 select-none">
+                <p className="text-[10px] font-bold truncate leading-tight">
+                  {video.title}
+                </p>
+                {duration > 0 && (
+                  <p className="text-[8.5px] text-white/50 font-mono leading-none mt-0.5">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </p>
+                )}
+              </div>
               <div className="flex items-center gap-1 shrink-0 no-drag">
                 {/* 1-Tap Play / Pause Button */}
                 <button
@@ -987,10 +1259,10 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   {/* Speed Menu Popup */}
                   {showSpeedMenu && (
                     <div 
-                      className="absolute bottom-full right-0 mb-1.5 w-32 bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100 flex flex-col no-drag"
+                      className="absolute bottom-full right-0 mb-1.5 w-32 max-h-36 overflow-y-auto bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100 flex flex-col no-drag"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-white/10 flex items-center justify-between">
+                      <div className="px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-white/10 flex items-center justify-between sticky top-0 bg-slate-900">
                         <span>प्लेबैक स्पीड</span>
                         <Gauge size={10} className="text-slate-400" />
                       </div>
@@ -1042,9 +1314,10 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 <span className="font-bold text-white/80">कीबोर्ड शॉर्टकट्स:</span>
                 <div className="flex items-center gap-3">
                   <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">Space</kbd> प्ले / रोकें</span>
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">← / →</kbd> 10s सीक</span>
                   <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">&gt; / &lt;</kbd> स्पीड</span>
-                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">F</kbd> सिनेमा</span>
                   <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">M</kbd> म्यूट</span>
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">F</kbd> सिनेमा</span>
                   <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">Esc</kbd> छोटा करें</span>
                 </div>
               </div>
@@ -1061,7 +1334,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className={`flex items-center gap-2 px-3 py-1.5 bg-slate-950/95 backdrop-blur-md rounded-full border-2 shadow-2xl text-white w-[275px] sm:w-[310px] animate-in fade-in zoom-in-95 duration-200 cursor-grab active:cursor-grabbing transition-colors ${
+          className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-slate-950/95 backdrop-blur-md rounded-full border-2 shadow-2xl text-white w-[285px] sm:w-[325px] animate-in fade-in zoom-in-95 duration-200 cursor-grab active:cursor-grabbing transition-colors ${
             isPastDismissThreshold 
               ? 'border-red-500 shadow-red-600/60 ring-2 ring-red-500' 
               : 'border-red-600'
@@ -1087,13 +1360,14 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             <p className="text-[9.5px] font-bold text-white truncate leading-tight">
               {video.title}
             </p>
-            <span className="text-[8px] text-red-400 font-medium">
+            <span className="text-[8px] text-red-400 font-medium truncate block">
               {isPlaying ? '● लाइव ऑडियो चालू' : '❚❚ ऑडियो रुका हुआ'}
+              {duration > 0 && ` (${formatTime(currentTime)})`}
             </span>
           </div>
 
           {/* Quick Controls */}
-          <div className="flex items-center gap-1.5 shrink-0 no-drag">
+          <div className="flex items-center gap-1 shrink-0 no-drag">
             {/* 1-Tap Speed Cycle Badge */}
             <button
               type="button"
@@ -1110,6 +1384,19 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               <span>{playbackSpeed}x</span>
             </button>
 
+            {/* Previous Bulletin (Audio Pill) */}
+            {onPrev && hasPrev && (
+              <button
+                type="button"
+                onClick={onPrev}
+                aria-label="पिछला बुलेटिन"
+                title="पिछला बुलेटिन"
+                className="hidden sm:flex w-7 h-7 items-center justify-center hover:bg-slate-800 text-slate-200 hover:text-white rounded-full transition active:scale-95 cursor-pointer"
+              >
+                <SkipBack size={12} />
+              </button>
+            )}
+
             {/* Play/Pause in Audio Pill */}
             <button
               type="button"
@@ -1121,6 +1408,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               {isPlaying ? <Pause size={12} /> : <Play size={12} className="ml-0.5" />}
             </button>
 
+            {/* Next Bulletin */}
             {onNext && hasNext && (
               <button
                 type="button"

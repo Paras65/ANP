@@ -184,19 +184,26 @@ export const App: React.FC = () => {
     }
   });
 
-  // Global Floating Mini-Player playlist index & next bulletin handler
+  // Global Floating Mini-Player playlist index & next/prev bulletin handlers
   const currentGlobalVideoIdx = useMemo(() => {
     if (!globalPlayingVideo || !videoBulletins.length) return -1;
     return videoBulletins.findIndex(v => v.id === globalPlayingVideo.id || v.youtubeId === globalPlayingVideo.youtubeId);
   }, [globalPlayingVideo, videoBulletins]);
 
   const hasNextGlobalVideo = currentGlobalVideoIdx >= 0 && currentGlobalVideoIdx < videoBulletins.length - 1;
+  const hasPrevGlobalVideo = currentGlobalVideoIdx > 0;
 
   const handleNextGlobalVideo = useCallback(() => {
     if (hasNextGlobalVideo && videoBulletins[currentGlobalVideoIdx + 1]) {
       setGlobalPlayingVideo(videoBulletins[currentGlobalVideoIdx + 1]);
     }
   }, [hasNextGlobalVideo, videoBulletins, currentGlobalVideoIdx]);
+
+  const handlePrevGlobalVideo = useCallback(() => {
+    if (hasPrevGlobalVideo && videoBulletins[currentGlobalVideoIdx - 1]) {
+      setGlobalPlayingVideo(videoBulletins[currentGlobalVideoIdx - 1]);
+    }
+  }, [hasPrevGlobalVideo, videoBulletins, currentGlobalVideoIdx]);
 
   // Dynamic Live Mandi Rates
   const [mandiRates, setMandiRates] = useState<MandiRate[]>(() => {
@@ -2527,7 +2534,9 @@ export const App: React.FC = () => {
             onClose={() => setGlobalPlayingVideo(null)}
             onExpand={handleExpandGlobalVideo}
             onNext={hasNextGlobalVideo ? handleNextGlobalVideo : undefined}
+            onPrev={hasPrevGlobalVideo ? handlePrevGlobalVideo : undefined}
             hasNext={hasNextGlobalVideo}
+            hasPrev={hasPrevGlobalVideo}
             activeTab={activeTab}
             isPausedByModal={Boolean(activeStory || activeReelId)}
           />
