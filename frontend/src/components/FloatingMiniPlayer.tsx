@@ -1,7 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Maximize2, Minimize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2, RotateCw, Play, Pause } from 'lucide-react';
+import { X, Maximize2, Minimize2, ChevronDown, SkipForward, Scaling, GripHorizontal, Loader2, RotateCw, Play, Pause, Gauge, Check } from 'lucide-react';
 import type { VideoBulletin } from '../types';
 import { isDirectVideoUrl, getVideoThumbnail } from '../utils/mediaUtils';
+
+const SPEED_OPTIONS = [
+  { speed: 0.75, label: '0.75x' },
+  { speed: 1.0, label: '1x सामान्य' },
+  { speed: 1.25, label: '1.25x' },
+  { speed: 1.5, label: '1.5x तेज़' },
+  { speed: 2.0, label: '2x' }
+];
 
 interface FloatingMiniPlayerProps {
   video: VideoBulletin;
@@ -143,8 +151,95 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   useEffect(() => {
     return () => {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      if (speedToastTimeoutRef.current) clearTimeout(speedToastTimeoutRef.current);
     };
   }, []);
+
+  // Playback Speed State & Handlers (0.75x to 2x)
+  const getInitialPlaybackSpeed = (): number => {
+    if (typeof window === 'undefined') return 1.0;
+    try {
+      const saved = localStorage.getItem('anp_video_playback_speed');
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if ([0.75, 1.0, 1.25, 1.5, 2.0].includes(parsed)) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return 1.0;
+  };
+
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(getInitialPlaybackSpeed);
+  const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
+  const [speedToast, setSpeedToast] = useState<string | null>(null);
+  const speedToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speedMenuRef = useRef<HTMLDivElement>(null);
+
+  // Apply playback speed to both HTML5 video element and YouTube iframe
+  const applyPlaybackSpeed = useCallback((speed: number) => {
+    if (videoElementRef.current) {
+      videoElementRef.current.playbackRate = speed;
+    }
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func: 'setPlaybackRate', args: [speed] }),
+        '*'
+      );
+    }
+  }, []);
+
+  const triggerSpeedToast = useCallback((speed: number) => {
+    if (speedToastTimeoutRef.current) clearTimeout(speedToastTimeoutRef.current);
+    setSpeedToast(`${speed}x गति`);
+    speedToastTimeoutRef.current = setTimeout(() => {
+      setSpeedToast(null);
+    }, 1400);
+  }, []);
+
+  const handleSelectSpeed = useCallback((speed: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setPlaybackSpeed(speed);
+    applyPlaybackSpeed(speed);
+    setShowSpeedMenu(false);
+    triggerSpeedToast(speed);
+    try {
+      localStorage.setItem('anp_video_playback_speed', speed.toString());
+    } catch {}
+  }, [applyPlaybackSpeed, triggerSpeedToast]);
+
+  const handleCycleSpeed = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+    const currentIndex = speeds.indexOf(playbackSpeed);
+    const nextSpeed = currentIndex !== -1 && currentIndex < speeds.length - 1 
+      ? speeds[currentIndex + 1] 
+      : speeds[0];
+    handleSelectSpeed(nextSpeed);
+  }, [playbackSpeed, handleSelectSpeed]);
+
+  // Enforce speed whenever video element or iframe is ready
+  useEffect(() => {
+    if (isVideoLoaded) {
+      applyPlaybackSpeed(playbackSpeed);
+    }
+  }, [isVideoLoaded, playbackSpeed, applyPlaybackSpeed]);
+
+  // Close speed menu when clicking outside
+  useEffect(() => {
+    if (!showSpeedMenu) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (speedMenuRef.current && !speedMenuRef.current.contains(e.target as Node)) {
+        setShowSpeedMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showSpeedMenu]);
 
   // Drag offset for real-time free-floating movement
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -235,12 +330,26 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
         if (videoElementRef.current) {
           videoElementRef.current.muted = !videoElementRef.current.muted;
         }
+      } else if (e.key === '>' || (e.shiftKey && e.key === '.')) {
+        e.preventDefault();
+        const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+        const idx = speeds.indexOf(playbackSpeed);
+        if (idx !== -1 && idx < speeds.length - 1) {
+          handleSelectSpeed(speeds[idx + 1]);
+        }
+      } else if (e.key === '<' || (e.shiftKey && e.key === ',')) {
+        e.preventDefault();
+        const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+        const idx = speeds.indexOf(playbackSpeed);
+        if (idx !== -1 && idx > 0) {
+          handleSelectSpeed(speeds[idx - 1]);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTogglePlayPause, isCinemaMode, isLandscapeRotated, isCollapsed]);
+  }, [handleTogglePlayPause, isCinemaMode, isLandscapeRotated, isCollapsed, playbackSpeed, handleSelectSpeed]);
 
   // FULLSCREEN CHANGE LISTENER FOR ROTATE MODE
   useEffect(() => {
@@ -824,6 +933,16 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   </button>
                 </div>
               )}
+
+              {/* Visual Speed Toast HUD */}
+              {speedToast && (
+                <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+                  <div className="px-3 py-1.5 rounded-lg bg-black/85 backdrop-blur-md border border-white/20 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-2xl animate-in zoom-in-75 duration-150">
+                    <Gauge size={14} className="text-amber-400" />
+                    <span>{speedToast}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* BOTTOM TITLE BAR WITH DIRECT 1-TAP CONTROLS */}
@@ -845,6 +964,55 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   <span>{isPlaying ? 'रोकें' : 'प्ले'}</span>
                 </button>
 
+                {/* Speed Controller Dropdown */}
+                <div className="relative shrink-0" ref={speedMenuRef}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSpeedMenu(prev => !prev);
+                    }}
+                    className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 border ${
+                      playbackSpeed !== 1.0
+                        ? 'bg-amber-500/25 text-amber-300 border-amber-400/40 hover:bg-amber-500/35'
+                        : 'bg-white/10 hover:bg-white/20 text-white border-white/15'
+                    }`}
+                    title="प्लेबैक स्पीड बदलें (0.75x - 2x)"
+                    aria-label="स्पीड कंट्रोल"
+                  >
+                    <Gauge size={9} />
+                    <span>{playbackSpeed}x</span>
+                  </button>
+
+                  {/* Speed Menu Popup */}
+                  {showSpeedMenu && (
+                    <div 
+                      className="absolute bottom-full right-0 mb-1.5 w-32 bg-slate-900/95 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100 flex flex-col no-drag"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-white/10 flex items-center justify-between">
+                        <span>प्लेबैक स्पीड</span>
+                        <Gauge size={10} className="text-slate-400" />
+                      </div>
+                      {SPEED_OPTIONS.map(opt => (
+                        <button
+                          key={opt.speed}
+                          type="button"
+                          onClick={(e) => handleSelectSpeed(opt.speed, e)}
+                          className={`w-full px-2.5 py-1 text-left text-[10px] font-semibold flex items-center justify-between cursor-pointer transition ${
+                            playbackSpeed === opt.speed
+                              ? 'bg-red-600/30 text-red-300 font-bold'
+                              : 'text-slate-200 hover:bg-white/10'
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          {playbackSpeed === opt.speed && <Check size={11} className="text-red-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Rotate Button */}
                 <button
                   type="button"
@@ -853,7 +1021,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   title="रोटेट मोड (Landscape)"
                 >
                   <RotateCw size={9} />
-                  <span>रोटेट</span>
+                  <span className={playerWidth < 300 ? 'hidden sm:inline' : ''}>रोटेट</span>
                 </button>
 
                 {/* Cinema / Expand Button */}
@@ -874,6 +1042,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                 <span className="font-bold text-white/80">कीबोर्ड शॉर्टकट्स:</span>
                 <div className="flex items-center gap-3">
                   <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">Space</kbd> प्ले / रोकें</span>
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">&gt; / &lt;</kbd> स्पीड</span>
                   <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">F</kbd> सिनेमा</span>
                   <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">M</kbd> म्यूट</span>
                   <span><kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono">Esc</kbd> छोटा करें</span>
@@ -892,7 +1061,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className={`flex items-center gap-2 px-3 py-1.5 bg-slate-950/95 backdrop-blur-md rounded-full border-2 shadow-2xl text-white w-[260px] sm:w-[290px] animate-in fade-in zoom-in-95 duration-200 cursor-grab active:cursor-grabbing transition-colors ${
+          className={`flex items-center gap-2 px-3 py-1.5 bg-slate-950/95 backdrop-blur-md rounded-full border-2 shadow-2xl text-white w-[275px] sm:w-[310px] animate-in fade-in zoom-in-95 duration-200 cursor-grab active:cursor-grabbing transition-colors ${
             isPastDismissThreshold 
               ? 'border-red-500 shadow-red-600/60 ring-2 ring-red-500' 
               : 'border-red-600'
@@ -925,6 +1094,22 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
           {/* Quick Controls */}
           <div className="flex items-center gap-1.5 shrink-0 no-drag">
+            {/* 1-Tap Speed Cycle Badge */}
+            <button
+              type="button"
+              onClick={handleCycleSpeed}
+              aria-label={`स्पीड: ${playbackSpeed}x, टैप करके बदलें`}
+              title={`स्पीड बदलें (${playbackSpeed}x)`}
+              className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-black flex items-center gap-0.5 transition active:scale-95 cursor-pointer border ${
+                playbackSpeed !== 1.0
+                  ? 'bg-amber-500/30 text-amber-300 border-amber-400/40 hover:bg-amber-500/40'
+                  : 'bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white border-white/15'
+              }`}
+            >
+              <Gauge size={8} />
+              <span>{playbackSpeed}x</span>
+            </button>
+
             {/* Play/Pause in Audio Pill */}
             <button
               type="button"
