@@ -88,7 +88,8 @@ export const DEMO_STORIES = EDITORIAL_STORIES;
 export function generateStoriesList(
   articles: Article[] = [],
   latestVideo?: VideoBulletin,
-  topMandiRate?: MandiRate
+  topMandiRate?: MandiRate,
+  targetDistrict?: string
 ): StoryItem[] {
   const dynamicList: StoryItem[] = [];
 
@@ -107,12 +108,43 @@ export function generateStoriesList(
     ringGradient: 'from-red-500 via-rose-600 to-amber-500'
   });
 
-  // 2. Kawardha Story (from latest Kawardha / Kabirdham article)
-  const kwdArticle = articles.find(a => a.district.includes('कवर्धा') || a.district.includes('कबीरधाम'));
+  // 2. Target District Story (If user selected a specific district other than 'सभी')
+  const isSpecificDistrict = targetDistrict && targetDistrict !== 'सभी';
+  let districtArticle: Article | undefined;
+  
+  if (isSpecificDistrict) {
+    const cleanTokens = targetDistrict.replace(/[()]/g, ' ').split(/\s+/).filter(Boolean);
+    districtArticle = articles.find(a => 
+      cleanTokens.some(token => a.district.toLowerCase().includes(token.toLowerCase()))
+    );
+  }
+
+  if (districtArticle) {
+    const theme = getCategoryTheme(districtArticle.category, districtArticle.title, districtArticle.district);
+    const districtLabel = (targetDistrict || districtArticle.district).replace(/ \(.*\)/, '').slice(0, 8);
+    dynamicList.push({
+      id: `s-district-${districtArticle._id}`,
+      label: districtLabel,
+      title: districtArticle.title,
+      image: getSmartCoverImage(districtArticle.coverImage, districtArticle.category, districtArticle.title, districtArticle.district),
+      category: districtArticle.category,
+      district: districtArticle.district,
+      excerpt: districtArticle.excerpt,
+      badge: '📍 ज़िला',
+      ringGradient: theme.ringGradient || 'from-red-500 via-amber-500 to-orange-500',
+      articleId: districtArticle._id
+    });
+  }
+
+  // 3. Kawardha HQ Story (Anchor hub for the portal - if not already added as districtArticle)
+  const kwdArticle = articles.find(a => 
+    (!districtArticle || a._id !== districtArticle._id) && 
+    (a.district.includes('कवर्धा') || a.district.includes('कबीरधाम'))
+  );
   if (kwdArticle) {
     dynamicList.push({
       id: `s-${kwdArticle._id}`,
-      label: 'कवर्धा',
+      label: 'कवर्धा HQ',
       title: kwdArticle.title,
       image: kwdArticle.coverImage || 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=140&auto=format&fit=crop&q=60',
       category: kwdArticle.category,
@@ -124,7 +156,7 @@ export function generateStoriesList(
     });
   }
 
-  // 3. Live Mandi Story (from top live crop rate)
+  // 4. Live Mandi Story (from top live crop rate, localized if matched)
   if (topMandiRate) {
     dynamicList.push({
       id: 's-mandi',
@@ -139,8 +171,9 @@ export function generateStoriesList(
     });
   }
 
-  // 4. Remaining top articles dynamically converted into web story circles
-  const remaining = articles.filter(a => !kwdArticle || a._id !== kwdArticle._id).slice(0, 5);
+  // 5. Remaining top articles dynamically converted into web story circles
+  const excludedIds = new Set([districtArticle?._id, kwdArticle?._id].filter(Boolean));
+  const remaining = articles.filter(a => !excludedIds.has(a._id)).slice(0, 5);
 
   remaining.forEach((art) => {
     const theme = getCategoryTheme(art.category, art.title, art.district);

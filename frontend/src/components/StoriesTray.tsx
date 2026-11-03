@@ -12,6 +12,7 @@ export interface StoriesTrayProps {
   articles?: Article[];
   latestVideo?: VideoBulletin;
   topMandiRate?: MandiRate;
+  targetDistrict?: string;
 }
 
 export const StoriesTray: React.FC<StoriesTrayProps> = ({ 
@@ -20,7 +21,8 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
   stories: propStories,
   articles = [],
   latestVideo,
-  topMandiRate
+  topMandiRate,
+  targetDistrict
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -30,8 +32,8 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
   const stories = useMemo<StoryItem[]>(() => {
     if (propStories && propStories.length > 0) return propStories;
     if (!articles || articles.length === 0) return [];
-    return generateStoriesList(articles, latestVideo, topMandiRate);
-  }, [propStories, articles, latestVideo, topMandiRate]);
+    return generateStoriesList(articles, latestVideo, topMandiRate, targetDistrict);
+  }, [propStories, articles, latestVideo, topMandiRate, targetDistrict]);
 
   // Check scroll bounds for desktop chevron indicators
   const checkScrollBounds = () => {
@@ -99,8 +101,8 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
               className="flex flex-col items-center gap-1.5 focus:outline-none group active:scale-95 transition-transform cursor-pointer"
             >
               {/* Story Avatar Circle with Gradient Ring */}
-              <div className={`relative w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] rounded-full p-[2.5px] bg-gradient-to-tr ${story.ringGradient} shadow-md group-hover:scale-105 transition-transform`}>
-                <div className={`w-full h-full rounded-full overflow-hidden p-[2px] ${
+              <div className={`relative w-[60px] h-[60px] sm:w-[72px] sm:h-[72px] rounded-full p-[2px] sm:p-[2.5px] bg-gradient-to-tr ${story.ringGradient} shadow-md group-hover:scale-105 transition-transform`}>
+                <div className={`w-full h-full rounded-full overflow-hidden p-[1.5px] sm:p-[2px] ${
                   isDark ? 'bg-slate-950' : 'bg-white'
                 }`}>
                   <img 
@@ -108,8 +110,8 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
                     alt={story.label}
                     loading="lazy"
                     decoding="async"
-                    width="66"
-                    height="66"
+                    width="62"
+                    height="62"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/logo-96.webp';
                     }}
@@ -119,14 +121,14 @@ export const StoriesTray: React.FC<StoriesTrayProps> = ({
 
                 {/* Optional Badge */}
                 {story.badge && (
-                  <span className="absolute -bottom-1 inset-x-0 mx-auto w-max bg-red-600 text-white font-black text-[9px] px-1.5 py-0.2 rounded-full uppercase tracking-tighter shadow border border-slate-950">
+                  <span className="absolute -bottom-1 inset-x-0 mx-auto w-max bg-red-600 text-white font-black text-[8.5px] sm:text-[9px] px-1.5 py-0.2 rounded-full uppercase tracking-tighter shadow border border-slate-950">
                     {story.badge}
                   </span>
                 )}
               </div>
 
               {/* Label */}
-              <span className={`text-[11px] font-bold tracking-tight max-w-[68px] truncate transition-colors ${
+              <span className={`text-[10px] sm:text-[11px] font-bold tracking-tight max-w-[64px] sm:max-w-[72px] truncate transition-colors ${
                 isDark ? 'text-slate-200 group-hover:text-red-400' : 'text-slate-800 group-hover:text-red-600'
               }`}>
                 {story.label}

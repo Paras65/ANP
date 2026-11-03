@@ -28,6 +28,8 @@ export interface VideoBulletin {
   youtubeUrl: string;
   publishedAt?: string;
   createdAt?: string;
+  district?: string;
+  description?: string;
 }
 
 export interface ReelComment {

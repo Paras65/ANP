@@ -16,7 +16,9 @@ import {
   ChevronDown,
   MapPinOff,
   Loader2,
-  X
+  X,
+  Play,
+  Tv
 } from 'lucide-react';
 import { formatRelativeHindiTime, estimateReadingTime, formatHindiViews } from './utils/dateUtils';
 
@@ -1293,10 +1295,27 @@ export const App: React.FC = () => {
       .slice(0, 5);
   }, [articles]);
 
-  // Dynamic Web Stories synthesized from live portal articles, video bulletins & mandi rates
+  // Localized Top Mandi Rate: Prioritizes rates matching currentDistrict if available
+  const relevantTopMandiRate = useMemo(() => {
+    if (currentDistrict !== 'सभी') {
+      const cleanTokens = currentDistrict.replace(/[()]/g, ' ').split(/\s+/).filter(Boolean);
+      const matched = mandiRates.find(r => cleanTokens.some(token => r.mandi.toLowerCase().includes(token.toLowerCase())));
+      if (matched) return matched;
+    }
+    return mandiRates[0];
+  }, [mandiRates, currentDistrict]);
+
+  // Dynamic Web Stories synthesized from live portal articles, video bulletins & mandi rates (District-aware)
   const currentStoriesList = useMemo(() => {
-    return generateStoriesList(articles, videoBulletins[0], mandiRates[0]);
-  }, [articles, videoBulletins, mandiRates]);
+    return generateStoriesList(articles, videoBulletins[0], relevantTopMandiRate, currentDistrict);
+  }, [articles, videoBulletins, relevantTopMandiRate, currentDistrict]);
+
+  // Context-aware Mandi visibility: Auto-hide Mandi widget for purely non-agricultural categories to maximize vertical screen space
+  const isMandiRelevantForCategory = useMemo(() => {
+    if (!selectedCategory) return true;
+    const nonAgriCategories = ['मनोरंजन', 'खेल', 'तकनीक', 'अपराध', 'लाइफस्टाइल', 'सिनेमा'];
+    return !nonAgriCategories.some(cat => selectedCategory.includes(cat));
+  }, [selectedCategory]);
 
   // Saved Reels & Combined Total Saved Count
   const savedReelsList = useMemo(() => {
@@ -1454,16 +1473,20 @@ export const App: React.FC = () => {
         )}
 
         {/* 3. NATIVE STORIES TRAY (INSTAGRAM / INSHORTS STYLE WEB STORIES) */}
-        <div className={`w-full max-w-full overflow-hidden px-3 sm:px-4 pt-3 pb-1 border-b transition-colors ${
+        <div className={`w-full max-w-full overflow-hidden px-2.5 sm:px-4 pt-2 pb-0.5 sm:pt-2.5 sm:pb-1 border-b transition-colors ${
           isDark ? 'bg-slate-950/60 border-slate-800/60' : 'bg-white border-slate-200'
         }`}>
           <div className="max-w-7xl mx-auto w-full">
             <div className="flex items-center justify-between px-1 mb-1">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
                 <Sparkles size={11} className="text-amber-400" />
-                <span>वेब स्टोरीज़ • कवर्धा व शीर्ष सुर्खियां</span>
+                <span>
+                  {currentDistrict !== 'सभी' 
+                    ? `वेब स्टोरीज़ • ${currentDistrict.replace(/ \(.*\)/, '')} व ताज़ा सुर्खियां` 
+                    : 'वेब स्टोरीज़ • कवर्धा व शीर्ष सुर्खियां'}
+                </span>
               </span>
-              <span className="text-[10px] text-red-500 font-bold">24h लाइव</span>
+              <span className="text-[9.5px] sm:text-[10px] text-red-500 font-bold">24h लाइव</span>
             </div>
             <StoriesTray 
               onSelectStory={(s) => openStoryModal(s)} 
@@ -1471,13 +1494,14 @@ export const App: React.FC = () => {
               stories={currentStoriesList}
               articles={articles} 
               latestVideo={videoBulletins[0]} 
-              topMandiRate={mandiRates[0]} 
+              topMandiRate={relevantTopMandiRate} 
+              targetDistrict={currentDistrict}
             />
           </div>
         </div>
 
         {/* 4. MAIN CONTENT CONTAINER (PADDED BOTTOM FOR NATIVE BOTTOM NAV ON MOBILE, CLEAN SPACING ON DESKTOP) */}
-        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex-1 w-full max-w-full min-w-0 space-y-6 pb-28 md:pb-12">
+        <main className="max-w-7xl mx-auto px-2.5 sm:px-4 py-2.5 sm:py-4 flex-1 w-full max-w-full min-w-0 space-y-3.5 sm:space-y-5 pb-28 md:pb-12">
 
           {/* Semantic Top-Level H1 for WCAG & Agentic Browsing Heading Hierarchy */}
           <h1 className="sr-only">एम्बिशन न्यूज़ — कवर्धा (कबीरधाम) • छत्तीसगढ़ एवं मध्यप्रदेश डिजिटल न्यूज़ नेटवर्क</h1>
@@ -1662,7 +1686,7 @@ export const App: React.FC = () => {
               )}
 
               {/* 2. REGIONAL DISTRICT QUICK CHIPS BAR (CLEAN & NON-REDUNDANT) */}
-              <div className={`p-2.5 sm:p-3 rounded-2xl border transition-colors ${
+              <div className={`p-2 sm:p-2.5 rounded-2xl border transition-colors ${
                 isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
               }`}>
                 <div className="flex items-center gap-2">
@@ -1734,13 +1758,16 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* MANDI BHAV COMPACT BAR (Streamlined for immediate Above-the-Fold news consumption) */}
-              <MandiWidget 
-                rates={mandiRates} 
-                isDark={isDark} 
-                compact 
-                onViewFull={() => setActiveTab('mandi')} 
-              />
+              {/* MANDI BHAV COMPACT BAR (Streamlined for immediate Above-the-Fold news consumption, district-aware) */}
+              {isMandiRelevantForCategory && (
+                <MandiWidget 
+                  rates={mandiRates} 
+                  isDark={isDark} 
+                  compact 
+                  currentDistrict={currentDistrict}
+                  onViewFull={() => setActiveTab('mandi')} 
+                />
+              )}
 
               {/* FEED HEADER */}
               <div id="news-feed-section" className="flex items-center justify-between pt-1 scroll-mt-28">
@@ -2077,6 +2104,177 @@ export const App: React.FC = () => {
                               </div>
                             </div>
                           </div>
+
+                          {/* IN-FEED VIDEO SPOTLIGHT (AMBITION TV) - DUAL MONETIZATION & HIGH ENGAGEMENT */}
+                          {(idx === 1 || (idx === 0 && visibleGridArticles.length === 1)) && videoBulletins[0] && (
+                            <div className="col-span-1 sm:col-span-2 my-1.5">
+                              <div className={`rounded-3xl border overflow-hidden transition-all shadow-md group ${
+                                isDark 
+                                  ? 'bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-950 border-red-900/40 hover:border-red-600/50' 
+                                  : 'bg-gradient-to-br from-red-50/70 via-white to-slate-50 border-red-200 hover:border-red-300'
+                              }`}>
+                                {/* Top Header Strip */}
+                                <div className={`px-4 py-2.5 border-b flex items-center justify-between ${
+                                  isDark ? 'border-red-900/30 bg-red-950/20' : 'border-red-100 bg-red-50/50'
+                                }`}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+                                    <div className="flex items-center gap-1.5 text-xs font-black">
+                                      <Tv size={14} className="text-red-600" />
+                                      <span className={isDark ? 'text-white' : 'text-slate-900'}>Ambition TV</span>
+                                      <span className="text-[10px] text-red-500 font-bold hidden sm:inline">• विशेष वीडियो बुलेटिन</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                      isDark ? 'bg-slate-900 text-slate-300 border-slate-800' : 'bg-white text-slate-700 border-slate-200'
+                                    }`}>
+                                      {youtubeSubs} यूट्यूब दर्शक
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveTab('videos');
+                                        setTimeout(() => {
+                                          document.getElementById('video-bulletins-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }, 80);
+                                      }}
+                                      className="text-[11px] font-bold text-red-500 hover:text-red-400 flex items-center gap-0.5 cursor-pointer transition active:scale-95"
+                                      title="सभी वीडियो देखें"
+                                    >
+                                      <span>सभी वीडियो</span>
+                                      <ChevronRight size={13} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Main Content: Thumbnail + Details */}
+                                <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row gap-4 items-center">
+                                  {/* Video Thumbnail Box with Click-to-Play */}
+                                  <div 
+                                    onClick={() => handleSelectGlobalVideo(videoBulletins[0])}
+                                    className="relative w-full sm:w-64 aspect-video rounded-2xl overflow-hidden bg-slate-950 shrink-0 cursor-pointer shadow-md group/thumb"
+                                    role="button"
+                                    tabIndex={0}
+                                    title="वीडियो चलाएं"
+                                  >
+                                    <img 
+                                      src={getVideoThumbnail(videoBulletins[0])} 
+                                      alt={videoBulletins[0].title}
+                                      loading="lazy"
+                                      decoding="async"
+                                      width="320"
+                                      height="180"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = '/logo-96.webp';
+                                      }}
+                                      className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-500"
+                                    />
+
+                                    {/* Dark Overlay */}
+                                    <div className="absolute inset-0 bg-black/30 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
+                                      {/* Play Button Icon */}
+                                      <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform duration-300 group-hover/thumb:scale-110 active:scale-95 ${
+                                        (globalPlayingVideo?.id === videoBulletins[0].id || globalPlayingVideo?.youtubeId === videoBulletins[0].youtubeId)
+                                          ? 'bg-emerald-600 text-white animate-pulse'
+                                          : 'bg-red-600 text-white'
+                                      }`}>
+                                        <Play size={20} className="ml-1 fill-white" />
+                                      </div>
+                                    </div>
+
+                                    {/* Playing Badge if active */}
+                                    {(globalPlayingVideo?.id === videoBulletins[0].id || globalPlayingVideo?.youtubeId === videoBulletins[0].youtubeId) ? (
+                                      <span className="absolute top-2 left-2 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 shadow">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                                        अभी चल रहा है
+                                      </span>
+                                    ) : (
+                                      <span className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-md text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-white/20">
+                                        यूट्यूब बुलेटिन
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Video Info & Quick Actions */}
+                                  <div className="flex-1 min-w-0 space-y-2.5 w-full">
+                                    <div className="flex items-center gap-2 text-[10px]">
+                                      <span className="text-red-500 font-bold bg-red-950/40 border border-red-900/60 px-2 py-0.5 rounded">
+                                        {videoBulletins[0].category || 'मुख्य बुलेटिन'}
+                                      </span>
+                                      <span className={`flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                        <Clock size={11} className="text-red-500" />
+                                        <span>{formatRelativeHindiTime(videoBulletins[0].publishedAt || new Date().toISOString())}</span>
+                                      </span>
+                                      {videoBulletins[0].district && (
+                                        <span className={`flex items-center gap-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                          <MapPin size={10} className="text-red-600" />
+                                          <span>{videoBulletins[0].district}</span>
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <h3 
+                                      onClick={() => handleSelectGlobalVideo(videoBulletins[0])}
+                                      className={`text-sm sm:text-base font-black leading-snug line-clamp-2 cursor-pointer transition-colors ${
+                                        isDark ? 'text-white hover:text-red-400' : 'text-slate-900 hover:text-red-600'
+                                      }`}
+                                    >
+                                      {videoBulletins[0].title}
+                                    </h3>
+
+                                    <p className={`text-xs line-clamp-2 leading-relaxed hidden sm:block ${
+                                      isDark ? 'text-slate-400' : 'text-slate-600'
+                                    }`}>
+                                      {videoBulletins[0].description || 'कवर्धा एवं छत्तीसगढ़-मध्यप्रदेश की दिनभर की बड़ी घटनाओं का सीधा विश्लेषण।'}
+                                    </p>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSelectGlobalVideo(videoBulletins[0])}
+                                        className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                                      >
+                                        <Play size={12} className="fill-white" />
+                                        <span>तुरंत देखें (Play)</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const url = videoBulletins[0].youtubeUrl || (videoBulletins[0].youtubeId ? `https://www.youtube.com/watch?v=${videoBulletins[0].youtubeId}` : window.location.origin);
+                                          const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${videoBulletins[0].title}\n\n▶️ तुरंत यहाँ देखें:\n${url}`;
+                                          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                                        }}
+                                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                                        title="व्हाट्सएप पर शेयर करें"
+                                      >
+                                        <WhatsAppIcon size={13} />
+                                        <span>शेयर करें</span>
+                                      </button>
+
+                                      {videoBulletins[0].youtubeId && (
+                                        <a
+                                          href={`https://www.youtube.com/watch?v=${videoBulletins[0].youtubeId}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={`text-[11px] font-bold px-2.5 py-1.5 rounded-xl border flex items-center gap-1 transition ${
+                                            isDark ? 'border-slate-800 text-slate-300 hover:text-white hover:border-slate-700' : 'border-slate-300 text-slate-700 hover:text-slate-900 bg-white'
+                                          }`}
+                                          title="यूट्यूब ऐप में खोलें"
+                                        >
+                                          <YoutubeIcon size={13} />
+                                          <span>यूट्यूब पर</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* DYNAMIC SPONSORED IN-FEED AD BANNER (LIVE OR FALLBACK INVITATION) */}
                           {idx === 3 && (
