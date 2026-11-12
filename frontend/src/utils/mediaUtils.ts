@@ -350,6 +350,21 @@ export async function syncYouTubeChannelVideos(
 }
 
 /**
+ * Safely compares two VideoBulletin objects without colliding on empty/undefined youtubeId
+ */
+export function isSameVideo(a?: VideoBulletin | null, b?: VideoBulletin | null): boolean {
+  if (!a || !b) return false;
+  if (a.id && b.id && a.id === b.id) return true;
+  const ytA = a.youtubeId?.trim();
+  const ytB = b.youtubeId?.trim();
+  if (ytA && ytB && ytA === ytB) return true;
+  const urlA = a.youtubeUrl?.trim();
+  const urlB = b.youtubeUrl?.trim();
+  if (urlA && urlB && urlA === urlB) return true;
+  return false;
+}
+
+/**
  * Helper to resolve realistic video thumbnail (Real YouTube frame instead of generic logo)
  */
 export function getVideoThumbnail(video: VideoBulletin): string {
@@ -362,7 +377,7 @@ export function getVideoThumbnail(video: VideoBulletin): string {
   if (video.youtubeId) {
     return `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
   }
-  return '/logo.png';
+  return '/logo-96.webp';
 }
 
 

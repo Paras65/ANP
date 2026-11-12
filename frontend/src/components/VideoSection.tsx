@@ -6,12 +6,14 @@ import {
   Tv, 
   RefreshCw,
   X,
-  Maximize2
+  Maximize2,
+  Loader2
 } from 'lucide-react';
 import { YoutubeIcon, WhatsAppIcon } from './SocialIcons';
 import type { VideoBulletin } from '../types';
 import { SOCIAL_LINKS } from '../data/mockData';
-import { sortMediaLatestFirst, getVideoThumbnail } from '../utils/mediaUtils';
+import { sortMediaLatestFirst, getVideoThumbnail, isSameVideo } from '../utils/mediaUtils';
+import { formatRelativeHindiTime } from '../utils/dateUtils';
 
 interface VideoSectionProps {
   bulletins: VideoBulletin[];
@@ -22,16 +24,19 @@ interface VideoSectionProps {
   onOpenVideo?: (video: VideoBulletin) => void;
   playingVideo?: VideoBulletin | null;
   onSelectVideo?: (video: VideoBulletin | null) => void;
+  onRequestCinemaMode?: (video?: VideoBulletin | null) => void;
   onHeroInViewChange?: (inView: boolean) => void;
+  isLoading?: boolean;
+  onRefresh?: () => void;
 }
 
 const PRESET_CATEGORIES = [
   { id: 'all', label: 'सभी वीडियो', icon: '📺' },
   { id: 'kawardha', label: 'कवर्धा विशेष', icon: '🔴', keywords: ['कवर्धा', 'कबीरधाम', 'भोरमदेव', 'कवर्धा स्पेशल', 'कवर्धा विशेष'] },
-  { id: 'state', label: 'राज्य बुलेटिन', icon: '📢', keywords: ['राज्य', 'छत्तीसगढ़', 'रायपुर', 'बिलासपुर', 'महाबुलेटिन', 'राज्य बुलेटिन'] },
+  { id: 'state', label: 'राज्य बुलेटिन', icon: '📢', keywords: ['राज्य', 'छत्तीसगढ़', 'रायपुर', 'बिलासपुर', 'महाबुलेटिन', 'राज्य बुलेटिन', 'राजनीति'] },
   { id: 'heritage', label: 'संस्कृति व धरोहर', icon: '🛕', keywords: ['संस्कृति', 'धरोहर', 'भोरमदेव', 'महोत्सव', 'मंदिर'] },
   { id: 'mandi', label: 'कृषि व मंडी', icon: '🌾', keywords: ['मंडी', 'गुड़', 'धान', 'किसान', 'भाव', 'मंडी भाव'] },
-  { id: 'ground', label: 'ग्राउंड रिपोर्ट', icon: '🎙️', keywords: ['ग्राउंड', 'सड़क', 'पुलिया', 'बारिश', 'मुद्दों', 'सीधी बहस'] },
+  { id: 'ground', label: 'ग्राउंड रिपोर्ट', icon: '🎙️', keywords: ['ग्राउंड', 'सड़क', 'पुलिया', 'बारिश', 'मुद्दों', 'सीधी बहस', 'क्राइम', 'अपराध'] },
   { id: 'governance', label: 'शासन व राजनीति', keywords: ['सरकार', 'कलेक्टर', 'कैबिनेट', 'प्रशासन', 'नेता', 'बहस'], icon: '🏛️' }
 ];
 
@@ -40,10 +45,12 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   isDark, 
   onShareWhatsApp,
   youtubeSubs,
-  autoPlayOnMount = false,
   playingVideo,
   onSelectVideo,
-  onHeroInViewChange
+  onRequestCinemaMode,
+  onHeroInViewChange,
+  isLoading = false,
+  onRefresh
 }) => {
   const [internalPlayingVideo, setInternalPlayingVideo] = useState<VideoBulletin | null>(null);
   const activePlayingVideo = playingVideo !== undefined ? playingVideo : internalPlayingVideo;
@@ -58,26 +65,32 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [visibleVideoCount, setVisibleVideoCount] = useState<number>(8);
-  const hasAutoPlayedRef = useRef<boolean>(false);
   const heroVideoRef = useRef<HTMLDivElement>(null);
 
-  // In-Page Cinema Opener: Sets video to play right inside the Hero Spotlight screen
+  // Start playing selected video smoothly in Floating Mini Player
   const openVideo = useCallback((video: VideoBulletin) => {
     setVideo(video);
-    setTimeout(() => {
-      heroVideoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 60);
   }, [setVideo]);
+
+  // Trigger full Cinema Mode (expands Floating Player seamlessly into theater screen)
+  const launchCinemaMode = useCallback((video?: VideoBulletin | null) => {
+    const target = video || activePlayingVideo;
+    if (onRequestCinemaMode) {
+      onRequestCinemaMode(target);
+    } else if (target) {
+      openVideo(target);
+    }
+  }, [onRequestCinemaMode, activePlayingVideo, openVideo]);
 
   // Track whether Hero screen is within viewport
   useEffect(() => {
     const target = heroVideoRef.current;
-    if (!target) return;
+    if (!target || !onHeroInViewChange) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         const inView = entry.isIntersecting && entry.intersectionRatio >= 0.2;
-        onHeroInViewChange?.(inView);
+        onHeroInViewChange(inView);
       },
       { threshold: [0, 0.2, 0.5] }
     );
@@ -85,7 +98,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
     observer.observe(target);
     return () => {
       observer.disconnect();
-      onHeroInViewChange?.(false);
+      onHeroInViewChange(false);
     };
   }, [onHeroInViewChange]);
 
@@ -108,21 +121,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
   const currentHeroVideo = activePlayingVideo || featuredVideo;
   const remainingBulletins = useMemo(() => {
     if (!currentHeroVideo) return displayList;
-    return displayList.filter(b => b.id !== currentHeroVideo.id && b.youtubeId !== currentHeroVideo.youtubeId);
+    return displayList.filter(b => !isSameVideo(b, currentHeroVideo));
   }, [displayList, currentHeroVideo]);
   const visibleRemaining = remainingBulletins.slice(0, visibleVideoCount);
   const hasMoreVideos = visibleVideoCount < remainingBulletins.length;
-
-  // Auto-play latest video immediately when entering dedicated videos tab
-  useEffect(() => {
-    if (autoPlayOnMount && bulletins && bulletins.length > 0 && !hasAutoPlayedRef.current) {
-      hasAutoPlayedRef.current = true;
-      const topVideo = bulletins[0];
-      if (topVideo && !playingVideo) {
-        openVideo(topVideo);
-      }
-    }
-  }, [autoPlayOnMount, bulletins, openVideo, playingVideo]);
 
   // Dynamic Categories calculation with real video counts
   const categoriesWithCounts = useMemo(() => {
@@ -144,7 +146,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 
   const handleShare = (video: VideoBulletin, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    const url = video.youtubeUrl || `https://www.youtube.com/watch?v=${video.youtubeId}`;
+    const url = video.youtubeUrl || (video.youtubeId ? `https://www.youtube.com/watch?v=${video.youtubeId}` : window.location.origin);
     if (onShareWhatsApp) {
       onShareWhatsApp(video.title, url);
     } else {
@@ -153,8 +155,56 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
     }
   };
 
-  // Pure real data: do not render video section if no live bulletins exist
-  if (!bulletins || bulletins.length === 0) return null;
+  // Graceful Loading / Empty Fallback (never return null so tab is never a blank screen)
+  if (!bulletins || bulletins.length === 0) {
+    return (
+      <section
+        id="video-bulletins-section"
+        className={`rounded-3xl border p-6 sm:p-10 text-center space-y-4 transition-colors ${
+          isDark ? 'bg-[#080d19]/95 border-red-950/40 shadow-2xl text-white' : 'bg-white border-slate-200 shadow-sm text-slate-900'
+        }`}
+      >
+        <div className="w-16 h-16 rounded-3xl bg-red-600/10 text-red-500 mx-auto flex items-center justify-center">
+          {isLoading ? <Loader2 size={32} className="animate-spin" /> : <Tv size={32} />}
+        </div>
+        <div className="space-y-1.5 max-w-md mx-auto">
+          <h2 className="text-base sm:text-lg font-black">
+            {isLoading ? 'Ambition TV बुलेटिन लोड हो रहे हैं...' : 'अभी कोई वीडियो बुलेटिन उपलब्ध नहीं है'}
+          </h2>
+          <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            {isLoading 
+              ? 'कवर्धा व छत्तीसगढ़-मध्यप्रदेश की ताज़ा वीडियो खबरें लोड की जा रही हैं।'
+              : 'नेटवर्क से वीडियो बुलेटिन प्राप्त नहीं हो सके। आप रीलोड कर सकते हैं या सीधे हमारे यूट्यूब चैनल पर सभी बुलेटिन देख सकते हैं।'}
+          </p>
+        </div>
+        {!isLoading && (
+          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={onRefresh}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition active:scale-95 cursor-pointer ${
+                  isDark ? 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-900'
+                }`}
+              >
+                <RefreshCw size={13} />
+                <span>पुनः लोड करें</span>
+              </button>
+            )}
+            <a
+              href={SOCIAL_LINKS.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1.5 shadow-lg transition active:scale-95"
+            >
+              <YoutubeIcon size={14} />
+              <span>यूट्यूब चैनल देखें</span>
+            </a>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section 
@@ -192,7 +242,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
           </div>
 
           {/* Mobile Right: YouTube Subscribers Badge */}
-          <div className="sm:hidden flex items-center gap-1 text-[10px] font-extrabold px-2 py-1 rounded-full bg-red-950/40 border border-red-800/40 text-red-300 shrink-0">
+          <div className={`sm:hidden flex items-center gap-1 text-[10px] font-extrabold px-2 py-1 rounded-full border shrink-0 ${
+            isDark ? 'bg-red-950/40 border-red-800/40 text-red-300' : 'bg-red-50 border-red-200 text-red-700'
+          }`}>
             <YoutubeIcon size={12} />
             <span>{youtubeSubs || SOCIAL_LINKS.youtubeSubs}</span>
           </div>
@@ -203,13 +255,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
           {/* Continuous Non-Stop TV Mode Button */}
           <button
             type="button"
-            onClick={() => {
-              if (featuredVideo || displayList[0]) {
-                openVideo(featuredVideo || displayList[0]);
-              }
-            }}
+            onClick={() => launchCinemaMode(activePlayingVideo || featuredVideo || displayList[0])}
             className="flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-md shadow-red-600/30 transition active:scale-95 cursor-pointer shrink-0"
-            title="सारे वीडियो बुलेटिन एक के बाद एक बिना रुके देखें"
+            title="बड़ी स्क्रीन में सारे वीडियो बुलेटिन एक के बाद एक बिना रुके देखें"
           >
             <Tv size={13} className="text-white" />
             <span>लगातार चलाएं (TV Mode)</span>
@@ -297,6 +345,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   <img
                     src={getVideoThumbnail(activePlayingVideo)}
                     alt=""
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/logo-96.webp';
+                    }}
                     className="absolute inset-0 w-full h-full object-cover opacity-35 blur-xs scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/60" />
@@ -323,9 +374,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     <div className="flex items-center gap-2 mt-4">
                       <button
                         type="button"
-                        onClick={() => {
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
+                        onClick={() => launchCinemaMode(activePlayingVideo)}
                         className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer shadow-lg flex items-center gap-1.5"
                       >
                         <Maximize2 size={13} />
@@ -353,6 +402,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
                       openVideo(featuredVideo);
                     }
                   }}
@@ -363,6 +413,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     alt={featuredVideo.title}
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/logo-96.webp';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
                   />
                   
@@ -383,9 +436,11 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   </div>
 
                   {/* Bottom Right Duration Badge */}
-                  <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 bg-black/85 backdrop-blur-md font-mono text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-bold border border-white/10 shadow">
-                    {featuredVideo.duration}
-                  </div>
+                  {featuredVideo.duration && (
+                    <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 bg-black/85 backdrop-blur-md font-mono text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-bold border border-white/10 shadow">
+                      {featuredVideo.duration}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -404,10 +459,10 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     {currentHeroVideo.category || 'कवर्धा विशेष'}
                   </span>
                   <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>
-                    • {currentHeroVideo.timeAgo}
+                    • {currentHeroVideo.publishedAt ? formatRelativeHindiTime(currentHeroVideo.publishedAt) : (currentHeroVideo.timeAgo || 'ताज़ा')}
                   </span>
                   <span className={`flex items-center gap-1 font-semibold ml-auto text-[10.5px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    <Eye size={12} className="text-red-500" /> {currentHeroVideo.views}
+                    <Eye size={12} className="text-red-500" /> {currentHeroVideo.views || 'ताज़ा'}
                   </span>
                 </div>
 
@@ -429,7 +484,11 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                     <span className="font-bold">Ambition News स्पेशल ग्राउंड रिपोर्ट</span>
                   </div>
-                  <span className="text-[10px] text-sky-400 font-bold bg-sky-950/40 border border-sky-900/60 px-1.5 py-0.2 rounded">
+                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                    isDark 
+                      ? 'text-sky-400 bg-sky-950/40 border-sky-900/60' 
+                      : 'text-sky-700 bg-sky-50 border-sky-200'
+                  }`}>
                     ✓ VERIFIED
                   </span>
                 </div>
@@ -447,7 +506,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => setVideo(null)}
-                    className="col-span-6 h-10 sm:h-11 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-3 rounded-xl shadow flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer truncate"
+                    className={`col-span-6 h-10 sm:h-11 font-bold text-xs px-3 rounded-xl shadow flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer truncate ${
+                      isDark ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'
+                    }`}
                   >
                     <X size={14} />
                     <span>रोकें (Stop)</span>
@@ -466,18 +527,24 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 {/* Next Video in Playlist */}
                 <button
                   type="button"
+                  disabled={displayList.length <= 1}
                   onClick={() => {
-                    const currId = currentHeroVideo.id;
-                    const curIdx = displayList.findIndex(b => b.id === currId);
-                    const nextVideo = displayList[(curIdx + 1) % displayList.length];
+                    if (displayList.length <= 1) return;
+                    const curIdx = displayList.findIndex(b => isSameVideo(b, currentHeroVideo));
+                    const nextIdx = curIdx >= 0 ? (curIdx + 1) % displayList.length : 0;
+                    const nextVideo = displayList[nextIdx];
                     if (nextVideo) openVideo(nextVideo);
                   }}
-                  className={`col-span-3 h-10 sm:h-11 font-bold text-xs px-2 rounded-xl border flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer truncate ${
+                  className={`col-span-3 h-10 sm:h-11 font-bold text-xs px-2 rounded-xl border flex items-center justify-center gap-1 transition active:scale-95 truncate ${
+                    displayList.length <= 1
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'cursor-pointer'
+                  } ${
                     isDark 
                       ? 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700/80' 
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
                   }`}
-                  title="अगला वीडियो चलाएं"
+                  title={displayList.length <= 1 ? 'अन्य वीडियो उपलब्ध नहीं' : 'अगला वीडियो चलाएं'}
                 >
                   <RefreshCw size={12} className="shrink-0" />
                   <span>अगला</span>
@@ -498,11 +565,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
 
               {/* Mobile TV Mode Strip directly beneath Action Bar */}
               <div 
-                onClick={() => {
-                  if (featuredVideo || displayList[0]) {
-                    openVideo(featuredVideo || displayList[0]);
-                  }
-                }}
+                onClick={() => launchCinemaMode(activePlayingVideo || featuredVideo || displayList[0])}
                 className={`sm:hidden mt-2.5 p-2 rounded-xl border flex items-center justify-between text-[10.5px] font-bold cursor-pointer transition active:scale-98 ${
                   isDark 
                     ? 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-900' 
@@ -532,7 +595,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
               : 'lg:grid-cols-2'
         } gap-4 sm:gap-5`}>
           {visibleRemaining.map((video) => {
-            const isCurrentlyPlaying = activePlayingVideo?.id === video.id;
+            const isCurrentlyPlaying = isSameVideo(activePlayingVideo, video);
             return (
               <div 
                 key={video.id}
@@ -540,7 +603,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 className={`group rounded-2xl border overflow-hidden cursor-pointer flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 will-change-transform shadow-md ${
                   isCurrentlyPlaying
                     ? 'border-red-600 ring-2 ring-red-600/40 shadow-red-600/30'
-                    : isDark ? 'bg-slate-950 border-slate-800/80 hover:border-red-600/60' : 'bg-slate-50 border-slate-200 hover:border-red-500 hover:shadow-lg'
+                    : isDark ? 'bg-slate-950 border-slate-800/80 hover:border-red-600/60' : 'bg-white border-slate-200 hover:border-red-500 hover:shadow-lg'
                 }`}
               >
                 {/* Thumbnail */}
@@ -550,6 +613,9 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     alt={video.title}
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/logo-96.webp';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                   />
                   <div className={`absolute inset-0 transition-colors flex items-center justify-center ${
@@ -578,9 +644,11 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     <span className="bg-black/75 backdrop-blur px-2 py-0.5 rounded font-medium">
                       {video.category || 'कवर्धा विशेष'}
                     </span>
-                    <span className="bg-black/85 font-mono px-1.5 py-0.5 rounded font-bold">
-                      {video.duration}
-                    </span>
+                    {video.duration && (
+                      <span className="bg-black/85 font-mono px-1.5 py-0.5 rounded font-bold">
+                        {video.duration}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -588,7 +656,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                 <div className="p-3 flex-1 flex flex-col justify-between">
                   <h3 className={`text-xs font-bold leading-snug line-clamp-2 transition-colors ${
                     isCurrentlyPlaying 
-                      ? 'text-red-400 font-black' 
+                      ? 'text-red-500 font-black' 
                       : isDark ? 'text-slate-100 group-hover:text-red-400' : 'text-slate-900 group-hover:text-red-600'
                   }`}>
                     {video.title}
@@ -598,7 +666,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                     isDark ? 'border-slate-800/40 text-slate-400' : 'border-slate-200 text-slate-600'
                   }`}>
                     <span className="flex items-center gap-1 font-medium">
-                      <Eye size={11} className="text-red-500" /> {video.views}
+                      <Eye size={11} className="text-red-500" /> {video.views || 'ताज़ा'}
                     </span>
                     <div className="flex items-center gap-2">
                       <button
@@ -611,7 +679,7 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                         <WhatsAppIcon size={13} className="text-emerald-500" />
                       </button>
                       <span className="flex items-center gap-1">
-                        <Clock size={11} /> {video.timeAgo}
+                        <Clock size={11} /> {video.publishedAt ? formatRelativeHindiTime(video.publishedAt) : (video.timeAgo || 'ताज़ा')}
                       </span>
                     </div>
                   </div>
@@ -620,12 +688,12 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
             );
           })}
 
-          {/* If there are 3 videos and space for a 4th, render promo */}
+          {/* If there are 3 videos and space for a 4th, render YouTube Channel / TV Mode Promo */}
           {visibleRemaining.length === 3 && (
-            <div 
-              onClick={() => {
-                if (displayList[0]) openVideo(displayList[0]);
-              }}
+            <a
+              href={SOCIAL_LINKS.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
               className={`rounded-2xl border p-4 flex flex-col justify-between cursor-pointer group transition-transform duration-300 hover:-translate-y-1 will-change-transform shadow-md ${
                 isDark 
                   ? 'bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-950 border-red-900/40 hover:border-red-500/60' 
@@ -637,28 +705,30 @@ export const VideoSection: React.FC<VideoSectionProps> = ({
                   <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow">
                     <YoutubeIcon size={20} />
                   </div>
-                  <span className="text-[10px] font-bold text-red-400 bg-red-950/60 border border-red-800/60 px-2 py-0.5 rounded-full">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    isDark ? 'text-red-400 bg-red-950/60 border-red-800/60' : 'text-red-700 bg-red-100 border-red-200'
+                  }`}>
                     {youtubeSubs || SOCIAL_LINKS.youtubeSubs}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">एम्बिशन टीवी</span>
+                  <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">एम्बिशन टीवी • यूट्यूब</span>
                   <h3 className={`text-xs sm:text-sm font-bold leading-snug mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    500+ वीडियो बुलेटिन उपलब्ध
+                    {bulletins.length}+ वीडियो बुलेटिन व लाइव चैनल
                   </h3>
                 </div>
                 <p className={`text-[11px] leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                  कवर्धा व CG-MP की ताज़ा खबरें, लाइव डिबेट व ग्राउंड रिपोर्ट्स सीधे यहीं देखें।
+                  कवर्धा व CG-MP की ताज़ा खबरें, लाइव डिबेट व ग्राउंड रिपोर्ट्स हमारे यूट्यूब चैनल पर सब्सक्राइब करें।
                 </p>
               </div>
 
               <div className={`pt-3 border-t flex items-center justify-between text-xs font-bold text-red-500 group-hover:text-red-400 ${
                 isDark ? 'border-red-900/30' : 'border-red-200'
               }`}>
-                <span>पहला वीडियो चलाएं</span>
+                <span>यूट्यूब चैनल खोलें</span>
                 <span>▶</span>
               </div>
-            </div>
+            </a>
           )}
         </div>
       )}

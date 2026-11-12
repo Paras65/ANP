@@ -47,7 +47,7 @@ import { useVoiceTyping } from './hooks/useVoiceTyping';
 import { YoutubeIcon, InstagramIcon, WhatsAppIcon, FacebookIcon } from './components/SocialIcons';
 import { getSmartCoverImage } from './utils/categoryTheme';
 import { getOptimizedImageUrl } from './utils/imageUtils';
-import { getVideoThumbnail, isDirectVideoUrl } from './utils/mediaUtils';
+import { getVideoThumbnail, isDirectVideoUrl, isSameVideo } from './utils/mediaUtils';
 
 import { 
   ALL_DISTRICTS_DEMO, 
@@ -102,22 +102,25 @@ export const App: React.FC = () => {
   const [activeReelId, setActiveReelId] = useState<string | null>(null);
   const [isSidebarVideoPlaying, setIsSidebarVideoPlaying] = useState<boolean>(false);
   const [globalPlayingVideo, setGlobalPlayingVideo] = useState<VideoBulletin | null>(null);
+  const [videoExpandTrigger, setVideoExpandTrigger] = useState<number>(0);
+  const [videoCinemaTrigger, setVideoCinemaTrigger] = useState<number>(0);
 
-  // Exclusive lock: Playing global video shuts down sidebar mini video
+  // Exclusive lock: Playing global video shuts down sidebar mini video & ensures visible mini-player
   const handleSelectGlobalVideo = useCallback((v: VideoBulletin | null) => {
     setGlobalPlayingVideo(v);
     if (v) {
       setIsSidebarVideoPlaying(false);
+      setVideoExpandTrigger(prev => prev + 1);
     }
   }, []);
 
-  const handleExpandGlobalVideo = () => {
-    setActiveArticle(null);
-    setActiveTab('videos');
-    setTimeout(() => {
-      document.getElementById('video-bulletins-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
+  const handleRequestCinemaVideo = useCallback((v?: VideoBulletin | null) => {
+    if (v) {
+      setGlobalPlayingVideo(v);
+      setIsSidebarVideoPlaying(false);
+    }
+    setVideoCinemaTrigger(prev => prev + 1);
+  }, []);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [savedArticles, setSavedArticles] = useState<Article[]>(() => {
     try {
@@ -189,7 +192,7 @@ export const App: React.FC = () => {
   // Global Floating Mini-Player playlist index & next/prev bulletin handlers
   const currentGlobalVideoIdx = useMemo(() => {
     if (!globalPlayingVideo || !videoBulletins.length) return -1;
-    return videoBulletins.findIndex(v => v.id === globalPlayingVideo.id || v.youtubeId === globalPlayingVideo.youtubeId);
+    return videoBulletins.findIndex(v => isSameVideo(v, globalPlayingVideo));
   }, [globalPlayingVideo, videoBulletins]);
 
   const hasNextGlobalVideo = currentGlobalVideoIdx >= 0 && currentGlobalVideoIdx < videoBulletins.length - 1;
@@ -1570,9 +1573,11 @@ export const App: React.FC = () => {
                   bulletins={videoBulletins} 
                   isDark={isDark} 
                   youtubeSubs={youtubeSubs}
-                  autoPlayOnMount={!globalPlayingVideo}
                   playingVideo={globalPlayingVideo}
                   onSelectVideo={handleSelectGlobalVideo}
+                  onRequestCinemaMode={handleRequestCinemaVideo}
+                  isLoading={isLoading}
+                  onRefresh={loadMediaFromBackend}
                   onShareWhatsApp={(title, url) => {
                     const text = `🔴 *Ambition TV • विशेष वीडियो बुलेटिन*:\n${title}\n\n▶️ तुरंत यहाँ देखें:\n${url || window.location.origin}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -2176,7 +2181,7 @@ export const App: React.FC = () => {
                                     <div className="absolute inset-0 bg-black/30 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
                                       {/* Play Button Icon */}
                                       <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform duration-300 group-hover/thumb:scale-110 active:scale-95 ${
-                                        (globalPlayingVideo?.id === videoBulletins[0].id || globalPlayingVideo?.youtubeId === videoBulletins[0].youtubeId)
+                                        isSameVideo(globalPlayingVideo, videoBulletins[0])
                                           ? 'bg-emerald-600 text-white animate-pulse'
                                           : 'bg-red-600 text-white'
                                       }`}>
@@ -2185,7 +2190,7 @@ export const App: React.FC = () => {
                                     </div>
 
                                     {/* Playing Badge if active */}
-                                    {(globalPlayingVideo?.id === videoBulletins[0].id || globalPlayingVideo?.youtubeId === videoBulletins[0].youtubeId) ? (
+                                    {isSameVideo(globalPlayingVideo, videoBulletins[0]) ? (
                                       <span className="absolute top-2 left-2 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 shadow">
                                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
                                         अभी चल रहा है
@@ -2730,7 +2735,6 @@ export const App: React.FC = () => {
           <FloatingMiniPlayer
             video={globalPlayingVideo}
             onClose={() => setGlobalPlayingVideo(null)}
-            onExpand={handleExpandGlobalVideo}
             onNext={hasNextGlobalVideo ? handleNextGlobalVideo : undefined}
             onPrev={hasPrevGlobalVideo ? handlePrevGlobalVideo : undefined}
             hasNext={hasNextGlobalVideo}
@@ -2738,6 +2742,8 @@ export const App: React.FC = () => {
             activeTab={activeTab}
             isPausedByModal={Boolean(activeStory || activeReelId)}
             isDark={isDark}
+            expandTrigger={videoExpandTrigger}
+            cinemaTrigger={videoCinemaTrigger}
           />
         )}
 

@@ -22,19 +22,22 @@ interface FloatingMiniPlayerProps {
   activeTab?: string;
   isPausedByModal?: boolean;
   isDark?: boolean;
+  expandTrigger?: number;
+  cinemaTrigger?: number;
 }
 
 export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   video,
   onClose,
-  onExpand,
   onNext,
   onPrev,
   hasNext = false,
   hasPrev = false,
   activeTab = 'home',
   isPausedByModal = false,
-  isDark = true
+  isDark = true,
+  expandTrigger = 0,
+  cinemaTrigger = 0
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -593,20 +596,51 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     };
   }, []);
 
-  // 3. AUTO-CINEMA ON VIDEOS TAB INITIAL VIEW
+  // 3A. SHRINK CINEMA MODE GRACEFULLY WHEN SWITCHING AWAY FROM VIDEOS TAB
+  const prevTabRef = useRef<string>(activeTab);
   useEffect(() => {
-    if (activeTab === 'videos' && window.scrollY < 120 && !isCollapsed && !hasManuallyMinimizedRef.current) {
-      setIsCinemaMode(true);
-    } else if (activeTab !== 'videos') {
-      setIsCinemaMode(false);
+    if (prevTabRef.current !== activeTab) {
+      prevTabRef.current = activeTab;
+      if (activeTab !== 'videos') {
+        setIsCinemaMode(false);
+      }
     }
-  }, [activeTab, video.id, cleanYtId, isCollapsed]);
+  }, [activeTab]);
+
+  // 3B. EXPLICIT UNCOLLAPSE / CINEMA TRIGGERS FROM VIDEO CARDS & BUTTONS
+  useEffect(() => {
+    if (expandTrigger > 0) {
+      setIsCollapsed(false);
+    }
+  }, [expandTrigger]);
+
+  useEffect(() => {
+    if (cinemaTrigger > 0) {
+      setIsCollapsed(false);
+      setIsLandscapeRotated(false);
+      setIsCinemaMode(true);
+      hasManuallyMinimizedRef.current = false;
+    }
+  }, [cinemaTrigger]);
+
+  // 3C. RE-CLAMP FLOATING POSITION WHENEVER EXPANDING/COLLAPSING AUDIO PILL
+  useEffect(() => {
+    if (typeof window === 'undefined' || isCinemaMode || isLandscapeRotated) return;
+    const currentWidth = isCollapsed ? 285 : playerWidth;
+    const playerHeight = isCollapsed ? 44 : Math.round(playerWidth * 0.5625) + 32;
+    const { minX, maxX, minY, maxY } = getDeviceBoundaries(currentWidth, playerHeight);
+    setPosition(prev => ({
+      x: Math.min(Math.max(prev.x, minX), maxX),
+      y: Math.min(Math.max(prev.y, minY), maxY)
+    }));
+  }, [isCollapsed, playerWidth, isCinemaMode, isLandscapeRotated, getDeviceBoundaries]);
 
   // 4. SCROLL LISTENER: COLLAPSE TO FLOATING ON SCROLL DOWN (DOES NOT RE-HIJACK ON SCROLL UP)
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = Math.max(0, window.scrollY);
       if (isCinemaMode && scrollY > 260) {
+        hasManuallyMinimizedRef.current = true;
         setIsCinemaMode(false);
       }
     };
@@ -738,8 +772,8 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
     setDragOffset({ x: deltaX, y: deltaY });
 
-    // Dismiss check: pointer near bottom of screen OR dragged far down
-    const inBottomZone = e.clientY > window.innerHeight - 110 || deltaY > 160;
+    // Dismiss check: Only trigger if user actively dragged downward into the bottom drop zone
+    const inBottomZone = dragStartRef.current.hasMoved && deltaY > 36 && (e.clientY > window.innerHeight - 95 || deltaY > 150);
     setIsOverBottomDismissZone(inBottomZone);
     setIsPastDismissThreshold(inBottomZone);
   };
@@ -759,21 +793,27 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     const distance = Math.hypot(deltaX, deltaY);
     const speed = distance / Math.max(deltaTime, 1);
 
-    // CASE A: TAP (Not dragged) -> Toggle Controls HUD
+    // CASE A: TAP (Not dragged) -> Expand if collapsed Audio Pill, else Toggle Controls HUD
     if (!dragStartRef.current.hasMoved && deltaTime < 350) {
-      setShowControls(prev => {
-        const next = !prev;
-        if (next) resetControlsTimer();
-        return next;
-      });
+      if (isCollapsed) {
+        setIsCollapsed(false);
+        setShowControls(true);
+        resetControlsTimer();
+      } else {
+        setShowControls(prev => {
+          const next = !prev;
+          if (next) resetControlsTimer();
+          return next;
+        });
+      }
       dragStartRef.current = null;
       setIsOverBottomDismissZone(false);
       return;
     }
 
-    // CASE B: DISMISS ONLY IF DROPPED IN BOTTOM DISMISS ZONE OR FLICKED DOWNWARDS
-    const isBottomDrop = isOverBottomDismissZone || e.clientY > window.innerHeight - 110;
-    const isDownwardFlick = deltaY > 90 && speed > 0.45;
+    // CASE B: DISMISS ONLY IF ACTIVELY DRAGGED DOWNWARD INTO DISMISS ZONE OR FLICKED DOWNWARDS
+    const isBottomDrop = isOverBottomDismissZone || (dragStartRef.current.hasMoved && deltaY > 36 && e.clientY > window.innerHeight - 95);
+    const isDownwardFlick = dragStartRef.current.hasMoved && deltaY > 90 && speed > 0.45;
     if (isBottomDrop || isDownwardFlick) {
       setIsDismissing(true);
       setDragOffset({
@@ -789,7 +829,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     }
 
     // CASE C: FREE POSITIONING (Stay exactly where released, clamped safely within screen bounds)
-    const currentWidth = isCollapsed ? 260 : playerWidth;
+    const currentWidth = isCollapsed ? 285 : playerWidth;
     const playerHeight = isCollapsed ? 44 : Math.round(playerWidth * 0.5625) + 32;
     const { minX, maxX, minY, maxY } = getDeviceBoundaries(currentWidth, playerHeight);
 
@@ -837,7 +877,6 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       return next;
     });
     setIsLandscapeRotated(false);
-    onExpand?.();
   };
 
   const handleToggleRotate = async (e?: React.MouseEvent) => {
@@ -904,6 +943,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       {(isCinemaMode || isLandscapeRotated) && !isCollapsed && (
         <div 
           onClick={() => {
+            hasManuallyMinimizedRef.current = true;
             setIsCinemaMode(false);
             if (isLandscapeRotated) handleToggleRotate();
           }}
@@ -1278,7 +1318,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             >
               <div 
                 className="h-full bg-red-600 group-hover:bg-red-500 relative transition-all duration-100 ease-linear"
-                style={{ width: `${duration > 0 && isFinite(duration) ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 100}%` }}
+                style={{ width: `${duration > 0 && isFinite(duration) ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : !isFinite(duration) ? 100 : 0}%` }}
               >
                 <span className="opacity-0 group-hover:opacity-100 absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md transition-opacity -mr-1.5"></span>
               </div>
