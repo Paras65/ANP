@@ -186,15 +186,35 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   const hasFallenBackRef = useRef<boolean>(false);
   const fallbackWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [hasPlaybackError, setHasPlaybackError] = useState<boolean>(false);
+  const currentTimeRef = useRef<number>(0);
+  const fallbackStartTimeRef = useRef<number>(0);
 
-  // Trigger graceful fallback to youtube-nocookie
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
+
+  // Trigger graceful fallback to youtube-nocookie (capturing start time once in ref so src never mutates during playback)
   const triggerDomainFallback = useCallback(() => {
     if (hasFallenBackRef.current) return;
     hasFallenBackRef.current = true;
+    fallbackStartTimeRef.current = Math.floor(currentTimeRef.current);
     setUseNoCookie(true);
   }, []);
 
-  // Watchdog timer: If after 3.8 seconds YouTube iframe has not loaded,
+  // Stabilized iframe src: ONLY recalculates on video change or domain fallback (NEVER on every currentTime tick!)
+  const youtubeIframeSrc = useMemo(() => {
+    if (!cleanYtId) return '';
+    const domain = useNoCookie ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com';
+    const originParam = typeof window !== 'undefined' && window.location.origin
+      ? `&origin=${encodeURIComponent(window.location.origin)}`
+      : '';
+    const startParam = useNoCookie && fallbackStartTimeRef.current > 2
+      ? `&start=${fallbackStartTimeRef.current}`
+      : '';
+    return `${domain}/embed/${cleanYtId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1${originParam}${startParam}`;
+  }, [cleanYtId, useNoCookie]);
+
+  // Watchdog timer: If after 5 seconds YouTube iframe has not loaded,
   // automatically trigger fallback to youtube-nocookie so the user never sees a black screen.
   useEffect(() => {
     if (isDirectVideoUrl(video.youtubeUrl || video.youtubeId)) return;
@@ -205,7 +225,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
       if (!isVideoLoaded && !hasFallenBackRef.current) {
         triggerDomainFallback();
       }
-    }, 3800);
+    }, 5000);
 
     return () => {
       if (fallbackWatchdogRef.current) clearTimeout(fallbackWatchdogRef.current);
@@ -417,8 +437,8 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
           }
         }
 
-        // Catch YouTube player errors (e.g. 150 = embedding disabled, 101 = blocked)
-        if (data.event === 'onError' || (data.info && typeof data.info === 'number' && [2, 5, 100, 101, 150].includes(data.info))) {
+        // Catch ONLY genuine YouTube player error events (ignore onStateChange 2=PAUSED, 5=CUED!)
+        if (data.event === 'onError') {
           if (!hasFallenBackRef.current) {
             triggerDomainFallback();
           } else {
@@ -674,6 +694,8 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     setIsVideoLoaded(false);
     setIsPlaying(true);
     setCurrentTime(0);
+    currentTimeRef.current = 0;
+    fallbackStartTimeRef.current = 0;
     setDuration(0);
     setShowControls(true);
     setUseNoCookie(false);
@@ -1201,7 +1223,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
                   key={`${cleanYtId}_${useNoCookie ? 'nocookie' : 'standard'}`}
                   onLoad={handleIframeLoad}
                   onError={triggerDomainFallback}
-                  src={`${useNoCookie ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com'}/embed/${cleanYtId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1${typeof window !== 'undefined' && window.location.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}${currentTime > 2 ? `&start=${Math.floor(currentTime)}` : ''}`}
+                  src={youtubeIframeSrc}
                   title={video.title}
                   className="w-full h-full border-0 relative z-10"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
