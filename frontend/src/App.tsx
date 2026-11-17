@@ -1279,7 +1279,19 @@ export const App: React.FC = () => {
   const inFeedAds = ads.filter(a => a.placement === 'in_feed' && a.isActive);
   const inFeedAd = inFeedAds[0] || null;
   const secondaryInFeedAd = inFeedAds.length > 1 ? inFeedAds[1] : null;
-  const articleAd = ads.find(a => a.placement === 'article_bottom' && a.isActive);
+  const articleAds = ads.filter(a => a.placement === 'article_bottom' && a.isActive);
+  const articleAd = articleAds[0] || null;
+  const activeArticleAd = useMemo(() => {
+    if (articleAds.length === 0) return null;
+    if (!activeArticle?._id) return articleAds[0];
+    let hash = 0;
+    for (let i = 0; i < activeArticle._id.length; i++) {
+      hash = (hash << 5) - hash + activeArticle._id.charCodeAt(i);
+      hash |= 0;
+    }
+    const idx = Math.abs(hash) % articleAds.length;
+    return articleAds[idx];
+  }, [articleAds, activeArticle]);
 
   // Progressive Disclosure: visible count & server-side pagination bridge
   const visibleGridArticles = gridArticles.slice(0, visibleCount - 1);
@@ -1541,7 +1553,7 @@ export const App: React.FC = () => {
                 isDark={isDark}
                 isBookmarked={savedArticles.some(a => a._id === activeArticle._id)}
                 onToggleBookmark={toggleBookmark}
-                ad={articleAd}
+                ad={activeArticleAd || articleAd}
                 articles={articles}
                 relatedArticles={articles.filter(a => a._id !== activeArticle._id && (a.category === activeArticle.category || a.district === activeArticle.district)).slice(0, 4)}
                 onSelectArticle={openArticleModal}
@@ -2298,8 +2310,8 @@ export const App: React.FC = () => {
                             </div>
                           )}
 
-                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER 1 (PRIMARY SPONSOR) */}
-                          {idx === 3 && (
+                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER 1 (PRIMARY SPONSOR: Namecheap) */}
+                          {(idx === (visibleGridArticles.length <= 3 ? 1 : 2)) && inFeedAd && (
                             <div className="col-span-1 sm:col-span-2 my-1">
                               <AdBanner 
                                 ad={inFeedAd} 
@@ -2312,8 +2324,8 @@ export const App: React.FC = () => {
                             </div>
                           )}
 
-                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER 2 (SECONDARY SPONSOR ROTATION) */}
-                          {idx === 7 && secondaryInFeedAd && (
+                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER 2 (SECONDARY SPONSOR: Lenovo) */}
+                          {(idx === 5 || (idx === 3 && visibleGridArticles.length <= 5 && visibleGridArticles.length > 3)) && secondaryInFeedAd && (
                             <div className="col-span-1 sm:col-span-2 my-1">
                               <AdBanner 
                                 ad={secondaryInFeedAd} 

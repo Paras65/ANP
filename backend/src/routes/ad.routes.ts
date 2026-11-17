@@ -44,7 +44,7 @@ const DEFAULT_HOSTGATOR_ADS = [
     placement: 'in_feed' as const,
     targetDistrict: 'सभी 88 जिले',
     isActive: true,
-    priority: 20,
+    priority: 35,
     impressions: 0,
     clicks: 0
   },
@@ -83,7 +83,7 @@ const DEFAULT_HOSTGATOR_ADS = [
     placement: 'article_bottom' as const,
     targetDistrict: 'सभी 88 जिले',
     isActive: true,
-    priority: 20,
+    priority: 35,
     impressions: 0,
     clicks: 0
   },
