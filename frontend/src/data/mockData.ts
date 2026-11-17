@@ -273,5 +273,50 @@ export const DEFAULT_SPONSOR_ADS: Advertisement[] = [
     impressions: 4300,
     clicks: 215,
     createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000010",
+    title: "BigRock India • .IN व .COM डोमेन और वेब होस्टिंग पर 70% तक की भारी छूट!",
+    clientName: "BigRock India (Official Partner)",
+    clientPhone: "",
+    imageUrl: "/banners/bigrock-feed.svg",
+    linkUrl: "https://bigrock-in.sjv.io/gRdGNv",
+    placement: "in_feed",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 28,
+    impressions: 5200,
+    clicks: 245,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000011",
+    title: "BigRock India • भारत का नंबर 1 डोमेन व होस्टिंग प्रोवाइडर — 70% छूट",
+    clientName: "BigRock India",
+    clientPhone: "",
+    imageUrl: "/banners/bigrock-header.svg",
+    linkUrl: "https://bigrock-in.sjv.io/gRdGNv",
+    placement: "header_top",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 22,
+    impressions: 4600,
+    clicks: 205,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000012",
+    title: "BigRock India • अपनी वेबसाइट के लिए .IN डोमेन बुक करें — 70% तक की छूट",
+    clientName: "BigRock India",
+    clientPhone: "",
+    imageUrl: "/banners/bigrock-article.svg",
+    linkUrl: "https://bigrock-in.sjv.io/gRdGNv",
+    placement: "article_bottom",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 30,
+    impressions: 3950,
+    clicks: 190,
+    createdAt: "2026-11-17T00:00:00.000Z"
   }
 ];

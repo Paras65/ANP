@@ -1279,6 +1279,7 @@ export const App: React.FC = () => {
   const inFeedAds = ads.filter(a => a.placement === 'in_feed' && a.isActive);
   const inFeedAd = inFeedAds[0] || null;
   const secondaryInFeedAd = inFeedAds.length > 1 ? inFeedAds[1] : null;
+  const tertiaryInFeedAd = inFeedAds.length > 2 ? inFeedAds[2] : null;
   const articleAds = ads.filter(a => a.placement === 'article_bottom' && a.isActive);
   const articleAd = articleAds[0] || null;
   const activeArticleAd = useMemo(() => {
@@ -2324,11 +2325,25 @@ export const App: React.FC = () => {
                             </div>
                           )}
 
-                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER 2 (SECONDARY SPONSOR: Lenovo) */}
+                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER 2 (SECONDARY SPONSOR: BigRock) */}
                           {(idx === 5 || (idx === 3 && visibleGridArticles.length <= 5 && visibleGridArticles.length > 3)) && secondaryInFeedAd && (
                             <div className="col-span-1 sm:col-span-2 my-1">
                               <AdBanner 
                                 ad={secondaryInFeedAd} 
+                                placement="in_feed" 
+                                isDark={isDark} 
+                                onContactWhatsApp={() => {
+                                  window.open(`https://api.whatsapp.com/send?phone=917000139694&text=${encodeURIComponent('नमस्ते Ambition News, मुझे अपने प्रतिष्ठान / व्यवसाय का विज्ञापन व कवरेज पोर्टल पर प्रकाशित करवाना है।')}`, '_blank');
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER 3 (TERTIARY SPONSOR: Lenovo) */}
+                          {idx === 8 && tertiaryInFeedAd && (
+                            <div className="col-span-1 sm:col-span-2 my-1">
+                              <AdBanner 
+                                ad={tertiaryInFeedAd} 
                                 placement="in_feed" 
                                 isDark={isDark} 
                                 onContactWhatsApp={() => {

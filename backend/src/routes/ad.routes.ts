@@ -125,6 +125,45 @@ const DEFAULT_HOSTGATOR_ADS = [
     priority: 15,
     impressions: 0,
     clicks: 0
+  },
+  {
+    title: 'BigRock India • .IN व .COM डोमेन और वेब होस्टिंग पर 70% तक की भारी छूट!',
+    clientName: 'BigRock India (Official Partner)',
+    clientPhone: '',
+    imageUrl: '/banners/bigrock-feed.svg',
+    linkUrl: 'https://bigrock-in.sjv.io/gRdGNv',
+    placement: 'in_feed' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 28,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'BigRock India • भारत का नंबर 1 डोमेन व होस्टिंग प्रोवाइडर — 70% छूट',
+    clientName: 'BigRock India',
+    clientPhone: '',
+    imageUrl: '/banners/bigrock-header.svg',
+    linkUrl: 'https://bigrock-in.sjv.io/gRdGNv',
+    placement: 'header_top' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 22,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'BigRock India • अपनी वेबसाइट के लिए .IN डोमेन बुक करें — 70% तक की छूट',
+    clientName: 'BigRock India',
+    clientPhone: '',
+    imageUrl: '/banners/bigrock-article.svg',
+    linkUrl: 'https://bigrock-in.sjv.io/gRdGNv',
+    placement: 'article_bottom' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 30,
+    impressions: 0,
+    clicks: 0
   }
 ];
 
