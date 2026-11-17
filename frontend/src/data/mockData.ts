@@ -1,4 +1,4 @@
-import type { Article, VideoBulletin, InstagramPost, MandiRate, DistrictItem } from '../types';
+import type { Article, VideoBulletin, InstagramPost, MandiRate, DistrictItem, Advertisement } from '../types';
 
 // Zero Code Policy: Dynamic Environment Variables & Runtime Resolution
 const siteUrl = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://ambitionnews.init65.co.in');
@@ -136,4 +136,142 @@ export const ALL_DISTRICTS_DEMO: DistrictItem[] = [
   { _id: 'd-sgr', name: 'Sagar', nameHindi: 'सागर', slug: 'sagar', state: 'madhya-pradesh' },
   { _id: 'd-rew', name: 'Rewa', nameHindi: 'रीवा', slug: 'rewa', state: 'madhya-pradesh' },
   { _id: 'd-chw', name: 'Chhindwara', nameHindi: 'छिंदवाड़ा', slug: 'chhindwara', state: 'madhya-pradesh' }
+];
+
+export const DEFAULT_SPONSOR_ADS: Advertisement[] = [
+  {
+    _id: "6ae9a01b79e2f4a100000001",
+    title: "HostGator India • वेब होस्टिंग पर 60% तक भारी छूट + मुफ़्त .IN/.COM डोमेन",
+    clientName: "HostGator India (Official Partner)",
+    clientPhone: "",
+    imageUrl: "/banners/hostgator-header.svg",
+    linkUrl: "https://hostgator-india.sjv.io/yXnR2",
+    placement: "header_top",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 25,
+    impressions: 4850,
+    clicks: 210,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000002",
+    title: "Lenovo India • लैपटॉप, टैबलेट व पीसी पर भारी छूट — 50% तक OFF! (IdeaPad, ThinkPad & Yoga)",
+    clientName: "Lenovo India (Official Store)",
+    clientPhone: "",
+    imageUrl: "/banners/lenovo-feed.svg",
+    linkUrl: "https://lenovo-in.zlvv.net/je2xVM",
+    placement: "in_feed",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 30,
+    impressions: 7450,
+    clicks: 380,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000003",
+    title: "Namecheap • अपना पसंदीदा डोमेन (.COM / .IN) रजिस्टर करें मात्र ₹499 से + मुफ़्त Privacy Protection",
+    clientName: "Namecheap (Official Partner)",
+    clientPhone: "",
+    imageUrl: "/banners/namecheap-feed.svg",
+    linkUrl: "https://namecheap.pxf.io/JPbWq",
+    placement: "in_feed",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 20,
+    impressions: 5920,
+    clicks: 275,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000004",
+    title: "HostGator India • मात्र ₹79/माह में अपनी खुद की वेबसाइट या ब्लॉग शुरू करें",
+    clientName: "HostGator Web Solutions",
+    clientPhone: "",
+    imageUrl: "/banners/hostgator-feed.svg",
+    linkUrl: "https://hostgator-india.sjv.io/yXnR2",
+    placement: "in_feed",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 15,
+    impressions: 6120,
+    clicks: 295,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000005",
+    title: "Lenovo India • नया लैपटॉप खरीदने की सोच रहे हैं? नो-कॉस्ट EMI + स्टूडेंट डिस्काउंट",
+    clientName: "Lenovo India",
+    clientPhone: "",
+    imageUrl: "/banners/lenovo-article.svg",
+    linkUrl: "https://lenovo-in.zlvv.net/je2xVM",
+    placement: "article_bottom",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 30,
+    impressions: 4900,
+    clicks: 260,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000006",
+    title: "Namecheap • अपने ब्रांड के लिए सुरक्षित डोमेन व फ्री WhoisGuard प्राप्त करें",
+    clientName: "Namecheap",
+    clientPhone: "",
+    imageUrl: "/banners/namecheap-article.svg",
+    linkUrl: "https://namecheap.pxf.io/JPbWq",
+    placement: "article_bottom",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 20,
+    impressions: 3800,
+    clicks: 180,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000007",
+    title: "व्यापार या पर्सनल ब्लॉग के लिए बेस्ट होस्टिंग व SSL • HostGator India",
+    clientName: "HostGator India",
+    clientPhone: "",
+    imageUrl: "/banners/hostgator-article.svg",
+    linkUrl: "https://hostgator-india.sjv.io/yXnR2",
+    placement: "article_bottom",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 15,
+    impressions: 3400,
+    clicks: 160,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000008",
+    title: "Lenovo Laptops & Tablets • भारी छूट — No-Cost EMI + फ्री डिलीवरी",
+    clientName: "Lenovo India",
+    clientPhone: "",
+    imageUrl: "/banners/lenovo-header.svg",
+    linkUrl: "https://lenovo-in.zlvv.net/je2xVM",
+    placement: "header_top",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 20,
+    impressions: 4300,
+    clicks: 215,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  },
+  {
+    _id: "6ae9a01b79e2f4a100000009",
+    title: "Namecheap • अपना पसंदीदा .COM या .IN डोमेन बुक करें मात्र ₹499 से + फ्री Privacy",
+    clientName: "Namecheap Domains",
+    clientPhone: "",
+    imageUrl: "/banners/namecheap-header.svg",
+    linkUrl: "https://namecheap.pxf.io/JPbWq",
+    placement: "header_top",
+    targetDistrict: "सभी 88 जिले",
+    isActive: true,
+    priority: 15,
+    impressions: 4100,
+    clicks: 195,
+    createdAt: "2026-11-17T00:00:00.000Z"
+  }
 ];

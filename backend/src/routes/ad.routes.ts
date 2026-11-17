@@ -8,9 +8,143 @@ import { logger } from '../utils/logger.js';
 
 const router = Router();
 
+const DEFAULT_HOSTGATOR_ADS = [
+  {
+    title: 'HostGator India • वेब होस्टिंग पर 60% तक भारी छूट + मुफ़्त .IN/.COM डोमेन',
+    clientName: 'HostGator India (Official Partner)',
+    clientPhone: '',
+    imageUrl: '/banners/hostgator-header.svg',
+    linkUrl: 'https://hostgator-india.sjv.io/yXnR2',
+    placement: 'header_top' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 25,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'Lenovo India • लैपटॉप, टैबलेट व पीसी पर भारी छूट — 50% तक OFF! (IdeaPad, ThinkPad & Yoga)',
+    clientName: 'Lenovo India (Official Store)',
+    clientPhone: '',
+    imageUrl: '/banners/lenovo-feed.svg',
+    linkUrl: 'https://lenovo-in.zlvv.net/je2xVM',
+    placement: 'in_feed' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 30,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'Namecheap • अपना पसंदीदा डोमेन (.COM / .IN) रजिस्टर करें मात्र ₹499 से + मुफ़्त Privacy Protection',
+    clientName: 'Namecheap (Official Partner)',
+    clientPhone: '',
+    imageUrl: '/banners/namecheap-feed.svg',
+    linkUrl: 'https://namecheap.pxf.io/JPbWq',
+    placement: 'in_feed' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 20,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'HostGator India • मात्र ₹79/माह में अपनी खुद की वेबसाइट या ब्लॉग शुरू करें',
+    clientName: 'HostGator Web Solutions',
+    clientPhone: '',
+    imageUrl: '/banners/hostgator-feed.svg',
+    linkUrl: 'https://hostgator-india.sjv.io/yXnR2',
+    placement: 'in_feed' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 15,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'Lenovo India • नया लैपटॉप खरीदने की सोच रहे हैं? नो-कॉस्ट EMI + स्टूडेंट डिस्काउंट',
+    clientName: 'Lenovo India',
+    clientPhone: '',
+    imageUrl: '/banners/lenovo-article.svg',
+    linkUrl: 'https://lenovo-in.zlvv.net/je2xVM',
+    placement: 'article_bottom' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 30,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'Namecheap • अपने ब्रांड के लिए सुरक्षित डोमेन व फ्री WhoisGuard प्राप्त करें',
+    clientName: 'Namecheap',
+    clientPhone: '',
+    imageUrl: '/banners/namecheap-article.svg',
+    linkUrl: 'https://namecheap.pxf.io/JPbWq',
+    placement: 'article_bottom' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 20,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'व्यापार या पर्सनल ब्लॉग के लिए बेस्ट होस्टिंग व SSL • HostGator India',
+    clientName: 'HostGator India',
+    clientPhone: '',
+    imageUrl: '/banners/hostgator-article.svg',
+    linkUrl: 'https://hostgator-india.sjv.io/yXnR2',
+    placement: 'article_bottom' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 15,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'Lenovo Laptops & Tablets • भारी छूट — No-Cost EMI + फ्री डिलीवरी',
+    clientName: 'Lenovo India',
+    clientPhone: '',
+    imageUrl: '/banners/lenovo-header.svg',
+    linkUrl: 'https://lenovo-in.zlvv.net/je2xVM',
+    placement: 'header_top' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 20,
+    impressions: 0,
+    clicks: 0
+  },
+  {
+    title: 'Namecheap • अपना पसंदीदा .COM या .IN डोमेन बुक करें मात्र ₹499 से + फ्री Privacy',
+    clientName: 'Namecheap Domains',
+    clientPhone: '',
+    imageUrl: '/banners/namecheap-header.svg',
+    linkUrl: 'https://namecheap.pxf.io/JPbWq',
+    placement: 'header_top' as const,
+    targetDistrict: 'सभी 88 जिले',
+    isActive: true,
+    priority: 15,
+    impressions: 0,
+    clicks: 0
+  }
+];
+
+const seedDefaultAdsIfEmpty = async () => {
+  try {
+    const count = await Advertisement.countDocuments();
+    if (count === 0) {
+      await Advertisement.insertMany(DEFAULT_HOSTGATOR_ADS);
+      logger.info('Auto-seeded default HostGator India affiliate ads into MongoDB');
+    }
+  } catch (e) {
+    logger.error('Failed to auto-seed default ads:', e);
+  }
+};
+
 // GET /api/ads - Get advertisements (Public gets active, Admin can pass ?all=true)
 router.get('/ads', async (req: Request, res: Response) => {
   try {
+    await seedDefaultAdsIfEmpty();
+
     const { placement, district, all } = req.query;
     const query: any = {};
 

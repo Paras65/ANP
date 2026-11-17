@@ -51,9 +51,10 @@ export const AdBanner: React.FC<AdBannerProps> = ({
             <img 
               src={ad.imageUrl} 
               alt={ad.title} 
+              title={ad.title}
               loading="lazy"
               decoding="async"
-              className="w-full h-16 sm:h-24 md:h-28 object-cover group-hover:scale-[1.01] transition-transform duration-300"
+              className="w-full h-auto aspect-[5/1] sm:aspect-[6.25/1] max-h-32 object-contain sm:object-cover group-hover:scale-[1.01] transition-transform duration-300"
             />
           </div>
         </div>

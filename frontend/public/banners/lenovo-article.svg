@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 320" width="100%" height="100%">
+  <defs>
+    <linearGradient id="lnvArtBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#121214" />
+      <stop offset="50%" stop-color="#22161b" />
+      <stop offset="100%" stop-color="#0e0f14" />
+    </linearGradient>
+    <linearGradient id="lnvArtBtn" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e2231a" />
+      <stop offset="100%" stop-color="#ff3d34" />
+    </linearGradient>
+    <filter id="lnvArtShadow" x="-5%" y="-10%" width="110%" height="125%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.45" />
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="320" rx="18" fill="url(#lnvArtBg)" />
+  <rect width="1000" height="320" rx="18" fill="none" stroke="#e2231a" stroke-opacity="0.35" stroke-width="1.5" />
+
+  <!-- Soft Ambient Glow -->
+  <circle cx="900" cy="80" r="140" fill="#e2231a" fill-opacity="0.12" filter="blur(30px)" />
+  <circle cx="80" cy="240" r="120" fill="#ff3d34" fill-opacity="0.08" filter="blur(30px)" />
+
+  <!-- Badge -->
+  <g transform="translate(40, 32)">
+    <rect x="0" y="0" width="75" height="24" rx="4" fill="#e2231a" />
+    <text x="37" y="16" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900">Lenovo</text>
+    <text x="86" y="16" fill="#ff6b64" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="1">OFFICIAL INDIA STORE • गिजेट पार्टनर</text>
+  </g>
+
+  <!-- Heading -->
+  <g transform="translate(40, 95)">
+    <text x="0" y="0" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" letter-spacing="-0.5">
+      नया लैपटॉप या टैबलेट खरीदने की सोच रहे हैं?
+    </text>
+    <text x="0" y="32" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="600">
+      Lenovo India स्टोर से पाएं — <tspan fill="#ff3d34" font-weight="800">50% तक की भारी छूट + No-Cost EMI + ओरिजिनल वारंटी</tspan>
+    </text>
+  </g>
+
+  <!-- Feature Bullet Points -->
+  <g transform="translate(40, 175)">
+    <g transform="translate(0, 0)">
+      <circle cx="12" cy="12" r="12" fill="#e2231a" fill-opacity="0.4" />
+      <text x="12" y="16" text-anchor="middle" font-size="12">✓</text>
+      <text x="32" y="16" fill="#e2e8f0" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700">स्टूडेंट &amp; टीचर स्पेशल डिस्काउंट</text>
+    </g>
+
+    <g transform="translate(240, 0)">
+      <circle cx="12" cy="12" r="12" fill="#e2231a" fill-opacity="0.4" />
+      <text x="12" y="16" text-anchor="middle" font-size="12">✓</text>
+      <text x="32" y="16" fill="#e2e8f0" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700">0% ब्याज पर आसान किस्तें (EMI)</text>
+    </g>
+
+    <g transform="translate(480, 0)">
+      <circle cx="12" cy="12" r="12" fill="#e2231a" fill-opacity="0.4" />
+      <text x="12" y="16" text-anchor="middle" font-size="12">✓</text>
+      <text x="32" y="16" fill="#e2e8f0" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700">ऑल इंडिया फ्री एक्सप्रेस डिलीवरी</text>
+    </g>
+  </g>
+
+  <!-- Bottom CTA Row -->
+  <g transform="translate(40, 235)">
+    <rect x="0" y="4" width="160" height="38" rx="10" fill="#1f181c" stroke="#e2231a" stroke-opacity="0.5" stroke-width="1.2" />
+    <text x="80" y="27" text-anchor="middle" fill="#ff6b64" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900">
+      50% तक की छूट*
+    </text>
+
+    <g transform="translate(680, -6)">
+      <rect x="0" y="0" width="240" height="52" rx="16" fill="url(#lnvArtBtn)" filter="url(#lnvArtShadow)" />
+      <text x="120" y="32" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="900">
+        Lenovo ऑफर्स देखें →
+      </text>
+    </g>
+  </g>
+</svg>

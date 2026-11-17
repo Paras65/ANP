@@ -55,7 +55,8 @@ import {
   POPULAR_DISTRICTS_MP, 
   SOCIAL_LINKS,
   INITIAL_ARTICLES,
-  MANDI_RATES
+  MANDI_RATES,
+  DEFAULT_SPONSOR_ADS
 } from './data/mockData';
 import { generateStoriesList, type StoryItem } from './data/storiesData';
 import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Reporter, Advertisement, ComplianceTab } from './types';
@@ -85,7 +86,16 @@ export const App: React.FC = () => {
     return INITIAL_ARTICLES;
   });
   const [reporters, setReporters] = useState<Reporter[]>([]);
-  const [ads, setAds] = useState<Advertisement[]>([]);
+  const [ads, setAds] = useState<Advertisement[]>(() => {
+    try {
+      const cached = localStorage.getItem('anp_cached_ads');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_SPONSOR_ADS;
+  });
   const [youtubeSubs, setYoutubeSubs] = useState<string>(() => {
     return localStorage.getItem('anp_yt_subs') || SOCIAL_LINKS.youtubeSubs || '4.56K+';
   });
@@ -404,10 +414,15 @@ export const App: React.FC = () => {
 
       // Fetch active local advertiser campaigns
       api.get('/ads').then(res => {
-        if (res.data?.success && Array.isArray(res.data.data)) {
+        if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
           setAds(res.data.data);
+          localStorage.setItem('anp_cached_ads', JSON.stringify(res.data.data));
+        } else if (!res.data?.data || res.data.data.length === 0) {
+          setAds(DEFAULT_SPONSOR_ADS);
         }
-      }).catch(() => {});
+      }).catch(() => {
+        setAds(prev => (prev && prev.length > 0 ? prev : DEFAULT_SPONSOR_ADS));
+      });
     }, 400);
 
     return () => clearTimeout(timer);
@@ -1261,7 +1276,9 @@ export const App: React.FC = () => {
 
   // Active Monetization / Ad Placements
   const headerAd = ads.find(a => a.placement === 'header_top' && a.isActive);
-  const inFeedAd = ads.find(a => a.placement === 'in_feed' && a.isActive);
+  const inFeedAds = ads.filter(a => a.placement === 'in_feed' && a.isActive);
+  const inFeedAd = inFeedAds[0] || null;
+  const secondaryInFeedAd = inFeedAds.length > 1 ? inFeedAds[1] : null;
   const articleAd = ads.find(a => a.placement === 'article_bottom' && a.isActive);
 
   // Progressive Disclosure: visible count & server-side pagination bridge
@@ -2281,11 +2298,25 @@ export const App: React.FC = () => {
                             </div>
                           )}
 
-                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER (LIVE OR FALLBACK INVITATION) */}
+                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER 1 (PRIMARY SPONSOR) */}
                           {idx === 3 && (
                             <div className="col-span-1 sm:col-span-2 my-1">
                               <AdBanner 
                                 ad={inFeedAd} 
+                                placement="in_feed" 
+                                isDark={isDark} 
+                                onContactWhatsApp={() => {
+                                  window.open(`https://api.whatsapp.com/send?phone=917000139694&text=${encodeURIComponent('नमस्ते Ambition News, मुझे अपने प्रतिष्ठान / व्यवसाय का विज्ञापन व कवरेज पोर्टल पर प्रकाशित करवाना है।')}`, '_blank');
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {/* DYNAMIC SPONSORED IN-FEED AD BANNER 2 (SECONDARY SPONSOR ROTATION) */}
+                          {idx === 7 && secondaryInFeedAd && (
+                            <div className="col-span-1 sm:col-span-2 my-1">
+                              <AdBanner 
+                                ad={secondaryInFeedAd} 
                                 placement="in_feed" 
                                 isDark={isDark} 
                                 onContactWhatsApp={() => {

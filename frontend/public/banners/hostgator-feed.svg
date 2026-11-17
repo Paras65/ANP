@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="feedBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#02162e" />
+      <stop offset="50%" stop-color="#052449" />
+      <stop offset="100%" stop-color="#010d1c" />
+    </linearGradient>
+    <linearGradient id="feedBtn" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffb81c" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#082b52" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#03162c" stop-opacity="0.8" />
+    </linearGradient>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="480" rx="20" fill="url(#feedBg)" />
+  <rect width="1000" height="480" rx="20" fill="none" stroke="#00a8e8" stroke-opacity="0.3" stroke-width="1.5" />
+
+  <!-- Ambient Glow Circles -->
+  <circle cx="850" cy="120" r="180" fill="#00a8e8" fill-opacity="0.12" filter="blur(40px)" />
+  <circle cx="150" cy="380" r="160" fill="#ffb81c" fill-opacity="0.08" filter="blur(40px)" />
+
+  <!-- Subtle Geometric Grid Lines -->
+  <g stroke="#ffffff" stroke-opacity="0.04" stroke-width="1">
+    <line x1="0" y1="120" x2="1000" y2="120" />
+    <line x1="0" y1="240" x2="1000" y2="240" />
+    <line x1="0" y1="360" x2="1000" y2="360" />
+    <line x1="250" y1="0" x2="250" y2="480" />
+    <line x1="500" y1="0" x2="500" y2="480" />
+    <line x1="750" y1="0" x2="750" y2="480" />
+  </g>
+
+  <!-- Header Category Pill -->
+  <g transform="translate(48, 38)">
+    <rect x="0" y="0" width="240" height="28" rx="14" fill="#ffb81c" fill-opacity="0.15" stroke="#ffb81c" stroke-opacity="0.5" stroke-width="1" />
+    <text x="14" y="19" fill="#ffb81c" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="900" letter-spacing="1">⚡ OFFICIAL HOSTING PARTNER</text>
+  </g>
+
+  <!-- Main Headline -->
+  <g transform="translate(48, 105)">
+    <text x="0" y="0" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="900" letter-spacing="-0.5">
+      अपनी वेबसाइट या ब्लॉग आज ही शुरू करें!
+    </text>
+    <text x="0" y="38" fill="#38bdf8" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700">
+      HostGator India • 99.9% अपटाइम, अनलिमिटेड बैंडविड्थ और सुपरफास्ट स्पीड
+    </text>
+  </g>
+
+  <!-- 3 Value Proposition Feature Cards -->
+  <g transform="translate(48, 180)">
+    <!-- Card 1 -->
+    <rect x="0" y="0" width="280" height="110" rx="16" fill="url(#cardGrad)" stroke="#00a8e8" stroke-opacity="0.3" stroke-width="1.2" filter="url(#cardShadow)" />
+    <circle cx="36" cy="38" r="18" fill="#0054b4" fill-opacity="0.4" />
+    <text x="36" y="44" text-anchor="middle" font-size="18">🌐</text>
+    <text x="68" y="34" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="800">फ्री डोमेन (.IN / .COM)</text>
+    <text x="68" y="56" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12">1 वर्ष के लिए पूर्णतः मुफ़्त डोमेन</text>
+    <text x="68" y="76" fill="#ffb81c" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700">₹999 की सीधी बचत</text>
+
+    <!-- Card 2 -->
+    <rect x="310" y="0" width="280" height="110" rx="16" fill="url(#cardGrad)" stroke="#00a8e8" stroke-opacity="0.3" stroke-width="1.2" filter="url(#cardShadow)" />
+    <circle cx="346" cy="38" r="18" fill="#0054b4" fill-opacity="0.4" />
+    <text x="346" y="44" text-anchor="middle" font-size="18">🔒</text>
+    <text x="378" y="34" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="800">लाइफटाइम फ्री SSL</text>
+    <text x="378" y="56" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12">फुल डेटा एन्क्रिप्शन व सुरक्षा</text>
+    <text x="378" y="76" fill="#38bdf8" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700">Google SEO में रैंकिंग बूस्ट</text>
+
+    <!-- Card 3 -->
+    <rect x="620" y="0" width="280" height="110" rx="16" fill="url(#cardGrad)" stroke="#00a8e8" stroke-opacity="0.3" stroke-width="1.2" filter="url(#cardShadow)" />
+    <circle cx="656" cy="38" r="18" fill="#0054b4" fill-opacity="0.4" />
+    <text x="656" y="44" text-anchor="middle" font-size="18">⚡</text>
+    <text x="688" y="34" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="800">1-क्लिक वर्डप्रेस</text>
+    <text x="688" y="56" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12">बिना कोडिंग 2 मिनट में साइट लाइव</text>
+    <text x="688" y="76" fill="#4ade80" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700">24x7 भारतीय फोन सपोर्ट</text>
+  </g>
+
+  <!-- Bottom Action Bar: Price + Discount + CTA Button -->
+  <g transform="translate(48, 335)">
+    <!-- Discount highlight -->
+    <rect x="0" y="8" width="130" height="42" rx="10" fill="#dc2626" />
+    <text x="65" y="35" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900">
+      FLAT 60% OFF
+    </text>
+
+    <!-- Price -->
+    <text x="145" y="24" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700">शुरुआती कीमत:</text>
+    <text x="145" y="50" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900">
+      <tspan fill="#ffb81c">₹79</tspan><tspan font-size="14" fill="#cbd5e1"> / महीना*</tspan>
+    </text>
+
+    <!-- Big Action Button -->
+    <g transform="translate(580, 0)">
+      <rect x="0" y="0" width="320" height="58" rx="18" fill="url(#feedBtn)" filter="url(#cardShadow)" />
+      <text x="160" y="36" text-anchor="middle" fill="#02162e" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="900">
+        ऑफर का लाभ उठाएं (Claim Now) →
+      </text>
+    </g>
+  </g>
+</svg>

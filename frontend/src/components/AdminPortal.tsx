@@ -48,7 +48,7 @@ import type { Article, DistrictItem, VideoBulletin, InstagramPost, MandiRate, Re
 import { parseYouTubeUrl, extractYouTubeChannelId, syncYouTubeChannelVideos, parseReelMedia } from '../utils/mediaUtils';
 import { WhatsAppIcon } from './SocialIcons';
 import api, { setAuthToken } from '../api/client';
-import { SOCIAL_LINKS } from '../data/mockData';
+import { SOCIAL_LINKS, DEFAULT_SPONSOR_ADS } from '../data/mockData';
 import { WhatsAppBulletinModal } from './WhatsAppBulletinModal';
 import { NewsCardGeneratorModal } from './NewsCardGeneratorModal';
 import { PaginationBar } from './common/PaginationBar';
@@ -151,7 +151,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [copiedAdminCodes, setCopiedAdminCodes] = useState(false);
   
   // Ad & Monetization Management States
-  const [ads, setAds] = useState<Advertisement[]>([]);
+  const [ads, setAds] = useState<Advertisement[]>(DEFAULT_SPONSOR_ADS);
   const [isLoadingAds, setIsLoadingAds] = useState(false);
   const [editingAdId, setEditingAdId] = useState<string | null>(null);
   const [adForm, setAdForm] = useState<{
@@ -694,8 +694,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     try {
       setIsLoadingAds(true);
       const res = await api.get('/ads?all=true');
-      if (res.data?.success && Array.isArray(res.data.data)) {
+      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
         setAds(res.data.data);
+      } else if (!res.data?.data || res.data.data.length === 0) {
+        setAds(DEFAULT_SPONSOR_ADS);
       }
     } catch (err) {
       console.error('Error fetching ads:', err);
